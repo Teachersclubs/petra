@@ -1,0 +1,229 @@
+/* ===== الحالة العامة، الحفظ المحلي، أدوات التاريخ ===== */
+(function (g) {
+  'use strict';
+  const KEY = 'teachers-clubs-editor:v2';
+
+  const MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+  const DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+  function todayISO() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+
+  function parseISO(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m) return null;
+    return new Date(+m[1], +m[2] - 1, +m[3], 12);
+  }
+
+  /** مثال: الاثنين، 09 نوفمبر 2026 */
+  function formatGregorian(iso) {
+    const d = parseISO(iso);
+    if (!d) return '';
+    return DAYS[d.getDay()] + '، ' + String(d.getDate()).padStart(2, '0') + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  /** التاريخ الهجري (أم القرى) مثال: 30 جمادى الأولى 1448 */
+  function formatHijri(iso) {
+    const d = parseISO(iso);
+    if (!d) return '';
+    try {
+      const parts = new Intl.DateTimeFormat('ar-u-ca-islamic-umalqura-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' }).formatToParts(d);
+      const get = t => (parts.find(p => p.type === t) || {}).value || '';
+      return get('day') + ' ' + get('month') + ' ' + get('year');
+    } catch (e) { return ''; }
+  }
+
+  const FONTS = [
+    ['Simplified Arabic', 'Simplified Arabic (عربي مبسّط)'],
+    ['Traditional Arabic', 'Traditional Arabic (عربي تقليدي)'],
+    ['Sakkal Majalla', 'Sakkal Majalla (سكّال مجلّة)'],
+    ['Arabic Typesetting', 'Arabic Typesetting (ويندوز)'],
+    ['Andalus', 'Andalus (أندلس — ويندوز)'],
+    ['Segoe UI', 'Segoe UI'],
+    ['Tahoma', 'Tahoma'],
+    ['Arial', 'Arial'],
+    ['Times New Roman', 'Times New Roman'],
+    ['Calibri', 'Calibri'],
+    ['Cairo', 'Cairo (القاهرة — مضمَّن)'],
+    ['Tajawal', 'Tajawal (تجوّل — مضمَّن)'],
+    ['Almarai', 'Almarai (المراعي — مضمَّن)'],
+    ['IBM Plex Sans Arabic', 'IBM Plex Sans Arabic (مضمَّن)'],
+    ['Amiri', 'Amiri (أميري — نسخ تقليدي، مضمَّن)'],
+    ['Noto Naskh Arabic', 'Noto Naskh Arabic (نسخ — مضمَّن)']
+  ];
+
+  function person() { return { name: '', signImg: '', stampImg: '', showSign: true, showStamp: true }; }
+
+  function letterDefaults(internal) {
+    return {
+      number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
+      to0: !internal, to1: !internal, to2: !internal,
+      toDir: !!internal, dirName: '', toCustom: '',
+      subject: '', body: '', showHead: true, showManager: true
+    };
+  }
+
+  function defaults() {
+    return {
+      v: 2,
+      activeDoc: 'letter',
+      clubName: '',
+      font: 'Simplified Arabic',
+      bodySize: 14,
+      lineHeight: 1.5,
+      logoSize: 24,
+      onePage: false,
+      logos: {
+        ministry: { show: true, data: '' },
+        club: { show: true, data: '' }
+      },
+      footer: {
+        show: true, line: true, lineWidth: 1,
+        name: '', nameSize: 12, nameAlign: 'center', nameBold: true,
+        phone: '', whatsapp: '', email: '', facebook: '', website: '', address: '', fax: '', social: '', extra: '',
+        font: 'Simplified Arabic', size: 10, align: 'center', color: '#222222', bold: false,
+        icons: { phone: true, whatsapp: true, email: true, facebook: true, location: true, web: true },
+        iconSize: 10, iconPos: 'before', gap: 5
+      },
+      people: {
+        head: person(), manager: person(),
+        signSize: 16, stampSize: 22, stampPos: 'right', removeBg: true
+      },
+      send: { email: '', whatsapp: '', format: 'pdf' },
+      theme: '',
+      letter: letterDefaults(false),
+      internal: letterDefaults(true),
+      thanks: letterDefaults(false),
+      circular: {
+        number: '', subject: '', body: '',
+        date: todayISO(), showDate: true, showHijri: true, hijri: '', hijriManual: false,
+        showNumUnder: false, showTitleNum: true,
+        lineShow: true, lineWidth: 1.5, lineStyle: 'solid', lineColor: '#000000', lineBefore: 3, lineAfter: 3, linePct: 100,
+        titleSize: 17, titleAlign: 'center',
+        bodyFont: '', bodySize: 0, bodyAlign: 'justify',
+        showHead: true, showManager: true
+      }
+    };
+  }
+
+  function merge(base, over) {
+    if (over === null || typeof over !== 'object' || Array.isArray(over)) return base;
+    Object.keys(base).forEach(k => {
+      if (!(k in over)) return;
+      if (base[k] !== null && typeof base[k] === 'object' && !Array.isArray(base[k])) base[k] = merge(base[k], over[k]);
+      else if (typeof over[k] === typeof base[k]) base[k] = over[k];
+    });
+    return base;
+  }
+
+  /** ترحيل بيانات النسخة الأولى (v1) إلى البنية الجديدة */
+  function migrate(raw) {
+    if (!raw || typeof raw !== 'object') return {};
+    if (raw.v >= 2) {
+      const r = JSON.parse(JSON.stringify(raw));
+      ['letter', 'internal', 'thanks', 'circular'].forEach(k => {
+        const d = r[k]; if (!d || d.showHead !== undefined) return;
+        const who = d.signer || d.signWho || 'manager';
+        d.showHead = who === 'head' || who === 'both'; d.showManager = who === 'manager' || who === 'both';
+      });
+      return r;
+    }
+    const o = JSON.parse(JSON.stringify(raw));
+    o.people = o.people || { head: {}, manager: {} };
+    const L = o.letter || {}, C = o.circular || {};
+    const key = L.signTitle === 'رئيس الهيئة الإدارية' ? 'head' : 'manager';
+    if (L.signName) o.people[key].name = L.signName;
+    if (L.signImg) { o.people[key].signImg = L.signImg; o.people[key].showSign = L.signShow !== false; }
+    if (C.headName && !o.people.head.name) o.people.head.name = C.headName;
+    if (C.managerName && !o.people.manager.name) o.people.manager.name = C.managerName;
+    if (o.letter) { o.letter.showHead = key === 'head'; o.letter.showManager = key !== 'head'; }
+    if (o.circular && o.circular.number != null) o.circular.date = App_todayISO();
+    if (o.font === 'Tahoma') o.font = 'Simplified Arabic';
+    if (o.footer && o.footer.font === 'Tahoma') o.footer.font = 'Simplified Arabic';
+    if (o.bodySize === 13) o.bodySize = 14;
+    if (o.footer && o.footer.size === 9) o.footer.size = 10;
+    o.v = 2;
+    return o;
+  }
+  function App_todayISO() { return todayISO(); }
+
+  function build(raw) {
+    const d = defaults();
+    merge(d, migrate(raw));
+    const known = f => FONTS.some(x => x[0] === f);
+    if (!known(d.font)) d.font = 'Simplified Arabic';
+    if (!known(d.footer.font)) d.footer.font = 'Simplified Arabic';
+    if (d.circular.bodyFont && !known(d.circular.bodyFont)) d.circular.bodyFont = '';
+    if (!d.letter.hijri && !d.letter.hijriManual) d.letter.hijri = formatHijri(d.letter.date);
+    if (!d.internal.hijri && !d.internal.hijriManual) d.internal.hijri = formatHijri(d.internal.date);
+    if (!d.thanks.hijri && !d.thanks.hijriManual) d.thanks.hijri = formatHijri(d.thanks.date);
+    if (!d.circular.hijri && !d.circular.hijriManual) d.circular.hijri = formatHijri(d.circular.date);
+    return d;
+  }
+
+  /* ---------- التخزين الدائم: IndexedDB مع احتياط localStorage ---------- */
+  const DB = 'teachers-clubs-editor', STORE = 'kv';
+  function openDb() {
+    return new Promise((res, rej) => {
+      if (!g.indexedDB) return rej(new Error('no idb'));
+      const rq = indexedDB.open(DB, 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore(STORE);
+      rq.onsuccess = () => res(rq.result);
+      rq.onerror = () => rej(rq.error);
+    });
+  }
+  function idbGet(db, k) { return new Promise((res, rej) => { const r = db.transaction(STORE).objectStore(STORE).get(k); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+  function idbSet(db, k, v) { return new Promise((res, rej) => { const t = db.transaction(STORE, 'readwrite'); t.objectStore(STORE).put(v, k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); }
+
+  let db = null;
+  async function loadAsync() {
+    let raw = null, att = null;
+    try { db = await openDb(); raw = await idbGet(db, 'state'); att = await idbGet(db, 'attachments'); } catch (e) { db = null; }
+    if (!raw) {
+      try { const s = localStorage.getItem(KEY) || localStorage.getItem('teachers-clubs-editor:v1'); if (s) raw = JSON.parse(s); } catch (e) { /* تجاهل */ }
+    }
+    try { if (navigator.storage && navigator.storage.persist) App_persisted = await navigator.storage.persist(); } catch (e) { /* تجاهل */ }
+    return { state: build(raw), attachments: att };
+  }
+  let App_persisted = false;
+
+  let saveTimer = null, saveFailed = false;
+  function save(state) {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => flush(state), 250);
+  }
+  async function flush(state) {
+    const att = g.App.attach && g.App.attach.store ? g.App.attach.store : null;
+    try {
+      if (db) {
+        await idbSet(db, 'state', JSON.parse(JSON.stringify(state)));
+        if (att) await idbSet(db, 'attachments', JSON.parse(JSON.stringify(att)));
+      } else {
+        localStorage.setItem(KEY, JSON.stringify(state));
+      }
+      saveFailed = false; g.App.lastSaved = Date.now();
+    } catch (e) {
+      if (!saveFailed && g.toast) g.toast('تعذّر الحفظ التلقائي (التخزين ممتلئ أو معطّل في المتصفح)');
+      saveFailed = true;
+    }
+  }
+  async function wipe() {
+    try { localStorage.removeItem(KEY); localStorage.removeItem('teachers-clubs-editor:v1'); } catch (e) { /* تجاهل */ }
+    if (db) { db.close(); await new Promise(r => { const q = indexedDB.deleteDatabase(DB); q.onsuccess = q.onerror = q.onblocked = () => r(); }); }
+  }
+
+  function getPath(obj, path) { return path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj); }
+  function setPath(obj, path, val) {
+    const ks = path.split('.'); const last = ks.pop();
+    const t = ks.reduce((o, k) => o[k], obj); t[last] = val;
+  }
+
+  g.App = Object.assign(g.App || {}, {
+    KEY, FONTS, defaults, build, loadAsync, save, flush, wipe, getPath, setPath, migrate,
+    isPersisted: () => App_persisted,
+    todayISO, formatGregorian, formatHijri
+  });
+})(window);

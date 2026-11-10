@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>أندية المعلمين والعاملين — محرر الكتب الرسمية</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f4e5f'/%3E%3Cpath d='M9 8h10l4 4v12H9z' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="top-row">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>
+      </span>
+      <div class="brand-text">
+        <h1>أندية المعلمين والعاملين في وزارة التربية والتعليم وتنمية الموارد البشرية</h1>
+        <p>محرر الكتب الرسمية للأندية</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn icon" id="btnTheme" type="button" title="الوضع الليلي" aria-label="تبديل الوضع الليلي">
+        <svg class="i-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
+      </button>
+      <button class="btn" id="btnWord" title="تنزيل بصيغة Word">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+        <span>Word</span>
+      </button>
+      <button class="btn" id="btnPdf" title="تنزيل بصيغة PDF">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>
+        <span>PDF</span>
+      </button>
+      <button class="btn icon" id="btnDrive" type="button" title="تنزيل الملف ثم فتح Google Drive لرفعه" aria-label="رفع إلى Google Drive"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8.2 3h7.6l6.2 10.7h-7.6z" fill="#fbbc04"/><path d="M8.2 3L2 13.7l3.8 6.6 6.2-10.7z" fill="#0f9d58"/><path d="M5.8 20.3h12.4l3.8-6.6H9.6z" fill="#4285f4"/></svg></button>
+      <button class="btn primary" id="btnPrint" title="طباعة">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>
+        <span>طباعة</span>
+      </button>
+    </div>
+  </div>
+  <nav class="doc-tabs" role="tablist" aria-label="نوع المستند">
+    <button role="tab" class="doc-tab active" data-doc="letter" aria-selected="true">كتاب للوزارة</button>
+    <button role="tab" class="doc-tab" data-doc="internal" aria-selected="false">كتاب داخلي</button>
+    <button role="tab" class="doc-tab" data-doc="thanks" aria-selected="false">كتاب شكر</button>
+    <button role="tab" class="doc-tab" data-doc="circular" aria-selected="false">تعميم هيئة عامة</button>
+  </nav>
+</header>
+
+<main class="workspace" data-pane="edit">
+
+  <!-- ============ لوحة التحرير والإعدادات ============ -->
+  <aside class="side">
+    <nav class="side-nav" role="tablist" aria-label="الأقسام">
+      <button class="side-tab active" data-sec="doc"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg><span>تحرير المستند</span></button>
+      <button class="side-tab" data-sec="logos"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 9"/></svg><span>الشعارات</span></button>
+      <button class="side-tab" data-sec="footer"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16h18"/></svg><span>ذيل الصفحة</span></button>
+      <button class="side-tab" data-sec="send"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg><span>الإرسال</span></button>
+      <button class="side-tab" data-sec="site"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg><span>إعدادات الموقع</span></button>
+    </nav>
+
+    <!-- ===== تحرير المستند: كتاب للوزارة ===== -->
+    <section class="panel active" id="sec-doc">
+
+      <!-- ===== كتاب للوزارة ===== -->
+      <div class="doc-form" data-form="letter">
+        <h2 class="panel-title">بيانات الكتاب</h2>
+        <label class="field"><span>اسم النادي <small>(يظهر بعد كلمة «نادي»)</small></span>
+          <input type="text" data-bind="clubName" placeholder="مثال: البتراء"></label>
+        <div class="row2">
+          <label class="field"><span>رقم الكتاب</span><input type="text" data-doc-bind="letter.number" placeholder="مثال: 1/2026"></label>
+          <label class="field"><span>التاريخ (الموافق)</span><input type="date" data-doc-bind="letter.date"></label>
+        </div>
+        <label class="check"><input type="checkbox" data-doc-bind="letter.showHijri"> <span>إظهار التاريخ الهجري</span></label>
+        <label class="field" data-show-if="letter.showHijri"><span>التاريخ الهجري <small>(يُحسب تلقائيًا ويمكن تعديله)</small></span>
+          <input type="text" data-doc-bind="letter.hijri" placeholder="مثال: 30 جمادى الأولى 1448"></label>
+
+        <fieldset class="group" data-recipients>
+          <legend>الجهات الموجه إليها</legend>
+          <label class="check"><input type="checkbox" data-doc-bind="letter.to0"> <span>معالي وزير التربية والتعليم وتنمية الموارد البشرية الأكرم</span></label>
+          <label class="check"><input type="checkbox" data-doc-bind="letter.to1"> <span>عطوفة مدير إدارة النشاطات التربوية الأكرم</span></label>
+          <label class="check"><input type="checkbox" data-doc-bind="letter.to2"> <span>عطوفة مدير أندية المعلمين والعاملين الأكرم</span></label>
+        </fieldset>
+
+        <label class="field"><span>الموضوع <small>(يُستخدم اسمًا للملف عند التنزيل)</small></span><input type="text" data-doc-bind="letter.subject" placeholder="موضوع الكتاب"></label>
+
+        <div class="field"><span>نص الكتاب</span>
+          <div class="rte" data-rte="letter">
+            <div class="rte-bar"></div>
+            <div class="rte-area" contenteditable="true" dir="rtl" data-doc-rte="letter.body" spellcheck="true"></div>
+          </div>
+        </div>
+
+        <fieldset class="group">
+          <legend>التوقيع والاعتماد</legend>
+          <label class="check"><input type="checkbox" data-doc-bind="letter.showHead"> <span>إظهار رئيس الهيئة الإدارية</span></label>
+          <label class="check"><input type="checkbox" data-doc-bind="letter.showManager"> <span>إظهار مدير النادي</span></label>
+          <p class="hint">يظهر اسم كل موقّع وتوقيعه وختمه. تُضبط البيانات من قسم «الموقّعون» أدناه.</p>
+        </fieldset>
+      </div>
+
+      <!-- ===== تعميم هيئة عامة ===== -->
+      <div class="doc-form" data-form="circular" hidden>
+        <h2 class="panel-title">بيانات التعميم</h2>
+        <label class="field"><span>اسم النادي <small>(يظهر بعد كلمة «نادي»)</small></span>
+          <input type="text" data-bind="clubName" placeholder="مثال: البتراء"></label>
+        <div class="row2">
+          <label class="field"><span>تعميم رقم</span><input type="text" data-doc-bind="circular.number" placeholder="مثال: 3/2026"></label>
+          <label class="field"><span>التاريخ (الموافق)</span><input type="date" data-doc-bind="circular.date"></label>
+        </div>
+        <label class="check"><input type="checkbox" data-doc-bind="circular.showDate"> <span>إظهار التاريخ في الزاوية اليمنى (اليوم والميلادي والهجري)</span></label>
+        <label class="check"><input type="checkbox" data-doc-bind="circular.showHijri"> <span>إظهار التاريخ الهجري</span></label>
+        <label class="field" data-show-if="circular.showHijri"><span>التاريخ الهجري <small>(يُحسب تلقائيًا ويمكن تعديله)</small></span>
+          <input type="text" data-doc-bind="circular.hijri" placeholder="مثال: 30 جمادى الأولى 1448"></label>
+        <label class="check"><input type="checkbox" data-doc-bind="circular.showNumUnder"> <span>إظهار رقم التعميم أسفل التاريخ</span></label>
+        <label class="check"><input type="checkbox" data-doc-bind="circular.showTitleNum"> <span>إظهار «تعميم رقم» تحت العنوان</span></label>
+
+        <fieldset class="group">
+          <legend>الخط الفاصل بين الترويسة والنص</legend>
+          <label class="switch block"><input type="checkbox" data-doc-bind="circular.lineShow"><i></i><span>إظهار الخط الفاصل</span></label>
+          <div class="row2">
+            <label class="field"><span>السماكة (نقطة)</span><input type="number" min="0.25" max="8" step="0.25" data-doc-bind="circular.lineWidth"></label>
+            <label class="field"><span>النمط</span>
+              <select data-doc-bind="circular.lineStyle"><option value="solid">متصل</option><option value="dashed">متقطع</option><option value="dotted">منقّط</option><option value="double">مزدوج</option></select></label>
+          </div>
+          <div class="row2">
+            <label class="field"><span>المسافة فوق الخط (مم)</span><input type="number" min="0" max="30" step="1" data-doc-bind="circular.lineBefore"></label>
+            <label class="field"><span>المسافة تحت الخط (مم)</span><input type="number" min="0" max="30" step="1" data-doc-bind="circular.lineAfter"></label>
+          </div>
+          <div class="row2">
+            <label class="field"><span>اللون</span><input type="color" data-doc-bind="circular.lineColor"></label>
+            <label class="field"><span>العرض: <b data-out-path="circular.linePct"></b>٪</span><input type="range" min="20" max="100" step="5" data-doc-bind="circular.linePct"></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend>خط وتنسيق التعميم</legend>
+          <div class="row2">
+            <label class="field"><span>حجم العنوان (نقطة)</span><input type="number" min="10" max="36" step="1" data-doc-bind="circular.titleSize"></label>
+            <label class="field"><span>موقع العنوان</span>
+              <select data-doc-bind="circular.titleAlign"><option value="center">وسط</option><option value="right">يمين</option><option value="left">يسار</option></select></label>
+          </div>
+          <div class="row2">
+            <label class="field"><span>نوع خط النص</span><select data-fonts="blank" data-doc-bind="circular.bodyFont"></select></label>
+            <label class="field"><span>حجم خط النص <small>(0 = الافتراضي)</small></span><input type="number" min="0" max="24" step="0.5" data-doc-bind="circular.bodySize"></label>
+          </div>
+          <label class="field"><span>موقع النص (المحاذاة)</span>
+            <select data-doc-bind="circular.bodyAlign"><option value="justify">ضبط</option><option value="right">يمين</option><option value="center">وسط</option><option value="left">يسار</option></select></label>
+        </fieldset>
+
+        <label class="field"><span>الموضوع <small>(يُستخدم اسمًا للملف عند التنزيل)</small></span><input type="text" data-doc-bind="circular.subject" placeholder="موضوع التعميم"></label>
+
+        <div class="field"><span>نص التعميم</span>
+          <div class="rte" data-rte="circular">
+            <div class="rte-bar"></div>
+            <div class="rte-area" contenteditable="true" dir="rtl" data-doc-rte="circular.body" spellcheck="true"></div>
+          </div>
+        </div>
+
+        <fieldset class="group">
+          <legend>التوقيع والاعتماد</legend>
+          <label class="check"><input type="checkbox" data-doc-bind="circular.showHead"> <span>إظهار رئيس الهيئة الإدارية</span></label>
+          <label class="check"><input type="checkbox" data-doc-bind="circular.showManager"> <span>إظهار مدير النادي</span></label>
+          <p class="hint">الأسماء والتواقيع والأختام من قسم «الموقّعون» أدناه.</p>
+        </fieldset>
+      </div>
+
+      <!-- ===== الموقّعون ===== -->
+      <fieldset class="group" id="peopleBox">
+        <legend>الموقّعون: الاسم والتوقيع والختم</legend>
+        <div class="people-card" data-person="head">
+          <h4>رئيس الهيئة الإدارية</h4>
+          <label class="field"><span>الاسم</span><input type="text" data-bind="people.head.name" placeholder="الاسم الذي يظهر أسفل التوقيع"></label>
+          <div class="img-slot" data-kind="sign">
+            <span class="slot-lbl">التوقيع الإلكتروني</span>
+            <div class="logo-thumb"><img alt="" hidden><em>لا يوجد</em></div>
+            <div class="slot-btns">
+              <label class="btn sm">رفع توقيع<input type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
+              <button type="button" class="btn sm ghost danger" data-remove hidden>إزالة</button>
+              <label class="switch" data-show-if="people.head.signImg"><input type="checkbox" data-bind="people.head.showSign"><i></i><span>إظهار</span></label>
+            </div>
+          </div>
+          <div class="img-slot" data-kind="stamp">
+            <span class="slot-lbl">الختم الرسمي</span>
+            <div class="logo-thumb"><img alt="" hidden><em>لا يوجد</em></div>
+            <div class="slot-btns">
+              <label class="btn sm">رفع ختم<input type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
+              <button type="button" class="btn sm ghost danger" data-remove hidden>إزالة</button>
+              <label class="switch" data-show-if="people.head.stampImg"><input type="checkbox" data-bind="people.head.showStamp"><i></i><span>إظهار</span></label>
+            </div>
+          </div>
+        </div>
+        <div class="people-card" data-person="manager">
+          <h4>مدير النادي</h4>
+          <label class="field"><span>الاسم</span><input type="text" data-bind="people.manager.name" placeholder="الاسم الذي يظهر أسفل التوقيع"></label>
+          <div class="img-slot" data-kind="sign">
+            <span class="slot-lbl">التوقيع الإلكتروني</span>
+            <div class="logo-thumb"><img alt="" hidden><em>لا يوجد</em></div>
+            <div class="slot-btns">
+              <label class="btn sm">رفع توقيع<input type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
+              <button type="button" class="btn sm ghost danger" data-remove hidden>إزالة</button>
+              <label class="switch" data-show-if="people.manager.signImg"><input type="checkbox" data-bind="people.manager.showSign"><i></i><span>إظهار</span></label>
+            </div>
+          </div>
+          <div class="img-slot" data-kind="stamp">
+            <span class="slot-lbl">الختم الرسمي</span>
+            <div class="logo-thumb"><img alt="" hidden><em>لا يوجد</em></div>
+            <div class="slot-btns">
+              <label class="btn sm">رفع ختم<input type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
+              <button type="button" class="btn sm ghost danger" data-remove hidden>إزالة</button>
+              <label class="switch" data-show-if="people.manager.stampImg"><input type="checkbox" data-bind="people.manager.showStamp"><i></i><span>إظهار</span></label>
+            </div>
+          </div>
+        </div>
+        <div class="row2">
+          <label class="field"><span>ارتفاع التوقيع (مم)</span><input type="number" min="8" max="40" step="1" data-bind="people.signSize"></label>
+          <label class="field"><span>ارتفاع الختم (مم)</span><input type="number" min="10" max="45" step="1" data-bind="people.stampSize"></label>
+        </div>
+        <label class="field"><span>موضع الختم بجانب التوقيع</span>
+          <select data-bind="people.stampPos"><option value="right">الختم يمين التوقيع</option><option value="left">الختم يسار التوقيع</option></select></label>
+        <label class="check"><input type="checkbox" data-bind="people.removeBg"> <span>جعل الخلفية البيضاء شفافة عند رفع التوقيع أو الختم</span></label>
+      </fieldset>
+
+      <fieldset class="group" id="attBox">
+        <legend>المرفقات <small id="attCount"></small></legend>
+        <p class="hint">تُضاف المرفقات في صفحات مستقلة بعد المستند، وتدخل في Word وPDF والطباعة والإرسال، وتُحفظ في المتصفح.</p>
+        <div class="att-btns">
+          <label class="btn">صور من الجهاز<input type="file" id="attImg" accept="image/*" multiple hidden></label>
+          <label class="btn">ملف PDF<input type="file" id="attPdf" accept="application/pdf" multiple hidden></label>
+          <label class="btn">صورة من الماسح الضوئي<input type="file" id="attScan" accept="image/*" capture="environment" hidden></label>
+        </div>
+        <ul class="att-list" id="attList"></ul>
+      </fieldset>
+
+      <div class="panel-foot">
+        <button class="btn ghost danger" id="btnClearDoc">مسح محتوى هذا المستند</button>
+      </div>
+    </section>
+
+    <!-- ===== الشعارات ===== -->
+    <section class="panel" id="sec-logos" hidden>
+      <h2 class="panel-title">إعدادات الشعارات</h2>
+      <p class="hint">تُرفع الشعارات من جهازك وتُحفظ في متصفحك فقط. الشعار الأول يظهر في يمين الترويسة والثاني في يسارها.</p>
+
+      <div class="logo-card" data-logo="ministry">
+        <div class="logo-head"><h3>شعار الوزارة</h3>
+          <label class="switch"><input type="checkbox" data-bind="logos.ministry.show"><i></i><span>إظهار في الترويسة</span></label></div>
+        <div class="logo-body">
+          <div class="logo-thumb"><img alt="" hidden><em>لم يُرفع شعار</em></div>
+          <div class="logo-btns">
+            <label class="btn">رفع شعار<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden></label>
+            <button class="btn ghost danger" data-remove hidden>إزالة</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-card" data-logo="club">
+        <div class="logo-head"><h3>شعار الأندية</h3>
+          <label class="switch"><input type="checkbox" data-bind="logos.club.show"><i></i><span>إظهار في الترويسة</span></label></div>
+        <div class="logo-body">
+          <div class="logo-thumb"><img alt="" hidden><em>لم يُرفع شعار</em></div>
+          <div class="logo-btns">
+            <label class="btn">رفع شعار<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden></label>
+            <button class="btn ghost danger" data-remove hidden>إزالة</button>
+          </div>
+        </div>
+      </div>
+
+      <label class="field"><span>حجم الشعار في الترويسة: <b data-out="logoSize"></b> مم</span>
+        <input type="range" min="15" max="35" step="1" data-bind="logoSize"></label>
+    </section>
+
+    <!-- ===== ذيل الصفحة ===== -->
+    <section class="panel" id="sec-footer" hidden>
+      <h2 class="panel-title">ذيل الصفحة</h2>
+      <label class="switch block"><input type="checkbox" data-bind="footer.show"><i></i><span>إظهار ذيل الصفحة</span></label>
+      <label class="switch block"><input type="checkbox" data-bind="footer.line"><i></i><span>خط فاصل بين المستند وذيل الصفحة</span></label>
+      <label class="field"><span>سماكة الخط الفاصل (نقطة)</span><input type="number" min="0.25" max="6" step="0.25" data-bind="footer.lineWidth"></label>
+
+      <fieldset class="group">
+        <legend>اسم النادي (أعلى الذيل تحت الخط)</legend>
+        <label class="field"><span>اسم النادي</span><input type="text" data-bind="footer.name" placeholder="مثال: نادي البتراء"></label>
+        <div class="row2">
+          <label class="field"><span>حجم الخط (نقطة)</span><input type="number" min="8" max="28" step="0.5" data-bind="footer.nameSize"></label>
+          <label class="field"><span>المحاذاة</span>
+            <select data-bind="footer.nameAlign"><option value="center">وسط</option><option value="right">يمين</option><option value="left">يسار</option></select></label>
+        </div>
+        <label class="switch block"><input type="checkbox" data-bind="footer.nameBold"><i></i><span>خط عريض للاسم</span></label>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>بيانات النادي (تظهر في سطر واحد)</legend>
+        <div class="row2">
+          <label class="field"><span>رقم الهاتف</span><input type="text" data-bind="footer.phone" dir="ltr" class="ltr"></label>
+          <label class="field"><span>واتساب</span><input type="text" data-bind="footer.whatsapp" dir="ltr" class="ltr"></label>
+        </div>
+        <label class="field"><span>البريد الإلكتروني</span><input type="text" data-bind="footer.email" dir="ltr" class="ltr"></label>
+        <label class="field"><span>فيسبوك <small>(اسم الصفحة أو الرابط)</small></span><input type="text" data-bind="footer.facebook" dir="ltr" class="ltr"></label>
+        <label class="field"><span>الموقع الإلكتروني</span><input type="text" data-bind="footer.website" dir="ltr" class="ltr"></label>
+        <label class="field"><span>العنوان (الموقع الجغرافي)</span><input type="text" data-bind="footer.address"></label>
+        <label class="field"><span>رقم الفاكس</span><input type="text" data-bind="footer.fax" dir="ltr" class="ltr"></label>
+        <label class="field"><span>روابط تواصل أخرى <small>(رابط في كل سطر، تظهر في نفس السطر)</small></span>
+          <textarea rows="2" data-bind="footer.social" dir="ltr" class="ltr" placeholder="instagram.com/..."></textarea></label>
+        <label class="field"><span>معلومات إضافية <small>(كل سطر يظهر في سطر مستقل أسفل الذيل)</small></span><textarea rows="2" data-bind="footer.extra"></textarea></label>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>الأيقونات</legend>
+        <div class="row2">
+          <label class="check"><input type="checkbox" data-bind="footer.icons.facebook"> <span>فيسبوك</span></label>
+          <label class="check"><input type="checkbox" data-bind="footer.icons.whatsapp"> <span>واتساب</span></label>
+          <label class="check"><input type="checkbox" data-bind="footer.icons.email"> <span>البريد الإلكتروني</span></label>
+          <label class="check"><input type="checkbox" data-bind="footer.icons.phone"> <span>الهاتف</span></label>
+          <label class="check"><input type="checkbox" data-bind="footer.icons.location"> <span>الموقع الجغرافي</span></label>
+          <label class="check"><input type="checkbox" data-bind="footer.icons.web"> <span>الموقع الإلكتروني</span></label>
+        </div>
+        <div class="row2">
+          <label class="field"><span>حجم الأيقونات (نقطة)</span><input type="number" min="6" max="24" step="0.5" data-bind="footer.iconSize"></label>
+          <label class="field"><span>موضع الأيقونة</span>
+            <select data-bind="footer.iconPos"><option value="before">قبل النص</option><option value="after">بعد النص</option><option value="above">فوق النص</option></select></label>
+        </div>
+        <label class="field"><span>المسافة بين العناصر (مم)</span><input type="number" min="1" max="20" step="1" data-bind="footer.gap"></label>
+        <p class="hint">«فوق النص» يظهر في المعاينة وPDF والطباعة؛ وفي Word تُوضع الأيقونة قبل النص.</p>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>الخط والتنسيق</legend>
+        <div class="row2">
+          <label class="field"><span>نوع الخط</span><select data-fonts data-bind="footer.font"></select></label>
+          <label class="field"><span>حجم النص (نقطة)</span><input type="number" min="6" max="16" step="0.5" data-bind="footer.size"></label>
+        </div>
+        <div class="row2">
+          <label class="field"><span>محاذاة بيانات النادي</span>
+            <select data-bind="footer.align"><option value="center">وسط</option><option value="right">يمين</option><option value="left">يسار</option></select></label>
+          <label class="field"><span>اللون</span><input type="color" data-bind="footer.color"></label>
+        </div>
+        <label class="switch block"><input type="checkbox" data-bind="footer.bold"><i></i><span>خط عريض</span></label>
+        <p class="hint">يُصغَّر النص تلقائيًا إذا لزم ليبقى السطر واحدًا.</p>
+      </fieldset>
+    </section>
+
+    <!-- ===== الإرسال ===== -->
+    <section class="panel" id="sec-send" hidden>
+      <h2 class="panel-title">إرسال المستند</h2>
+      <p class="hint">يُرسل المستند الحالي (مع مرفقاته) باسم موضوع الكتاب. المتصفحات لا تسمح بإرفاق ملف تلقائيًا في رسالة البريد أو واتساب، لذلك يُنزَّل الملف ثم تُفتح الرسالة جاهزة لتُرفقه بنفسك. على الهاتف تظهر قائمة المشاركة وفيها الملف مرفقًا.</p>
+      <label class="field"><span>البريد الإلكتروني المعتمد</span>
+        <input type="email" class="ltr" dir="ltr" data-bind="send.email" placeholder="name@example.com"></label>
+      <label class="field"><span>رقم واتساب <small>(بمفتاح الدولة بدون +، مثال: 962791234567 — اختياري)</small></span>
+        <input type="text" inputmode="tel" class="ltr" dir="ltr" data-bind="send.whatsapp" placeholder="962791234567"></label>
+      <label class="field"><span>صيغة الملف المرسل</span>
+        <select data-bind="send.format"><option value="pdf">PDF</option><option value="docx">Word</option></select></label>
+      <div class="send-btns">
+        <button type="button" class="btn primary" id="btnMail">إرسال بالبريد الإلكتروني</button>
+        <button type="button" class="btn wa" id="btnWa">إرسال إلى واتساب</button>
+      </div>
+    </section>
+
+    <!-- ===== إعدادات الموقع ===== -->
+    <section class="panel" id="sec-site" hidden>
+      <h2 class="panel-title">إعدادات الموقع</h2>
+      <div class="state-line" id="persistState"></div>
+      <label class="field"><span>اسم النادي <small>(مشترك بين المستندات)</small></span>
+        <input type="text" data-bind="clubName" placeholder="مثال: البتراء"></label>
+      <div class="row2">
+        <label class="field"><span>الخط الافتراضي</span><select data-fonts data-bind="font"></select></label>
+        <label class="field"><span>حجم نص المستند (نقطة)</span><input type="number" min="10" max="20" step="0.5" data-bind="bodySize"></label>
+      </div>
+      <label class="field"><span>تباعد الأسطر: <b data-out="lineHeight"></b></span>
+        <input type="range" min="1.2" max="2" step="0.05" data-bind="lineHeight"></label>
+      <label class="switch block"><input type="checkbox" data-bind="onePage"><i></i><span>الحفاظ على صفحة واحدة</span></label>
+      <p class="hint">عند التفعيل يُصغَّر حجم الخط وتباعد الأسطر والمسافات تلقائيًا (بحد أدنى مقروء) ليبقى المستند في صفحة واحدة قدر الإمكان، دون حذف أي محتوى. المرفقات صفحات مستقلة ولا تتأثر.</p>
+
+      <fieldset class="group">
+        <legend>البيانات المحفوظة</legend>
+        <p class="hint">تُحفظ جميع البيانات والإعدادات والشعارات والتواقيع والأختام والمرفقات تلقائيًا في هذا المتصفح، وتبقى بعد إغلاق الموقع وإعادة فتحه.</p>
+        <div class="row2">
+          <button class="btn" id="btnExportSettings">نسخ احتياطي</button>
+          <label class="btn">استعادة نسخة<input type="file" id="fileImportSettings" accept="application/json" hidden></label>
+        </div>
+        <button class="btn ghost danger" id="btnResetAll">إعادة ضبط كل شيء</button>
+      </fieldset>
+    </section>
+  </aside>
+
+  <!-- ============ المعاينة ============ -->
+  <section class="preview-wrap">
+    <div class="preview-bar">
+      <span>معاينة مباشرة · A4</span>
+      <div class="zoom">
+        <button id="zoomOut" aria-label="تصغير">−</button>
+        <output id="zoomVal">100%</output>
+        <button id="zoomIn" aria-label="تكبير">+</button>
+        <button id="zoomFit">ملاءمة</button>
+      </div>
+    </div>
+    <div class="preview-scroll" id="previewScroll">
+      <div class="sheet-holder" id="sheetHolder">
+        <div class="sheet" id="sheet"></div>
+        <div id="attSheets"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="tableDlg">
+  <form method="dialog" id="tableForm">
+    <h3>إدراج جدول</h3>
+    <div class="row2">
+      <label class="field"><span>عدد الصفوف</span><input type="number" id="tRows" min="1" max="30" value="3"></label>
+      <label class="field"><span>عدد الأعمدة</span><input type="number" id="tCols" min="1" max="8" value="3"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="tHead" checked> <span>الصف الأول عنوان (غامق)</span></label>
+    <div class="dlg-btns"><button class="btn primary" value="ok">إدراج</button><button class="btn" value="cancel" formnovalidate>إلغاء</button></div>
+  </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- نسخة الطباعة -->
+<div id="printRoot" aria-hidden="true"></div>
+
+<script src="vendor/docx.js"></script>
+<script src="vendor/html2canvas.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="vendor/pdf.min.js"></script>
+<script src="js/state.js"></script>
+<script src="js/render.js"></script>
+<script src="js/export-word.js"></script>
+<script src="js/export-pdf.js"></script>
+<script src="js/attach.js"></script>
+<script src="js/send.js"></script>
+<script src="js/drive.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
