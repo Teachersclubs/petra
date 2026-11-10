@@ -233,16 +233,22 @@
   async function signCell(S, key, who, fin) {
     const SG = App.SG, f = S.font, size = S.bodySize, p = S.people[key];
     const g = App.signGeomSafe(S, key, who, fin), R = g.rects;
-    const runs = [mkRun(App.TITLES[key], { font: f, size, b: true })];
-    if (R.sign) runs.push(await floatImg(p.signImg, R.sign));
-    if (R.stamp) runs.push(await floatImg(p.stampImg, R.stamp));
-    const out = [mkPara(runs, { align: 'center', line: mm(SG.TITLE_H), exact: true, keepNext: true })];
-    const gap = R.name.y - SG.TITLE_H;
+    const imgs = [];
+    if (R.sign) imgs.push(await floatImg(p.signImg, R.sign));
+    if (R.stamp) imgs.push(await floatImg(p.stampImg, R.stamp));
+    const ind = r => { const dx = r.x + r.w / 2 - SG.W / 2; if (Math.abs(dx) <= 0.05) return undefined; const v = Math.round(mm(Math.abs(dx))); return dx > 0 ? { end: v, start: -v } : { start: v, end: -v }; };
+    const out = [];
+    let y = 0; // موضع الصفة من أعلى الصندوق
+    const T = R.title, N = R.name;
+    if (T.y > 0.3) {
+      // فقرة فارغة تحمل الصور (تبدأ من أعلى الصندوق) ثم الصفة
+      out.push(new docx.Paragraph({ children: imgs.splice(0), spacing: { before: 0, after: 0, line: Math.max(20, mm(T.y)), lineRule: docx.LineRuleType.EXACT } }));
+    }
+    out.push(mkPara([mkRun(App.TITLES[key], { font: f, size, b: true }), ...imgs], { align: 'center', line: mm(SG.TITLE_H), exact: true, keepNext: true, indent: ind(T) }));
+    const gap = N.y - (T.y + SG.TITLE_H);
     if (gap > 0.3) out.push(gapPara(gap));
-    const dx = R.name.x + R.name.w / 2 - SG.W / 2; // إزاحة مركز الاسم عن مركز الصندوق
-    const ind = Math.abs(dx) > 0.05 ? (dx > 0 ? { end: Math.round(mm(2 * dx)) } : { start: Math.round(mm(-2 * dx)) }) : undefined;
-    out.push(mkPara([mkRun(p.name || ' ', { font: f, size })], { align: 'center', line: mm(SG.NAME_H), exact: true, indent: ind }));
-    const tail = g.H - R.name.y - SG.NAME_H;
+    out.push(mkPara([mkRun(p.name || ' ', { font: f, size })], { align: 'center', line: mm(SG.NAME_H), exact: true, indent: ind(N) }));
+    const tail = g.H - N.y - SG.NAME_H;
     if (tail > 0.3) out.push(gapPara(tail));
     return out;
   }
@@ -358,7 +364,7 @@
         if (d.showNumUnder) out.push(dp('الرقم:', d.number || ' '));
       }
       out.push(spacer(sp(3)));
-      out.push(mkPara([mkRun('تعميم هيئة عامة', { font: f, size: d.titleSize, b: true })], { align: d.titleAlign }));
+      out.push(mkPara([mkRun(App.circTitle(S), { font: f, size: d.titleSize, b: true })], { align: d.titleAlign }));
       if (d.showTitleNum) out.push(mkPara([mkRun('تعميم رقم ' + (d.number || ''), { font: f, size: 14, b: true })], { align: d.titleAlign, after: sp(6) }));
       else out.push(spacer(sp(4)));
       out.push(mkPara([

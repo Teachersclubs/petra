@@ -25,13 +25,13 @@
         <svg class="i-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         <svg class="i-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
       </button>
-      <button class="btn" id="btnWord" title="تنزيل بصيغة Word">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
-        <span>Word</span>
+      <button class="btn dl dl-word" id="btnWord" title="تنزيل بصيغة Word">
+        <svg class="dl-ico" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M8 3h11l7 7v17a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="#fff" fill-opacity=".95"/><path d="M19 3l7 7h-5a2 2 0 0 1-2-2z" fill="#9db9e6"/><rect x="2" y="12" width="17" height="11" rx="2.2" fill="#2b579a"/><path d="M5.4 14.8l1.5 6.2h1.3l1-3.9 1 3.9h1.3l1.5-6.2h-1.3l-.9 4-1-4H8.6l-1 4-.9-4z" fill="#fff"/></svg>
+        <span class="dl-txt"><b>Word</b><small>تنزيل .docx</small></span>
       </button>
-      <button class="btn" id="btnPdf" title="تنزيل بصيغة PDF">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg>
-        <span>PDF</span>
+      <button class="btn dl dl-pdf" id="btnPdf" title="تنزيل بصيغة PDF">
+        <svg class="dl-ico" viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M8 3h11l7 7v17a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="#fff" fill-opacity=".95"/><path d="M19 3l7 7h-5a2 2 0 0 1-2-2z" fill="#f0a5a0"/><rect x="2" y="12" width="19" height="11" rx="2.2" fill="#d93025"/><path d="M5 21v-6h2.1c1.3 0 2.1.7 2.1 1.9S8.400 18.800 7.100 18.800H6.200V21zm1.200-3.200h.8c.6 0 1-.3 1-.9s-.4-.9-1-.9h-.8zM10.600 21v-6h1.900c1.800 0 3 1.100 3 3s-1.200 3-3 3zm1.200-1h.6c1.100 0 1.800-.7 1.800-2s-.7-2-1.800-2h-.6zM16.400 21v-6h3.400v1h-2.200v1.600h2v1h-2V21z" fill="#fff"/></svg>
+        <span class="dl-txt"><b>PDF</b><small>تنزيل .pdf</small></span>
       </button>
       <button class="btn icon" id="btnDrive" type="button" title="تنزيل الملف ثم فتح Google Drive لرفعه" aria-label="رفع إلى Google Drive"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8.2 3h7.6l6.2 10.7h-7.6z" fill="#fbbc04"/><path d="M8.2 3L2 13.7l3.8 6.6 6.2-10.7z" fill="#0f9d58"/><path d="M5.8 20.3h12.4l3.8-6.6H9.6z" fill="#4285f4"/></svg></button>
       <button class="btn primary" id="btnPrint" title="طباعة">
@@ -41,12 +41,12 @@
     </div>
   </div>
   <nav class="doc-tabs" role="tablist" aria-label="نوع المستند">
-    <button role="tab" class="doc-tab active" data-doc="letter" aria-selected="true">كتاب للوزارة</button>
-    <button role="tab" class="doc-tab" data-doc="internal" aria-selected="false">كتاب داخلي</button>
-    <button role="tab" class="doc-tab" data-doc="thanks" aria-selected="false">كتاب شكر</button>
-    <button role="tab" class="doc-tab" data-doc="circular" aria-selected="false">تعميم هيئة عامة</button>
-    <button role="tab" class="doc-tab" data-doc="assign" aria-selected="false">قرار تكليف</button>
-    <button role="tab" class="doc-tab" data-doc="claim" aria-selected="false">مطالبة مالية</button>
+    <button role="tab" class="doc-tab active" data-doc="letter" aria-selected="true"><svg class="tab-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/></svg><span>كتاب للوزارة</span></button>
+    <button role="tab" class="doc-tab" data-doc="internal" aria-selected="false"><svg class="tab-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span>كتاب داخلي</span></button>
+    <button role="tab" class="doc-tab" data-doc="thanks" aria-selected="false"><svg class="tab-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.2-9.4A4.9 4.9 0 0 1 12 8a4.9 4.9 0 0 1 9.2 3.1C19.5 15.9 12 20.5 12 20.5z"/></svg><span>كتاب شكر</span></button>
+    <button role="tab" class="doc-tab" data-doc="circular" aria-selected="false"><svg class="tab-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 5.2a3 3 0 0 1 0 5.6M18.5 14.8c1.6.8 2.5 2.3 2.5 4.2"/></svg><span>تعميم هيئة عامة</span></button>
+    <button role="tab" class="doc-tab" data-doc="assign" aria-selected="false"><svg class="tab-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM8.5 13.5l2.3 2.3 4.7-4.8"/></svg><span>قرار تكليف</span></button>
+    <button role="tab" class="doc-tab" data-doc="claim" aria-selected="false"><svg class="tab-ico" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.7"/><path d="M6 9.5v.01M18 14.5v.01"/></svg><span>مطالبة مالية</span></button>
   </nav>
 </header>
 
@@ -117,6 +117,9 @@
           <input type="text" data-doc-bind="circular.hijri" placeholder="مثال: 30 جمادى الأولى 1448"></label>
         <label class="check"><input type="checkbox" data-doc-bind="circular.showNumUnder"> <span>إظهار رقم التعميم أسفل التاريخ</span></label>
         <label class="check"><input type="checkbox" data-doc-bind="circular.showTitleNum"> <span>إظهار «تعميم رقم» تحت العنوان</span></label>
+
+        <label class="field"><span>جملة العنوان البديلة <small>(اتركها فارغة لاستخدام «السادة أعضاء الهيئة العامة لنادي …» حسب اسم النادي)</small></span>
+          <input type="text" data-doc-bind="circular.titleCustom" placeholder="مثال: السادة أعضاء الهيئة العامة المحترمين"></label>
 
         <fieldset class="group">
           <legend>الخط الفاصل بين الترويسة والنص</legend>
@@ -228,9 +231,9 @@
         <legend>ضبط مواضع الختم والتوقيع والأسماء</legend>
         <label class="field"><span>وضع الختم والتوقيع بالنسبة للاسم</span>
           <select data-bind="people.mode" data-geo>
-            <option value="above">فوق الاسم (بينهما مسافة)</option>
+            <option value="below">أسفل الاسم (الافتراضي)</option>
+            <option value="above">فوق الاسم والصفة</option>
             <option value="overlap">فوق الاسم ومتراكب معه</option>
-            <option value="below">أسفل الاسم</option>
           </select></label>
         <div class="row2">
           <label class="field"><span>المسافة بين الختم والتوقيع (مم)</span><input type="number" min="0" max="20" step="0.5" data-bind="people.gapImg" data-geo></label>
@@ -241,7 +244,7 @@
           <select id="posStep"><option value="0.5">0.5 مم</option><option value="1" selected>1 مم</option><option value="2">2 مم</option><option value="5">5 مم</option></select></label>
         <div id="posList" class="pos-list"></div>
         <button type="button" class="btn sm ghost" id="posReset">إعادة ضبط جميع المواضع</button>
-        <p class="hint">لكل عنصر أزرار تحريك مستقلة (أعلى/أسفل/يمين/يسار)؛ لا يتأثر بقية العناصر. تُطبَّق المواضع نفسها على المعاينة وWord وPDF والطباعة وعلى جميع النماذج.</p>
+        <p class="hint"><b>الأسرع:</b> اسحب الاسم أو الختم أو التوقيع مباشرة على المعاينة بالماوس أو الإصبع. الصفة تتحرك مع الاسم تلقائيًا. انقر على العنصر لتحديده ثم حرّكه بالأسهم (Shift = خمسة أضعاف). وللدقة استخدم الأزرار أدناه.<br>لكل عنصر أزرار تحريك مستقلة (أعلى/أسفل/يمين/يسار)؛ لا يتأثر بقية العناصر. تُطبَّق المواضع نفسها على المعاينة وWord وPDF والطباعة وعلى جميع النماذج.</p>
       </fieldset>
 
       <fieldset class="group" id="attBox">
@@ -448,6 +451,13 @@
 </dialog>
 
 <dialog class="dlg" id="sendDlg"><form method="dialog"><h3 id="sdTitle"></h3><div id="sdBody"></div><div class="dlg-btns" id="sdBtns"></div></form></dialog>
+
+<dialog class="dlg" id="apprDlg" aria-labelledby="apTitle"><form method="dialog" class="appr">
+  <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.800-1-8-4.500-8-9V6z"/><path d="M8.500 12l2.500 2.500 4.500-5"/></svg>
+  <h3 id="apTitle">تذكير قبل <span id="apAct">التنزيل</span></h3>
+  <p>هل تم اعتماد الكتاب حسب الأصول؟</p>
+  <div class="dlg-btns"><button type="submit" value="no" class="btn">لا، العودة للتعديل</button><button type="submit" value="yes" class="btn primary" id="apYes">نعم، تم الاعتماد</button></div>
+</form></dialog>
 
 <div id="toast" role="status" aria-live="polite"></div>
 

@@ -35,6 +35,7 @@
       return '<div class="sheet copy" style="' + c.style.replace(/"/g, '&quot;') + '"><div class="sheet-main">' + c.main + '</div><div class="sheet-foot">' + c.foot + '</div></div>';
     }).join('');
     $('#attSheets').innerHTML = App.attachPagesHTML(App.attach.flat(S.activeDoc)).map(h => '<div class="sheet att">' + h + '</div>').join('');
+    markSel();
     applyZoom(true);
   }
 
@@ -475,8 +476,8 @@
 
   /* ---------- مواضع الختم والتوقيع والأسماء ---------- */
   const POS_ELS = [
-    ['head', 'sign', 'توقيع رئيس الهيئة'], ['head', 'stamp', 'ختم رئيس الهيئة'], ['head', 'name', 'اسم رئيس الهيئة'],
-    ['manager', 'sign', 'توقيع المدير'], ['manager', 'stamp', 'ختم المدير'], ['manager', 'name', 'اسم المدير']
+    ['head', 'sign', 'توقيع رئيس الهيئة'], ['head', 'stamp', 'ختم رئيس الهيئة'], ['head', 'name', 'الاسم + الصفة (رئيس الهيئة)'],
+    ['manager', 'sign', 'توقيع المدير'], ['manager', 'stamp', 'ختم المدير'], ['manager', 'name', 'الاسم + الصفة (المدير)']
   ];
   let geoSnap = null;
   function snapPeople() {
@@ -562,6 +563,63 @@
     });
     geoSnap = snapPeople();
   }
+  /* ---------- سحب مباشر على المعاينة + تحديد بالنقر وتحريك بالأسهم ---------- */
+  let sel = null; // { key, el }
+  function markSel() {
+    $$('#sheet .sg-mv').forEach(e => e.classList.toggle('sg-sel', !!sel && e.dataset.key === sel.key && e.dataset.el === sel.el));
+  }
+  function moveSel(dx, dy) {
+    if (!sel) return;
+    const o = S.people[sel.key].pos[sel.el], old = [o.x, o.y];
+    o.x = Math.max(-80, Math.min(80, Math.round((o.x + dx) * 10) / 10)); o.y = Math.max(-80, Math.min(80, Math.round((o.y + dy) * 10) / 10));
+    if (!acceptGeo()) { o.x = old[0]; o.y = old[1]; }
+    syncPos(); changed();
+  }
+  function setupDrag() {
+    const scroll = $('#previewScroll');
+    let d = null;
+    scroll.addEventListener('pointerdown', e => {
+      const t = e.target.closest('.sg-mv');
+      if (!t || !$('#sheet').contains(t)) { if (!e.target.closest('#sheet')) { sel = null; markSel(); } return; }
+      e.preventDefault();
+      const key = t.dataset.key, el = t.dataset.el, box = t.closest('.sign-box');
+      sel = { key, el }; markSel();
+      const o = S.people[key].pos[el];
+      d = { key, el, x0: e.clientX, y0: e.clientY, ox: o.x, oy: o.y, k: box.getBoundingClientRect().width / App.SG.W, els: $$('.sg-mv[data-key="' + key + '"][data-el="' + el + '"]', box), moved: false, dx: 0, dy: 0 };
+      d.els.forEach(n => n.classList.add('sg-drag'));
+      try { t.setPointerCapture(e.pointerId); } catch (x) { /* لا شيء */ }
+    });
+    scroll.addEventListener('pointermove', e => {
+      if (!d) return;
+      let dx = (e.clientX - d.x0) / d.k, dy = (e.clientY - d.y0) / d.k;
+      if (!d.moved && Math.abs(dx) + Math.abs(dy) < 0.6) return;
+      d.moved = true;
+      dx = Math.round(dx * 10) / 10; dy = Math.round(dy * 10) / 10;
+      d.dx = dx; d.dy = dy;
+      d.els.forEach(n => { n.style.transform = 'translate(' + dx + 'mm,' + dy + 'mm)'; });
+    });
+    const end = () => {
+      if (!d) return;
+      const c = d; d = null;
+      c.els.forEach(n => { n.style.transform = ''; n.classList.remove('sg-drag'); });
+      if (!c.moved) return;
+      const o = S.people[c.key].pos[c.el];
+      o.x = Math.max(-80, Math.min(80, Math.round((c.ox + c.dx) * 10) / 10)); o.y = Math.max(-80, Math.min(80, Math.round((c.oy + c.dy) * 10) / 10));
+      if (!acceptGeo()) { o.x = c.ox; o.y = c.oy; }
+      syncPos(); changed();
+    };
+    scroll.addEventListener('pointerup', end);
+    scroll.addEventListener('pointercancel', end);
+    document.addEventListener('keydown', e => {
+      if (!sel) return;
+      const a = e.target, tag = a && a.tagName;
+      if (a && (a.isContentEditable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT')) return;
+      const st = (+$('#posStep').value || 1) * (e.shiftKey ? 5 : 1);
+      const m = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, -st], ArrowDown: [0, st] }[e.key];
+      if (m) { e.preventDefault(); moveSel(m[0], m[1]); }
+      else if (e.key === 'Escape') { sel = null; markSel(); }
+    });
+  }
   function syncPos() {
     $$('#posList .pos-row').forEach(row => {
       const [who, el] = row.dataset.pos.split('.'), o = S.people[who].pos[el];
@@ -601,14 +659,28 @@
   /* ---------- التصدير ---------- */
   const download = (blob, name) => App.saveFile(blob, name);
 
+  /** تذكير الاعتماد قبل التنزيل أو الإرسال أو الطباعة */
+  function approve(act) {
+    const dlg = $('#apprDlg');
+    $('#apAct').textContent = act;
+    return new Promise(res => {
+      const done = () => { dlg.removeEventListener('close', done); res(dlg.returnValue === 'yes'); };
+      dlg.returnValue = 'no';
+      dlg.addEventListener('close', done);
+      dlg.showModal();
+      setTimeout(() => { const y = $('#apYes'); y && y.focus(); }, 30);
+    });
+  }
+  App.approve = approve;
+
   function setupActions() {
-    const exportAs = fmt => App.run(fmt === 'pdf' ? 'جارٍ تجهيز ملف PDF…' : 'جارٍ تجهيز ملف Word…', async () => {
+    const exportAs = fmt => approve('التنزيل').then(ok => ok && App.run(fmt === 'pdf' ? 'جارٍ تجهيز ملف PDF…' : 'جارٍ تجهيز ملف Word…', async () => {
       const f = await App.getFile(S, S.activeDoc, fmt);
       if (await App.saveFile(f.blob, f.name)) toast('تم تنزيل الملف: ' + f.name);
-    });
+    }));
     $('#btnWord').addEventListener('click', () => exportAs('docx'));
     $('#btnPdf').addEventListener('click', () => exportAs('pdf'));
-    $('#btnPrint').addEventListener('click', () => App.printDoc(S, S.activeDoc));
+    $('#btnPrint').addEventListener('click', async () => { if (await approve('الطباعة')) App.printDoc(S, S.activeDoc); });
 
     $('#btnClearDoc').addEventListener('click', () => {
       if (!confirm('سيتم مسح بيانات هذا المستند فقط (الإعدادات والشعارات تبقى). متابعة؟')) return;
@@ -664,7 +736,7 @@
   /* ---------- البدء ---------- */
   function init() {
     buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); setupAssign();
-    bindAll(); setupRte(); setupLogos(); setupPeople(); setupFonts(); setupPositions(); syncPos(); fillAR(); setupActions(); setupZoom(); setupTheme(); applyTheme();
+    bindAll(); setupRte(); setupLogos(); setupPeople(); setupFonts(); setupPositions(); setupDrag(); syncPos(); fillAR(); setupActions(); setupZoom(); setupTheme(); applyTheme();
     App.attach.init(() => S.activeDoc, changed); App.initSend(() => S); App.drive.init(() => S);
     $$('.doc-tab').forEach(b => b.addEventListener('click', () => setDoc(b.dataset.doc)));
     $$('.side-tab').forEach(b => b.addEventListener('click', () => setSection(b.dataset.sec)));

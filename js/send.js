@@ -49,6 +49,7 @@
   async function sendMail(S) {
     const email = (S.send.email || '').trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { g.toast('أدخل البريد الإلكتروني المعتمد بشكل صحيح (مثال: name@example.com)'); document.querySelector('[data-bind="send.email"]').focus(); return; }
+    if (!(await App.approve('الإرسال'))) return;
     const app = S.send.mailApp || 'gmail', useShare = isMobile || S.send.useShare;
     // تُفتح النافذة فورًا من نقرة المستخدم حتى لا يحجبها المتصفح بعد البناء
     const win = (!useShare && app !== 'default') ? window.open('about:blank', '_blank') : null;
@@ -81,6 +82,7 @@
   }
 
   async function sendWhatsApp(S) {
+    if (!(await App.approve('الإرسال'))) return;
     const useShare = isMobile || S.send.useShare;
     const win = !useShare ? window.open('about:blank', '_blank') : null;
     let state = 'fail';

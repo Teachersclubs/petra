@@ -80,7 +80,7 @@
       v: 2,
       activeDoc: 'letter',
       clubName: '',
-      font: 'Simplified Arabic',
+      font: 'Tajawal', fontV3: 1,
       bodySize: 14,
       lineHeight: 1.5,
       logoSize: 24,
@@ -95,14 +95,14 @@
         show: true, line: true, lineWidth: 1,
         name: '', nameSize: 12, nameAlign: 'center', nameBold: true,
         phone: '', whatsapp: '', email: '', facebook: '', website: '', address: '', fax: '', social: '', extra: '',
-        font: 'Simplified Arabic', size: 10, align: 'center', color: '#222222', bold: false,
+        font: 'Tajawal', size: 10, align: 'center', color: '#222222', bold: false,
         icons: { phone: true, whatsapp: true, email: true, facebook: true, location: true, web: true },
         iconSize: 10, iconPos: 'before', gap: 5
       },
       people: {
         head: person(), manager: person(),
         signSize: 16, stampSize: 22, stampPos: 'right', removeBg: true,
-        mode: 'above', gapName: 2, gapImg: 2, protect: true
+        mode: 'below', modeV2: 1, gapName: 2, gapImg: 2, protect: true
       },
       send: { email: '', whatsapp: '', format: 'pdf', subject: '', message: '', mailApp: 'gmail', useShare: false },
       theme: '',
@@ -124,7 +124,7 @@
         date: todayISO(), showDate: true, showHijri: true, hijri: '', hijriManual: false,
         showNumUnder: false, showTitleNum: true,
         lineShow: true, lineWidth: 1.5, lineStyle: 'solid', lineColor: '#000000', lineBefore: 3, lineAfter: 3, linePct: 100,
-        titleSize: 17, titleAlign: 'center',
+        titleSize: 17, titleAlign: 'center', titleCustom: '',
         bodyFont: '', bodySize: 0, bodyAlign: 'justify',
         showHead: true, showManager: true
       }
@@ -146,6 +146,8 @@
     if (!raw || typeof raw !== 'object') return {};
     if (raw.v >= 2) {
       const r = JSON.parse(JSON.stringify(raw));
+      if (!r.fontV3) { r.font = 'Tajawal'; if (r.footer) r.footer.font = 'Tajawal'; r.fontV3 = 1; }
+      if (r.people && !r.people.modeV2) { r.people.mode = 'below'; r.people.modeV2 = 1; }
       ['letter', 'internal', 'thanks', 'circular', 'assign', 'claim'].forEach(k => {
         const d = r[k]; if (!d || d.showHead !== undefined) return;
         const who = d.signer || d.signWho || 'manager';
@@ -155,6 +157,8 @@
     }
     const o = JSON.parse(JSON.stringify(raw));
     o.people = o.people || { head: {}, manager: {} };
+    o.font = 'Tajawal'; if (o.footer) o.footer.font = 'Tajawal'; o.fontV3 = 1;
+    if (!o.people.modeV2) { o.people.mode = 'below'; o.people.modeV2 = 1; }
     const L = o.letter || {}, C = o.circular || {};
     const key = L.signTitle === 'رئيس الهيئة الإدارية' ? 'head' : 'manager';
     if (L.signName) o.people[key].name = L.signName;
@@ -186,8 +190,8 @@
       d.ministrySeeded = true;
     }
     const known = f => FONTS.some(x => x[0] === f);
-    if (!known(d.font)) d.font = 'Simplified Arabic';
-    if (!known(d.footer.font)) d.footer.font = 'Simplified Arabic';
+    if (!known(d.font)) d.font = 'Tajawal';
+    if (!known(d.footer.font)) d.footer.font = 'Tajawal';
     if (d.circular.bodyFont && !known(d.circular.bodyFont)) d.circular.bodyFont = '';
     if (!d.letter.hijri && !d.letter.hijriManual) d.letter.hijri = formatHijri(d.letter.date);
     if (!d.internal.hijri && !d.internal.hijriManual) d.internal.hijri = formatHijri(d.internal.date);

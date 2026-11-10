@@ -120,13 +120,14 @@
     items.sort((x, y) => order.indexOf(x.k) - order.indexOf(y.k));
     const gi = o.gapImg, gn = o.gapName;
     const maxH = items.reduce((m, it) => Math.max(m, it.h), 0);
-    const zoneH = items.length ? maxH + 2 * SG.PADZ : SG.BLANK;
+    const zoneH = items.length ? maxH + 2 * SG.PADZ : 0;
     const total = items.reduce((t, it) => t + it.w, 0) + gi * Math.max(0, items.length - 1);
-    let zoneTop, nameY;
-    if (o.mode === 'below') { nameY = SG.TITLE_H + gn; zoneTop = nameY + SG.NAME_H + gn; }
-    else if (o.mode === 'overlap' && items.length) { zoneTop = SG.TITLE_H; nameY = SG.TITLE_H + zoneH - 5; }
-    else { zoneTop = SG.TITLE_H; nameY = SG.TITLE_H + zoneH + gn; }
-    const H = (o.mode === 'below' ? zoneTop + zoneH : nameY + SG.NAME_H) + SG.PADB;
+    // الصفة والاسم مجموعة واحدة متلاصقة تتحرك معًا؛ الختم والتوقيع حول المجموعة حسب الوضع
+    let titleY, zoneTop;
+    if (o.mode === 'above') { zoneTop = 0; titleY = zoneH ? zoneH + gn : 0; }
+    else if (o.mode === 'overlap') { titleY = 0; zoneTop = SG.TITLE_H + 1; }
+    else { titleY = 0; zoneTop = SG.TITLE_H + SG.NAME_H + gn; }
+    const nameY = titleY + SG.TITLE_H;
     let x = (SG.W - total) / 2;
     const rects = {};
     items.forEach(it => {
@@ -134,20 +135,32 @@
       rects[it.k] = { x: x + q.x, y: zoneTop + (zoneH - it.h) / 2 + q.y, w: it.w, h: it.h };
       x += it.w + gi;
     });
-    const nw = nameWidth(S, p);
+    const nw = nameWidth(S, p), tw = SG.W * 0.7;
     rects.name = { x: (SG.W - nw) / 2 + pos.name.x, y: nameY + pos.name.y, w: nw, h: SG.NAME_H, text: !!(p.name || '').trim() };
-    rects.title = { x: (SG.W - SG.W * 0.7) / 2, y: 0, w: SG.W * 0.7, h: SG.TITLE_H };
-    return { H, nameY0: nameY, rects, zoneH };
+    rects.title = { x: (SG.W - tw) / 2 + pos.name.x, y: titleY + pos.name.y, w: tw, h: SG.TITLE_H };
+    return { H: heightOf(rects), nameY0: nameY, titleY0: titleY, rects, zoneH };
+  }
+  function heightOf(rects) {
+    let m = SG.TITLE_H + SG.NAME_H;
+    ['sign', 'stamp', 'name', 'title'].forEach(k => { const r = rects[k]; if (r) m = Math.max(m, r.y + r.h); });
+    return m + SG.PADB;
   }
 
-  /** يحصر العناصر داخل الصفحة والصندوق حتى لا تختفي خارج الحدود (للعرض فقط) */
+  /** يحصر العناصر داخل الصفحة حتى لا تختفي خارج الحدود (للعرض والتصدير) */
   function signGeomSafe(S, key, who, fin) {
-    const g = signGeom(S, key), bl = boxLeft(key, who, fin);
-    ['sign', 'stamp', 'name'].forEach(k => {
-      const r = g.rects[k]; if (!r) return;
-      r.x = Math.max(4 - bl, Math.min(SG.PAGE_W - 4 - bl - r.w, r.x));
-      r.y = Math.max(k === 'name' ? SG.TITLE_H : 0, Math.min(g.H - r.h, r.y));
+    const g = signGeom(S, key), bl = boxLeft(key, who, fin), R = g.rects;
+    const lim = (lo, hi, v, w) => Math.max(lo, Math.min(hi - w, v));
+    ['sign', 'stamp'].forEach(k => {
+      const r = R[k]; if (!r) return;
+      r.x = lim(4 - bl, SG.PAGE_W - 4 - bl, r.x, r.w); r.y = Math.max(0, r.y);
     });
+    // مجموعة الصفة + الاسم تُحصر معًا
+    const t = R.title, n = R.name;
+    let mn = Math.min(t.x, n.x), mx = Math.max(t.x + t.w, n.x + n.w), dx = 0, dy = 0;
+    if (mn + bl < 4) dx = 4 - bl - mn; else if (mx + bl > SG.PAGE_W - 4) dx = SG.PAGE_W - 4 - bl - mx;
+    if (t.y < 0) dy = -t.y;
+    t.x += dx; n.x += dx; t.y += dy; n.y += dy;
+    g.H = heightOf(R);
     return g;
   }
 
@@ -160,9 +173,8 @@
         const r = g.rects[k]; if (!r) return;
         const rr = { key, k, x: r.x + bl, y: r.y, w: r.w, h: r.h, text: r.text };
         all.push(rr);
-        if (k === 'title') return;
         if (rr.x < 4 || rr.x + rr.w > SG.PAGE_W - 4) out.push('العنصر يخرج عن حدود الصفحة');
-        if (r.y < (k === 'name' ? SG.TITLE_H - 0.01 : -0.01) || r.y + r.h > g.H + 0.01) out.push('العنصر يخرج عن حدود منطقة التوقيع');
+        if (r.y < -0.01) out.push('العنصر يخرج عن حدود منطقة التوقيع');
       });
     });
     if (S.people.protect) {
@@ -182,12 +194,13 @@
   const f1 = v => Math.round(v * 100) / 100;
   function signBox(S, key, who, fin) {
     const g = signGeomSafe(S, key, who, fin), R = g.rects, p = S.people[key];
-    let h = '<div class="sign-box sg" style="width:' + SG.W + 'mm;height:' + f1(g.H) + 'mm">';
-    h += '<div class="sg-title" style="height:' + SG.TITLE_H + 'mm;line-height:' + SG.TITLE_H + 'mm">' + TITLES[key] + '</div>';
-    h += '<div class="sg-name" style="top:' + f1(R.name.y) + 'mm;height:' + SG.NAME_H + 'mm;line-height:' + SG.NAME_H + 'mm;left:' + f1(R.name.x + R.name.w / 2 - SG.W / 2) + 'mm;right:' + f1(-(R.name.x + R.name.w / 2 - SG.W / 2)) + 'mm">' + esc(p.name) + '</div>';
+    const T = R.title, N = R.name;
+    let h = '<div class="sign-box sg" data-key="' + key + '" style="width:' + SG.W + 'mm;height:' + f1(g.H) + 'mm">';
+    h += '<div class="sg-title sg-mv" data-key="' + key + '" data-el="name" style="top:' + f1(T.y) + 'mm;height:' + SG.TITLE_H + 'mm;line-height:' + SG.TITLE_H + 'mm;left:' + f1(T.x + T.w / 2 - SG.W / 2) + 'mm;right:' + f1(-(T.x + T.w / 2 - SG.W / 2)) + 'mm">' + TITLES[key] + '</div>';
+    h += '<div class="sg-name sg-mv" data-key="' + key + '" data-el="name" style="top:' + f1(N.y) + 'mm;height:' + SG.NAME_H + 'mm;line-height:' + SG.NAME_H + 'mm;left:' + f1(N.x + N.w / 2 - SG.W / 2) + 'mm;right:' + f1(-(N.x + N.w / 2 - SG.W / 2)) + 'mm">' + (p.name ? esc(p.name) : '') + '</div>';
     ['sign', 'stamp'].forEach(k => {
       const r = R[k]; if (!r) return;
-      h += '<img class="' + k + '-img sg-img" src="' + (k === 'sign' ? p.signImg : p.stampImg) + '" alt="" style="left:' + f1(r.x) + 'mm;top:' + f1(r.y) + 'mm;width:' + f1(r.w) + 'mm;height:' + f1(r.h) + 'mm">';
+      h += '<img class="' + k + '-img sg-img sg-mv" data-key="' + key + '" data-el="' + k + '" src="' + (k === 'sign' ? p.signImg : p.stampImg) + '" alt="" style="left:' + f1(r.x) + 'mm;top:' + f1(r.y) + 'mm;width:' + f1(r.w) + 'mm;height:' + f1(r.h) + 'mm">';
     });
     return h + '</div>';
   }
@@ -277,6 +290,13 @@
       signHTML(S, 'claim');
   }
 
+  /** عنوان التعميم: «السادة أعضاء الهيئة العامة لنادي …» أو الجملة التي يكتبها المستخدم */
+  function circTitle(S) {
+    const c = (S.circular.titleCustom || '').trim();
+    if (c) return c;
+    const n = (S.clubName || '').replace(/^\s*(ال)?نادي\s+/, '').trim();
+    return 'السادة أعضاء الهيئة العامة' + (n ? ' لنادي ' + n : ' للنادي');
+  }
   function recipStyle(S, type) {
     if (type !== 'thanks') return '';
     const y = +S.thanks.toY || 0, x = +S.thanks.toX || 0;
@@ -330,7 +350,7 @@
         (d.showNumUnder ? '<div><b>الرقم:</b> ' + (d.number ? esc(d.number) : ph('&nbsp;&nbsp;&nbsp;&nbsp;')) + '</div>' : '') + '</div>';
     }
     return headerHTML(S, E) + line + dateBlock +
-      '<div class="c-title" style="font-size:' + d.titleSize + 'pt;text-align:' + d.titleAlign + '">تعميم هيئة عامة</div>' +
+      '<div class="c-title" style="font-size:' + d.titleSize + 'pt;text-align:' + d.titleAlign + '">' + esc(circTitle(S)) + '</div>' +
       (d.showTitleNum ? '<div class="c-num" style="text-align:' + d.titleAlign + '">تعميم رقم ' + (d.number ? esc(d.number) : '') + '</div>' : '<div style="height:4mm"></div>') +
       '<div class="subject"><u>الموضوع:</u> ' + (d.subject ? esc(d.subject) : '') + '</div>' +
       '<div class="body" style="text-align:' + d.bodyAlign + '">' + (body || ph('نص التعميم…')) + '</div>' +
@@ -467,5 +487,5 @@
     return list.map(p => '<div class="att-page"><div class="att-cap">' + esc(p.cap) + '</div><img src="' + p.url + '" alt=""></div>');
   }
 
-  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, attachPagesHTML, esc, sanitize, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
+  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
 })(window);

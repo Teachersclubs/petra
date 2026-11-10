@@ -5,6 +5,7 @@
   const DRIVE_URL = 'https://drive.google.com/drive/my-drive';
 
   async function go(S, btn) {
+    if (!(await App.approve('الرفع إلى Drive'))) return;
     // تُفتح النافذة فورًا من نقرة المستخدم حتى لا يحجبها المتصفح
     const win = window.open('about:blank', '_blank');
     let ok = false;
