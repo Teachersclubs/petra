@@ -30,6 +30,10 @@
     App.lastEff = r.eff;
     sheet.setAttribute('style', r.style);
     sheet.innerHTML = '<div class="sheet-main">' + r.main + '</div><div class="sheet-foot">' + r.foot + '</div>';
+    $('#copySheets').innerHTML = App.variants(S, S.activeDoc).slice(1).map((v, i) => {
+      const c = App.renderDoc(S, S.activeDoc, i + 1);
+      return '<div class="sheet copy" style="' + c.style.replace(/"/g, '&quot;') + '"><div class="sheet-main">' + c.main + '</div><div class="sheet-foot">' + c.foot + '</div></div>';
+    }).join('');
     $('#attSheets').innerHTML = App.attachPagesHTML(App.attach.flat(S.activeDoc)).map(h => '<div class="sheet att">' + h + '</div>').join('');
     applyZoom(true);
   }
@@ -172,10 +176,22 @@
       }
       h += '</tbody></table><p><br></p>';
       area.focus();
-      if (saved) { const s2 = getSelection(); s2.removeAllRanges(); s2.addRange(saved); }
-      else { const r2 = document.createRange(); r2.selectNodeContents(area); r2.collapse(false); const s2 = getSelection(); s2.removeAllRanges(); s2.addRange(r2); }
-      document.execCommand('insertHTML', false, h);
-      const nt = area.querySelector('table[data-new]');
+      // الإدراج دائمًا بعد الفقرة الحالية (وبعد الجدول إن كان المؤشر داخل جدول) لتفادي جداول متداخلة أو تقسيم الفقرة
+      let blk = saved ? saved.startContainer : null;
+      while (blk && blk.parentNode !== area) blk = blk.parentNode;
+      const r2 = document.createRange();
+      if (blk && blk.parentNode === area) r2.setStartAfter(blk); else { r2.selectNodeContents(area); r2.collapse(false); }
+      r2.collapse(true);
+      const s2 = getSelection(); s2.removeAllRanges(); s2.addRange(r2);
+      let done = false;
+      try { done = document.execCommand('insertHTML', false, h); } catch (e) { done = false; }
+      let nt = area.querySelector('table[data-new]');
+      if (!nt) { // احتياط: إدراج مباشر في DOM
+        const tmp = document.createElement('div'); tmp.innerHTML = h;
+        const ref = blk && blk.parentNode === area ? blk.nextSibling : null;
+        Array.from(tmp.childNodes).forEach(n => area.insertBefore(n, ref));
+        nt = area.querySelector('table[data-new]');
+      }
       if (nt) {
         nt.removeAttribute('data-new');
         const first = nt.querySelector('th,td');
@@ -331,6 +347,19 @@
   function buildThanksForm() {
     const { src, c } = cloneLetterForm('thanks');
     $('.panel-title', c).textContent = 'بيانات كتاب الشكر';
+    // الجهات الموجه إليها: مربع كتابة بدل الخيارات الثابتة + تكرار الكتاب
+    const old = $('[data-doc-bind="thanks.to0"]', c).closest('fieldset');
+    const wrap = document.createElement('div');
+    wrap.innerHTML =
+      '<fieldset class="group"><legend>الجهة الموجه إليها الكتاب</legend>' +
+      '<label class="field"><span>اكتب الجهة <small>(كل سطر يظهر في سطر مستقل)</small></span>' +
+      '<textarea rows="3" data-doc-bind="thanks.toText" placeholder="مثال: عطوفة مدير التربية والتعليم الأكرم"></textarea></label></fieldset>' +
+      '<fieldset class="group"><legend>تكرار الكتاب</legend>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="thanks.copiesOn"> <span>تكرار الكتاب في صفحات جديدة لجهات أخرى</span></label>' +
+      '<label class="field" data-show-if="thanks.copiesOn"><span>الجهات الإضافية <small>(اكتب كل جهة في سطر)</small></span>' +
+      '<textarea rows="4" data-doc-bind="thanks.copiesText" placeholder="عطوفة مدير ... الأكرم&#10;عطوفة مدير ... الأكرم"></textarea>' +
+      '<small class="hint" id="copiesCount"></small></label></fieldset>';
+    old.replaceWith(...wrap.children);
     $('.doc-form[data-form="letter"]').after(c);
   }
   function buildInternalForm() {

@@ -235,7 +235,7 @@
     return mkTable([w, CONTENT_W - 2 * w, w], [await signCell(S, 'head'), [mkPara([], {})], await signCell(S, 'manager')], { valign: docx.VerticalAlign.TOP });
   }
 
-  async function buildMain(S, type) {
+  async function buildMain(S, type, variant) {
     const C = App.CONST, f = S.font, size = S.bodySize;
     const out = await headerBlock(S);
     const d = S[type];
@@ -257,7 +257,8 @@
         to.push(mkPara([mkRun(C.DIRECTOR + ' الأكرم', { font: f, size })], { align: 'center', line: 300 }));
         if (d.dirName.trim()) to.push(mkPara([mkRun(d.dirName.trim(), { font: f, size, b: true })], { align: 'center', line: 300 }));
       }
-      [d.to0, d.to1, d.to2].forEach((on, i) => { if (on) to.push(mkPara([mkRun(C.RECIPIENTS[i], { font: f, size })], { align: 'center', line: 300 })); });
+      if (type === 'thanks') App.toLines(S, variant).forEach(x => to.push(mkPara([mkRun(x, { font: f, size })], { align: 'center', line: 300 })));
+      [d.to0, d.to1, d.to2].forEach((on, i) => { if (on && type !== 'thanks') to.push(mkPara([mkRun(C.RECIPIENTS[i], { font: f, size })], { align: 'center', line: 300 })); });
       if (type === 'internal' && d.toCustom.trim()) d.toCustom.split('\n').filter(x => x.trim()).forEach(x => to.push(mkPara([mkRun(x.trim(), { font: f, size })], { align: 'center', line: 300 })));
       out.push(...to);
       if (to.length) out.push(spacer(sp(3)));
@@ -353,8 +354,23 @@
 
   async function buildDocx(S0, type) {
     const S = App.withEffective(S0, type);
-    const children = await buildMain(S, type);
-    const footer = await buildFooter(S);
+    const vars = App.variants(S, type);
+    const bodySections = [];
+    for (let i = 0; i < vars.length; i++) {
+      const children = await buildMain(S, type, vars[i]);
+      const footer = await buildFooter(S);
+      bodySections.push({
+        properties: {
+          page: {
+            size: { width: 11906, height: 16838 },
+            margin: { top: mm(10), bottom: footer ? mm(20) : mm(12), left: mm(17), right: mm(17), footer: mm(7), header: 0 }
+          },
+          bidi: true
+        },
+        footers: footer ? { default: footer } : undefined,
+        children
+      });
+    }
     const attSections = [];
     for (const p of App.attach.flat(type)) {
       const img = await fitImage(p.url, 178, 250);
@@ -371,17 +387,7 @@
       creator: 'أندية المعلمين والعاملين',
       title: S[type].subject || DOC_TITLES[type],
       styles: { default: { document: { run: { font: fontOf(S.font), size: Math.round(S.bodySize * 2), rightToLeft: true, language: { value: 'ar-JO', bidirectional: 'ar-JO' } } } } },
-      sections: [{
-        properties: {
-          page: {
-            size: { width: 11906, height: 16838 },
-            margin: { top: mm(10), bottom: footer ? mm(20) : mm(12), left: mm(17), right: mm(17), footer: mm(7), header: 0 }
-          },
-          bidi: true
-        },
-        footers: footer ? { default: footer } : undefined,
-        children
-      }].concat(attSections)
+      sections: bodySections.concat(attSections)
     });
     return docx.Packer.toBlob(doc);
   }

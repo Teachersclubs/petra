@@ -4,8 +4,8 @@
   const App = g.App;
   const PAGE_W = 794, PAGE_H = 1123; // A4 عند 96dpi
 
-  function sheetWrapper(S, type, forPrint) {
-    const r = App.renderDoc(S, type);
+  function sheetWrapper(S, type, forPrint, vi) {
+    const r = App.renderDoc(S, type, vi);
     const w = document.createElement('div');
     w.setAttribute('style', r.style);
     w.dir = 'rtl';
@@ -22,7 +22,12 @@
     // يظهر عنوان الصفحة كاسم افتراضي عند «حفظ كـ PDF» من نافذة الطباعة
     const oldTitle = document.title; document.title = App.fileName(S, type);
     const root = document.getElementById('printRoot');
-    const { wrap } = sheetWrapper(S, type, true);
+    const wrap = document.createElement('div');
+    App.variants(S, type).forEach((v, i) => {
+      const w = sheetWrapper(S, type, true, i).wrap;
+      if (i > 0) w.style.breakBefore = 'page';
+      wrap.appendChild(w);
+    });
     App.attachPagesHTML(App.attach.flat(type)).forEach(h => { const d = document.createElement('div'); d.innerHTML = h; wrap.appendChild(d.firstChild); });
     root.replaceChildren(wrap);
     const done = () => { document.title = oldTitle; root.replaceChildren(); window.removeEventListener('afterprint', done); };
@@ -33,7 +38,15 @@
 
   /* --- PDF: التقاط صفحة الرأس/المحتوى والذيل ثم تقطيعهما إلى صفحات A4 --- */
   async function buildPdf(S, type) {
-    const { r } = sheetWrapper(S, type, false);
+    const pdf = new g.jspdf.jsPDF({ orientation: 'p', unit: 'px', format: [PAGE_W, PAGE_H], compress: true, hotfixes: ['px_scaling'] });
+    let first = true;
+    const vars = App.variants(S, type);
+    for (let vi = 0; vi < vars.length; vi++) { await addVariant(pdf, S, type, vi, () => { const f = first; first = false; return f; }); }
+    return finishPdf(pdf, S, type, first);
+  }
+
+  async function addVariant(pdf, S, type, vi, takeFirst) {
+    const { r } = sheetWrapper(S, type, false, vi);
     const stage = document.createElement('div');
     stage.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + PAGE_W + 'px;direction:rtl;background:#fff;color:#000';
     stage.setAttribute('style', stage.getAttribute('style') + ';' + r.style);
@@ -69,7 +82,6 @@
 
       const k = mainC.width / PAGE_W; // عامل التكبير الفعلي
       const topGap = 38, bottomGap = 6;
-      const pdf = new g.jspdf.jsPDF({ orientation: 'p', unit: 'px', format: [PAGE_W, PAGE_H], compress: true, hotfixes: ['px_scaling'] });
 
       let y = 0, page = 0;
       while (y < mainH - 1 || page === 0) {
@@ -83,11 +95,18 @@
         cx.fillStyle = '#fff'; cx.fillRect(0, 0, pc.width, pc.height);
         if (sh > 0) cx.drawImage(mainC, 0, Math.round(y * k), mainC.width, Math.round(sh * k), 0, Math.round(offTop * k), mainC.width, Math.round(sh * k));
         if (footC) cx.drawImage(footC, 0, Math.round((PAGE_H - footH) * k));
-        if (page > 0) pdf.addPage([PAGE_W, PAGE_H], 'p');
+        if (!(page === 0 && takeFirst())) pdf.addPage([PAGE_W, PAGE_H], 'p');
         pdf.addImage(pc.toDataURL('image/png'), 'PNG', 0, 0, PAGE_W, PAGE_H, undefined, 'FAST');
         y += sh; page++;
         if (page > 30) break;
       }
+    } finally {
+      stage.remove();
+    }
+  }
+
+  async function finishPdf(pdf, S, type) {
+    {
       for (const p of App.attach.flat(type)) {
         pdf.addPage([PAGE_W, PAGE_H], 'p');
         const k2 = 2, pc = document.createElement('canvas');
@@ -104,8 +123,6 @@
       }
       pdf.setProperties({ title: S[type].subject || App.fileName(S, type), creator: 'أندية المعلمين والعاملين' });
       return pdf.output('blob');
-    } finally {
-      stage.remove();
     }
   }
 

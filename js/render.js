@@ -117,6 +117,19 @@
     return d.showHijri ? { hijri: d.hijri, greg } : { hijri: '', greg };
   }
 
+  let curVariant = null; // نص الجهة في النسخة المكرّرة (null = النسخة الأساسية)
+
+  /** نسخ كتاب الشكر: الأولى الأساسية ثم نسخة لكل سطر في «الجهات الإضافية» */
+  function variants(S, type) {
+    const out = [null];
+    if (type === 'thanks' && S.thanks.copiesOn) S.thanks.copiesText.split('\n').map(x => x.trim()).filter(Boolean).forEach(x => out.push(x));
+    return out;
+  }
+  function toLines(S, variant) {
+    if (variant) return [variant];
+    return S.thanks.toText.split('\n').map(x => x.trim()).filter(Boolean);
+  }
+
   function letterHTML(S, type, E) {
     const d = S[type];
     const dl = dateLines(d);
@@ -133,6 +146,10 @@
     if (type === 'internal') {
       if (d.toDir) list.unshift('<div>' + DIRECTOR + ' الأكرم</div>' + (d.dirName.trim() ? '<div class="to-name">' + esc(d.dirName.trim()) + '</div>' : ''));
       if (d.toCustom.trim()) d.toCustom.split('\n').filter(x => x.trim()).forEach(x => list.push('<div>' + esc(x.trim()) + '</div>'));
+    }
+    if (type === 'thanks') {
+      toLines(S, curVariant).forEach(x => list.push('<div>' + esc(x) + '</div>'));
+      if (!list.length) list.push('<div>' + ph('الجهة الموجه إليها الكتاب…') + '</div>');
     }
     const body = sanitize(d.body);
     return headerHTML(S, E) +
@@ -280,14 +297,17 @@
   }
 
   /** يعيد HTML القسمين: الرأس+المحتوى، والذيل */
-  function renderDoc(S, type) {
+  function renderDoc(S, type, vi) {
     const E = effective(S, type);
-    return { style: styleOf(S, type, E), main: mainHTML(S, type, E), foot: footerHTML(S, E), eff: E };
+    curVariant = variants(S, type)[vi || 0] || null;
+    try {
+      return { style: styleOf(S, type, E), main: mainHTML(S, type, E), foot: footerHTML(S, E), eff: E };
+    } finally { curVariant = null; }
   }
 
   function attachPagesHTML(list) {
     return list.map(p => '<div class="att-page"><div class="att-cap">' + esc(p.cap) + '</div><img src="' + p.url + '" alt=""></div>');
   }
 
-  g.App = Object.assign(App, { attachPagesHTML, esc, sanitize, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
+  g.App = Object.assign(App, { variants, toLines, attachPagesHTML, esc, sanitize, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
 })(window);

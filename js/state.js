@@ -76,6 +76,8 @@
       lineHeight: 1.5,
       logoSize: 24,
       onePage: false,
+      logoSeeded: false,
+      ministrySeeded: false,
       logos: {
         ministry: { show: true, data: '' },
         club: { show: true, data: '' }
@@ -96,7 +98,7 @@
       theme: '',
       letter: letterDefaults(false),
       internal: letterDefaults(true),
-      thanks: letterDefaults(false),
+      thanks: Object.assign(letterDefaults(false), { toText: '', copiesOn: false, copiesText: '' }),
       circular: {
         number: '', subject: '', body: '',
         date: todayISO(), showDate: true, showHijri: true, hijri: '', hijriManual: false,
@@ -153,6 +155,16 @@
   function build(raw) {
     const d = defaults();
     merge(d, migrate(raw));
+    // شعار الأندية الافتراضي: يُضاف مرة واحدة فقط، فإن أزاله المستخدم لا يعود
+    if (!d.logoSeeded) {
+      if (!d.logos.club.data && g.DEFAULT_CLUB_LOGO) { d.logos.club.data = g.DEFAULT_CLUB_LOGO; d.logos.club.show = true; }
+      d.logoSeeded = true;
+    }
+    // شعار الوزارة الافتراضي (مرة واحدة فقط)
+    if (!d.ministrySeeded) {
+      if (!d.logos.ministry.data && g.DEFAULT_MINISTRY_LOGO) { d.logos.ministry.data = g.DEFAULT_MINISTRY_LOGO; d.logos.ministry.show = true; }
+      d.ministrySeeded = true;
+    }
     const known = f => FONTS.some(x => x[0] === f);
     if (!known(d.font)) d.font = 'Simplified Arabic';
     if (!known(d.footer.font)) d.footer.font = 'Simplified Arabic';
