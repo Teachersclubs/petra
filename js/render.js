@@ -54,6 +54,7 @@
   const PAGE_H = 1122;
   const TITLES = { head: 'رئيس الهيئة الإدارية', manager: 'مدير النادي' };
   const isLetter = t => t === 'letter' || t === 'internal' || t === 'thanks';
+  const DATE_DOC = t => isLetter(t) || t === 'assign' || t === 'claim';
 
   /* ---------- أيقونات الذيل ---------- */
   const ICONS = {
@@ -90,31 +91,140 @@
 
   function ph(text) { return '<span class="ph">' + text + '</span>'; }
 
-  /* ---------- التوقيع والختم ---------- */
-  function signImgs(S, p) {
-    const o = S.people;
-    const sg = p.showSign && p.signImg ? '<img class="sign-img" src="' + p.signImg + '" alt="" style="height:' + o.signSize + 'mm">' : '';
-    const st = p.showStamp && p.stampImg ? '<img class="stamp-img" src="' + p.stampImg + '" alt="" style="height:' + o.stampSize + 'mm">' : '';
-    if (!sg && !st) return '';
-    // في الاتجاه RTL أول عنصر يظهر يمينًا
-    return '<div class="sign-imgs">' + (o.stampPos === 'left' ? sg + st : st + sg) + '</div>';
+  /* ---------- التوقيع والختم: هندسة موحّدة (مم) للمعاينة وPDF والطباعة وWord ---------- */
+  const SG = { W: 66, TITLE_H: 7, NAME_H: 7, PADB: 5, PADZ: 2, BLANK: 11, MAXW: 60, PAGE_W: 210, CL: 17, CR: 193 };
+
+  /** من يظهر ومن أي جهة: head يمينًا ثم manager؛ والمفرد يظهر يسارًا */
+  function signers(d) {
+    const who = [d.showHead ? 'head' : '', d.showManager ? 'manager' : ''].filter(Boolean);
+    return who;
   }
-  function signBox(S, key) {
-    const p = S.people[key], imgs = signImgs(S, p);
-    return '<div class="sign-box"><div class="sign-title">' + TITLES[key] + '</div>' + imgs +
-      '<div class="sign-name"' + (imgs ? ' style="margin-top:1mm"' : '') + '>' + esc(p.name) + '</div></div>';
+  function boxLeft(key, who, fin) {
+    return (key === 'head' && (who.length === 2 || fin)) ? SG.CR - SG.W : SG.CL;
+  }
+
+  function nameWidth(S, p) {
+    const n = (p.name || '').length;
+    return Math.max(12, Math.min(SG.W, n * (S.bodySize || 14) * 0.3528 * 0.5 + 4));
+  }
+
+  /** هندسة صندوق موقّع واحد: مستطيلات العناصر بإحداثيات الصندوق (مم) */
+  function signGeom(S, key) {
+    const o = S.people, p = o[key], pos = p.pos;
+    const fit = (h, ar) => { let w = h * ar; if (w > SG.MAXW) { h = h * SG.MAXW / w; w = SG.MAXW; } return { w, h }; };
+    const items = [];
+    if (p.showSign && p.signImg) { const f = fit(o.signSize, p.signAR || 2.2); items.push({ k: 'sign', w: f.w, h: f.h }); }
+    if (p.showStamp && p.stampImg) { const f = fit(o.stampSize, p.stampAR || 1); items.push({ k: 'stamp', w: f.w, h: f.h }); }
+    // ترتيب العرض الفيزيائي من اليسار إلى اليمين
+    const order = o.stampPos === 'left' ? ['stamp', 'sign'] : ['sign', 'stamp'];
+    items.sort((x, y) => order.indexOf(x.k) - order.indexOf(y.k));
+    const gi = o.gapImg, gn = o.gapName;
+    const maxH = items.reduce((m, it) => Math.max(m, it.h), 0);
+    const zoneH = items.length ? maxH + 2 * SG.PADZ : SG.BLANK;
+    const total = items.reduce((t, it) => t + it.w, 0) + gi * Math.max(0, items.length - 1);
+    let zoneTop, nameY;
+    if (o.mode === 'below') { nameY = SG.TITLE_H + gn; zoneTop = nameY + SG.NAME_H + gn; }
+    else if (o.mode === 'overlap' && items.length) { zoneTop = SG.TITLE_H; nameY = SG.TITLE_H + zoneH - 5; }
+    else { zoneTop = SG.TITLE_H; nameY = SG.TITLE_H + zoneH + gn; }
+    const H = (o.mode === 'below' ? zoneTop + zoneH : nameY + SG.NAME_H) + SG.PADB;
+    let x = (SG.W - total) / 2;
+    const rects = {};
+    items.forEach(it => {
+      const q = pos[it.k];
+      rects[it.k] = { x: x + q.x, y: zoneTop + (zoneH - it.h) / 2 + q.y, w: it.w, h: it.h };
+      x += it.w + gi;
+    });
+    const nw = nameWidth(S, p);
+    rects.name = { x: (SG.W - nw) / 2 + pos.name.x, y: nameY + pos.name.y, w: nw, h: SG.NAME_H, text: !!(p.name || '').trim() };
+    rects.title = { x: (SG.W - SG.W * 0.7) / 2, y: 0, w: SG.W * 0.7, h: SG.TITLE_H };
+    return { H, nameY0: nameY, rects, zoneH };
+  }
+
+  /** يحصر العناصر داخل الصفحة والصندوق حتى لا تختفي خارج الحدود (للعرض فقط) */
+  function signGeomSafe(S, key, who, fin) {
+    const g = signGeom(S, key), bl = boxLeft(key, who, fin);
+    ['sign', 'stamp', 'name'].forEach(k => {
+      const r = g.rects[k]; if (!r) return;
+      r.x = Math.max(4 - bl, Math.min(SG.PAGE_W - 4 - bl - r.w, r.x));
+      r.y = Math.max(k === 'name' ? SG.TITLE_H : 0, Math.min(g.H - r.h, r.y));
+    });
+    return g;
+  }
+
+  /** فحص التداخل والخروج عن الصفحة؛ يعيد رسائل المشاكل (فارغة = سليم) */
+  function signIssues(S, d, type) {
+    const who = signers(d), out = [], all = [], fin = type === 'assign' && !!d.showFinance;
+    who.forEach(key => {
+      const g = signGeom(S, key), bl = boxLeft(key, who, fin);
+      ['sign', 'stamp', 'name', 'title'].forEach(k => {
+        const r = g.rects[k]; if (!r) return;
+        const rr = { key, k, x: r.x + bl, y: r.y, w: r.w, h: r.h, text: r.text };
+        all.push(rr);
+        if (k === 'title') return;
+        if (rr.x < 4 || rr.x + rr.w > SG.PAGE_W - 4) out.push('العنصر يخرج عن حدود الصفحة');
+        if (r.y < (k === 'name' ? SG.TITLE_H - 0.01 : -0.01) || r.y + r.h > g.H + 0.01) out.push('العنصر يخرج عن حدود منطقة التوقيع');
+      });
+    });
+    if (S.people.protect) {
+      const hit = (a, b) => a.x < b.x + b.w - 0.01 && b.x < a.x + a.w - 0.01 && a.y < b.y + b.h - 0.01 && b.y < a.y + a.h - 0.01;
+      for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
+        const a = all[i], b = all[j];
+        if (a.key !== b.key && false) continue;
+        const imgNameOk = S.people.mode === 'overlap' && a.key === b.key && ((a.k === 'name' && b.k !== 'title' && b.k !== 'name') || (b.k === 'name' && a.k !== 'title' && a.k !== 'name'));
+        if (imgNameOk) continue;
+        if ((a.k === 'name' && !a.text) || (b.k === 'name' && !b.text)) { if (a.k === 'name' || b.k === 'name') { const other = a.k === 'name' ? b : a; if (other.k !== 'title') continue; } }
+        if (hit(a, b)) out.push('سيتداخل هذا العنصر مع عنصر آخر');
+      }
+    }
+    return Array.from(new Set(out));
+  }
+
+  const f1 = v => Math.round(v * 100) / 100;
+  function signBox(S, key, who, fin) {
+    const g = signGeomSafe(S, key, who, fin), R = g.rects, p = S.people[key];
+    let h = '<div class="sign-box sg" style="width:' + SG.W + 'mm;height:' + f1(g.H) + 'mm">';
+    h += '<div class="sg-title" style="height:' + SG.TITLE_H + 'mm;line-height:' + SG.TITLE_H + 'mm">' + TITLES[key] + '</div>';
+    h += '<div class="sg-name" style="top:' + f1(R.name.y) + 'mm;height:' + SG.NAME_H + 'mm;line-height:' + SG.NAME_H + 'mm;left:' + f1(R.name.x + R.name.w / 2 - SG.W / 2) + 'mm;right:' + f1(-(R.name.x + R.name.w / 2 - SG.W / 2)) + 'mm">' + esc(p.name) + '</div>';
+    ['sign', 'stamp'].forEach(k => {
+      const r = R[k]; if (!r) return;
+      h += '<img class="' + k + '-img sg-img" src="' + (k === 'sign' ? p.signImg : p.stampImg) + '" alt="" style="left:' + f1(r.x) + 'mm;top:' + f1(r.y) + 'mm;width:' + f1(r.w) + 'mm;height:' + f1(r.h) + 'mm">';
+    });
+    return h + '</div>';
+  }
+
+  /** بلوك «اللجنة المالية» أسفل مكان رئيس الهيئة (قرار التكليف) */
+  function financeHTML(S, d) {
+    if (!d.showFinance) return '';
+    const lines = (d.financeText || '').split('\n').map(x => x.trim()).filter(Boolean);
+    return '<div class="fin-box" style="width:' + SG.W + 'mm"><div class="fin-title">اللجنة المالية:</div>' + (lines.length ? lines.map(l => '<div class="fin-line">' + esc(l) + '</div>').join('') : '<div class="fin-line">' + ph('&nbsp;') + '</div>') + '</div>';
   }
 
   /** رئيس الهيئة يمينًا ثم مدير النادي؛ لكل منهما خيار إظهار */
-  function signHTML(S, d) {
-    const who = [d.showHead ? 'head' : '', d.showManager ? 'manager' : ''].filter(Boolean);
-    if (!who.length) return '';
-    return '<div class="sign ' + (who.length === 2 ? 'sign-two' : 'sign-one') + '">' + who.map(k => signBox(S, k)).join('') + '</div>';
+  function signHTML(S, type) {
+    const d = S[type], who = signers(d), fin = type === 'assign' && d.showFinance;
+    if (!who.length && !fin) return '';
+    const col = k => '<div class="sg-col">' + (who.includes(k) ? signBox(S, k, who, fin) : '') + (k === 'head' && fin ? financeHTML(S, d) : '') + '</div>';
+    if (fin && !who.includes('head')) {
+      return '<div class="sign sign-two">' + col('head') + (who.includes('manager') ? col('manager') : '') + '</div>';
+    }
+    if (who.length === 2) return '<div class="sign sign-two">' + col('head') + col('manager') + '</div>';
+    return '<div class="sign ' + (fin ? 'sign-two' : 'sign-one') + '">' + who.map(k => col(k)).join('') + '</div>';
   }
 
   function dateLines(d) {
     const greg = App.formatGregorian(d.date);
     return d.showHijri ? { hijri: d.hijri, greg } : { hijri: '', greg };
+  }
+
+  /** تاريخ قصير: 1/10/2026 */
+  function shortDate(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    return m ? (+m[3]) + '/' + (+m[2]) + '/' + m[1] : '';
+  }
+  function assignDateStr(d) { return (d.assignDateText || '').trim() || shortDate(d.assignDate); }
+  function fillAssign(html, d) {
+    const val = assignDateStr(d);
+    return html.split(App.ASSIGN_TOKEN).join('<span class="adate">' + esc(val || '................') + '</span>');
   }
 
   let curVariant = null; // نص الجهة في النسخة المكرّرة (null = النسخة الأساسية)
@@ -130,6 +240,49 @@
     return S.thanks.toText.split('\n').map(x => x.trim()).filter(Boolean);
   }
 
+  function dateRowHTML(d) {
+    const dl = dateLines(d);
+    const numCell = '<div class="dr-r"><b>الرقم:</b> ' + (d.number ? esc(d.number) : ph('&nbsp;')) + '</div>';
+    let dateCells;
+    if (d.showHijri) {
+      dateCells = '<div class="dr-c"><b>التاريخ:</b> <bdi>' + esc(dl.hijri) + '</bdi></div>' +
+        '<div class="dr-l"><b>الموافق:</b> <bdi>' + esc(dl.greg) + '</bdi></div>';
+    } else {
+      dateCells = '<div class="dr-c"></div><div class="dr-l"><b>التاريخ:</b> <bdi>' + esc(dl.greg) + '</bdi></div>';
+    }
+    return '<div class="date-row">' + numCell + dateCells + '</div>';
+  }
+
+  function assignHTML(S, E) {
+    const d = S.assign;
+    const body = fillAssign(sanitize(d.body), d);
+    return headerHTML(S, E) + dateRowHTML(d) +
+      '<div class="doc-title">قرار تكليف</div>' +
+      '<div class="who-line">' + esc(d.who) + ': ' + (d.assignee ? esc(d.assignee) : ph('................')) + '</div>' +
+      '<div class="body">' + (body || ph('نص القرار…')) + '</div>' +
+      (d.showClosing ? '<div class="closing">' + CLOSING + '</div>' : '<div style="height:' + 8 * E.sp + 'mm"></div>') +
+      signHTML(S, 'assign');
+  }
+
+  function claimHTML(S, E) {
+    const d = S.claim;
+    const body = sanitize(d.body);
+    const dv = (d.claimDateText || '').trim() || shortDate(d.claimDate);
+    const line = (lbl, val) => '<div class="cl-line"><b>' + esc(lbl) + '</b> ' + (val ? '<span>' + esc(val) + '</span>' : '<span class="cl-dots">' + ph('............................') + '</span>') + '</div>';
+    return headerHTML(S, E) + (d.showDateRow ? dateRowHTML(d) : '<div style="height:' + 6 * E.sp + 'mm"></div>') +
+      '<div class="doc-title">' + esc(d.title) + '</div>' +
+      '<div class="body cl-body">' + (body || ph('نص المطالبة…')) + '</div>' +
+      (d.showClosing ? '<div class="cl-closing">' + esc(d.closing) + '</div>' : '') +
+      '<div class="cl-owner">' + line(d.lblOwner, d.owner) + line(d.lblSign, '') + (d.showClaimDate ? line(d.lblDate, dv) : '') + '</div>' +
+      signHTML(S, 'claim');
+  }
+
+  function recipStyle(S, type) {
+    if (type !== 'thanks') return '';
+    const y = +S.thanks.toY || 0, x = +S.thanks.toX || 0;
+    if (!y && !x) return '';
+    return ' style="' + (y > 0 ? 'padding-top:' + y + 'mm;' : y < 0 ? 'margin-top:' + y + 'mm;' : '') + (x ? 'position:relative;left:' + x + 'mm;' : '') + '"';
+  }
   function letterHTML(S, type, E) {
     const d = S[type];
     const dl = dateLines(d);
@@ -154,11 +307,11 @@
     const body = sanitize(d.body);
     return headerHTML(S, E) +
       '<div class="date-row">' + numCell + dateCells + '</div>' +
-      (list.length ? '<div class="recipients">' + list.join('') + '</div>' : '') +
+      (list.length ? '<div class="recipients"' + recipStyle(S, type) + '>' + list.join('') + '</div>' : '') +
       '<div class="subject"><u>الموضوع:</u> ' + (d.subject ? '( ' + esc(d.subject) + ' )' : ph('(&nbsp;&nbsp;&nbsp;&nbsp;)')) + '</div>' +
       '<div class="body">' + (body || ph('نص الكتاب…')) + '</div>' +
       '<div class="closing">' + CLOSING + '</div>' +
-      signHTML(S, d);
+      signHTML(S, type);
   }
 
   function circularHTML(S, E) {
@@ -182,7 +335,7 @@
       '<div class="subject"><u>الموضوع:</u> ' + (d.subject ? esc(d.subject) : '') + '</div>' +
       '<div class="body" style="text-align:' + d.bodyAlign + '">' + (body || ph('نص التعميم…')) + '</div>' +
       '<div class="closing">' + CLOSING + '</div>' +
-      signHTML(S, d);
+      signHTML(S, 'circular');
   }
 
   /* ---------- الذيل ---------- */
@@ -231,7 +384,7 @@
   function styleOf(S, type, E) {
     return 'font-family:' + fontCss(S.font) + ';--body-font:' + fontCss(E.bodyFont) + ';--body-size:' + E.bodySize + 'pt;--lh:' + E.lineHeight + ';--sp:' + E.sp;
   }
-  function mainHTML(S, type, E) { return type === 'circular' ? circularHTML(S, E) : letterHTML(S, type, E); }
+  function mainHTML(S, type, E) { return type === 'circular' ? circularHTML(S, E) : type === 'assign' ? assignHTML(S, E) : type === 'claim' ? claimHTML(S, E) : letterHTML(S, type, E); }
 
   /* ---------- القياس التلقائي: صفحة واحدة + ضبط الذيل في سطر ---------- */
   let cache = { key: '', val: null };
@@ -239,7 +392,7 @@
     const P = S.people, mark = v => (typeof v === 'string' && v.length > 200 ? v.length : v);
     return JSON.stringify([type, S[type], S.font, S.bodySize, S.lineHeight, S.logoSize, S.onePage, S.clubName, S.footer,
       S.logos.ministry.show, mark(S.logos.ministry.data), S.logos.club.show, mark(S.logos.club.data),
-      [P.signSize, P.stampSize, P.stampPos], ['head', 'manager'].map(k => [P[k].name, P[k].showSign, P[k].showStamp, mark(P[k].signImg), mark(P[k].stampImg)]),
+      [P.signSize, P.stampSize, P.stampPos, P.mode, P.gapName, P.gapImg], ['head', 'manager'].map(k => [P[k].name, P[k].showSign, P[k].showStamp, mark(P[k].signImg), mark(P[k].stampImg), P[k].signAR, P[k].stampAR, P[k].pos]),
       document.fonts && document.fonts.status]);
   }
   function stageEl() {
@@ -258,13 +411,17 @@
     const baseSize = circ && d.bodySize > 0 ? d.bodySize : S.bodySize;
     const E = { bodySize: baseSize, lineHeight: S.lineHeight, sp: 1, logoSize: S.logoSize, footSize: S.footer.size, bodyFont: circ && d.bodyFont ? d.bodyFont : S.font, fits: true, scale: 1 };
     const stage = stageEl();
+    // القياس بدون فك ترميز الصور الكبيرة (تُستبدل بصورة 1×1 وتبقى أبعادها ثابتة) لتفادي البطء والتجمّد
+    const PIX = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+    const t0 = Date.now(), budget = () => Date.now() - t0 > 400;
     const measure = () => {
-      stage.innerHTML = '<div class="sheet measure" dir="rtl" style="' + styleOf(S, type, E) + '"><div class="sheet-main">' + mainHTML(S, type, E) + '</div><div class="sheet-foot">' + footerHTML(S, E) + '</div></div>';
+      const html = '<div class="sheet measure" dir="rtl" style="' + styleOf(S, type, E) + '"><div class="sheet-main">' + mainHTML(S, type, E) + '</div><div class="sheet-foot">' + footerHTML(S, E) + '</div></div>';
+      stage.innerHTML = html.replace(/src="data:image\/[^"]*"/g, 'src="' + PIX + '"');
       return stage.firstChild;
     };
     try {
       if (S.footer.show) {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 4 && !budget(); i++) {
           const row = measure().querySelector('.foot-info');
           if (!row || row.scrollWidth <= row.clientWidth + 1) break;
           const next = Math.max(6, Math.floor(E.footSize * (row.clientWidth / row.scrollWidth) * 4) / 4 - 0.25);
@@ -274,7 +431,8 @@
       }
       if (S.onePage) {
         let s = 1;
-        for (;;) {
+        for (let n = 0; n < 16; n++) {
+          if (budget()) break;
           const h = measure().offsetHeight;
           if (h <= PAGE_H - 1) { E.fits = true; break; }
           s -= 0.04;
@@ -309,5 +467,5 @@
     return list.map(p => '<div class="att-page"><div class="att-cap">' + esc(p.cap) + '</div><img src="' + p.url + '" alt=""></div>');
   }
 
-  g.App = Object.assign(App, { variants, toLines, attachPagesHTML, esc, sanitize, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
+  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, attachPagesHTML, esc, sanitize, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
 })(window);

@@ -55,7 +55,16 @@
     ['Noto Naskh Arabic', 'Noto Naskh Arabic (نسخ — مضمَّن)']
   ];
 
-  function person() { return { name: '', signImg: '', stampImg: '', showSign: true, showStamp: true }; }
+  function person() {
+    return {
+      name: '', signImg: '', stampImg: '', showSign: true, showStamp: true, signAR: 0, stampAR: 0,
+      pos: { sign: { x: 0, y: 0 }, stamp: { x: 0, y: 0 }, name: { x: 0, y: 0 } }
+    };
+  }
+
+  const ASSIGN_TOKEN = '[تاريخ التكليف]';
+  const ASSIGN_BODY = '<p>قررت تكليفك بالقيام بأعمال ................ في نادي ................ وذلك اعتبارًا من تاريخ ' + ASSIGN_TOKEN + ' ولمدة (   ) يومًا، وبأجرة يومية مقدارها (   ) دنانير فقط لا غير.</p>';
+  const CLAIM_BODY = '<p>يطلب لي من النادي مبلغ وقدره (   ) دينار، وذلك لقاء عملي بأعمال ................ في نادي ................ خلال الفترة من    /   /       لغاية    /   /       بواقع (   ) يومًا.</p>';
 
   function letterDefaults(internal) {
     return {
@@ -92,13 +101,24 @@
       },
       people: {
         head: person(), manager: person(),
-        signSize: 16, stampSize: 22, stampPos: 'right', removeBg: true
+        signSize: 16, stampSize: 22, stampPos: 'right', removeBg: true,
+        mode: 'above', gapName: 2, gapImg: 2, protect: true
       },
-      send: { email: '', whatsapp: '', format: 'pdf' },
+      send: { email: '', whatsapp: '', format: 'pdf', subject: '', message: '', mailApp: 'gmail', useShare: false },
       theme: '',
       letter: letterDefaults(false),
       internal: letterDefaults(true),
-      thanks: Object.assign(letterDefaults(false), { toText: '', copiesOn: false, copiesText: '' }),
+      thanks: Object.assign(letterDefaults(false), { toText: '', copiesOn: false, copiesText: '', toX: 0, toY: 0 }),
+      assign: Object.assign(letterDefaults(true), {
+        who: 'السيدة', assignee: '', assignDate: todayISO(), assignDateText: '', body: ASSIGN_BODY,
+        showClosing: false, showFinance: true, financeText: ''
+      }),
+      claim: {
+        number: '', date: todayISO(), showHijri: false, hijri: '', hijriManual: false, showDateRow: false,
+        title: 'مطالبة مالية', subject: '', body: CLAIM_BODY, showClosing: true, closing: 'وتفضلوا بقبول فائق الاحترام',
+        owner: '', lblOwner: 'صاحب الاستحقاق:', lblSign: 'التوقيع:', lblDate: 'التاريخ:',
+        showClaimDate: true, claimDate: '', claimDateText: '', showHead: false, showManager: false
+      },
       circular: {
         number: '', subject: '', body: '',
         date: todayISO(), showDate: true, showHijri: true, hijri: '', hijriManual: false,
@@ -126,7 +146,7 @@
     if (!raw || typeof raw !== 'object') return {};
     if (raw.v >= 2) {
       const r = JSON.parse(JSON.stringify(raw));
-      ['letter', 'internal', 'thanks', 'circular'].forEach(k => {
+      ['letter', 'internal', 'thanks', 'circular', 'assign', 'claim'].forEach(k => {
         const d = r[k]; if (!d || d.showHead !== undefined) return;
         const who = d.signer || d.signWho || 'manager';
         d.showHead = who === 'head' || who === 'both'; d.showManager = who === 'manager' || who === 'both';
@@ -172,6 +192,8 @@
     if (!d.letter.hijri && !d.letter.hijriManual) d.letter.hijri = formatHijri(d.letter.date);
     if (!d.internal.hijri && !d.internal.hijriManual) d.internal.hijri = formatHijri(d.internal.date);
     if (!d.thanks.hijri && !d.thanks.hijriManual) d.thanks.hijri = formatHijri(d.thanks.date);
+    if (!d.assign.hijri && !d.assign.hijriManual) d.assign.hijri = formatHijri(d.assign.date);
+    if (!d.claim.hijri && !d.claim.hijriManual) d.claim.hijri = formatHijri(d.claim.date);
     if (!d.circular.hijri && !d.circular.hijriManual) d.circular.hijri = formatHijri(d.circular.date);
     return d;
   }
@@ -236,6 +258,6 @@
   g.App = Object.assign(g.App || {}, {
     KEY, FONTS, defaults, build, loadAsync, save, flush, wipe, getPath, setPath, migrate,
     isPersisted: () => App_persisted,
-    todayISO, formatGregorian, formatHijri
+    todayISO, formatGregorian, formatHijri, ASSIGN_TOKEN, ASSIGN_BODY, CLAIM_BODY
   });
 })(window);

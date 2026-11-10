@@ -103,19 +103,36 @@
   function onInput(el, path) {
     const v = readEl(el);
     App.setPath(S, path, v);
-    const m = /^(letter|internal|thanks|circular)\.(date|hijri|showHijri)$/.exec(path);
+    if (path === 'assign.assignDate') S.assign.assignDateText = '';
+    if (path === 'claim.claimDate') S.claim.claimDateText = '';
+    const m = /^(letter|internal|thanks|circular|assign|claim)\.(date|hijri|showHijri)$/.exec(path);
     if (m) {
       const d = S[m[1]];
       if (m[2] === 'date') { if (!d.hijriManual) d.hijri = App.formatHijri(v); }
       else if (m[2] === 'hijri') { d.hijriManual = v.trim() !== ''; if (!d.hijriManual) d.hijri = App.formatHijri(d.date); }
       else if (v && !d.hijri) d.hijri = App.formatHijri(d.date);
     }
+    if (el.hasAttribute && el.hasAttribute('data-geo') && !acceptGeo(path === 'people.protect')) { refreshControls(); return; }
     if (path === 'font' || path === 'footer.font') applyFonts();
     refreshControls(el);
     changed();
   }
 
+  function bindNudge() {
+    const lim = { 'thanks.toY': [-5, 80], 'thanks.toX': [-40, 40] };
+    document.addEventListener('click', e => {
+      const b = e.target.closest('[data-nudge]');
+      if (b) {
+        const p = b.dataset.nudge, st = +($('#posStep') && $('#posStep').value) || 1, [lo, hi] = lim[p];
+        const v = Math.max(lo, Math.min(hi, Math.round(((+App.getPath(S, p) || 0) + (+b.dataset.d) * st) * 10) / 10));
+        App.setPath(S, p, v); refreshControls(); changed(); return;
+      }
+      const rs = e.target.closest('[data-nudge-reset]');
+      if (rs) { S.thanks.toX = 0; S.thanks.toY = 0; refreshControls(); changed(); }
+    });
+  }
   function bindAll() {
+    bindNudge();
     document.addEventListener('input', e => {
       const el = e.target;
       if (el.dataset && el.dataset.bind) onInput(el, el.dataset.bind);
@@ -310,10 +327,10 @@
           const f = e.target.files[0]; e.target.value = '';
           if (!f) return;
           if (!/^image\//.test(f.type)) { toast('الملف المختار ليس صورة'); return; }
-          try { S.people[key][field] = await normalizeImage(f, S.people.removeBg); S.people[key][showF] = true; refreshControls(); changed(); toast('تم الرفع'); }
+          try { const url = await normalizeImage(f, S.people.removeBg); S.people[key][field] = url; S.people[key][field === 'signImg' ? 'signAR' : 'stampAR'] = Math.round((await probeAR(url)) * 1000) / 1000; S.people[key][showF] = true; refreshControls(); syncPos(); changed(); toast('تم الرفع'); }
           catch (err) { toast('تعذّر قراءة الصورة'); }
         });
-        $('[data-remove]', slot).addEventListener('click', () => { S.people[key][field] = ''; refreshControls(); changed(); });
+        $('[data-remove]', slot).addEventListener('click', () => { S.people[key][field] = ''; S.people[key][field === 'signImg' ? 'signAR' : 'stampAR'] = 0; refreshControls(); syncPos(); changed(); });
       });
     });
   }
@@ -360,6 +377,18 @@
       '<textarea rows="4" data-doc-bind="thanks.copiesText" placeholder="عطوفة مدير ... الأكرم&#10;عطوفة مدير ... الأكرم"></textarea>' +
       '<small class="hint" id="copiesCount"></small></label></fieldset>';
     old.replaceWith(...wrap.children);
+    const posBox = document.createElement('fieldset'); posBox.className = 'group';
+    posBox.innerHTML = '<legend>موضع صندوق «الجهة الموجه إليها»</legend>' +
+      '<div class="pos-row"><b>تحريك الصندوق</b><div class="pos-pad">' +
+      '<button type="button" data-nudge="thanks.toY" data-d="-1" title="للأعلى" aria-label="رفع الصندوق">▲</button>' +
+      '<button type="button" data-nudge="thanks.toX" data-d="-1" title="يسار" aria-label="يسار">◀</button>' +
+      '<button type="button" data-nudge="thanks.toX" data-d="1" title="يمين" aria-label="يمين">▶</button>' +
+      '<button type="button" data-nudge="thanks.toY" data-d="1" title="للأسفل" aria-label="إنزال الصندوق">▼</button></div>' +
+      '<label>رأسي <input type="number" min="-5" max="80" step="0.5" data-doc-bind="thanks.toY"></label>' +
+      '<label>أفقي <input type="number" min="-40" max="40" step="0.5" data-doc-bind="thanks.toX"></label>' +
+      '<button type="button" class="btn sm ghost" data-nudge-reset="thanks" title="إعادة ضبط">↺</button></div>' +
+      '<p class="hint">الحركة بالمليمتر؛ إنزال الصندوق يزيح ما تحته، وتُطبَّق على المعاينة وWord وPDF والطباعة.</p>';
+    wrap.children.length; c.querySelector('[data-doc-bind="thanks.toText"]').closest('fieldset').after(posBox);
     $('.doc-form[data-form="letter"]').after(c);
   }
   function buildInternalForm() {
@@ -375,6 +404,188 @@
     src.after(c);
   }
 
+  /* ---------- قرار التكليف والمطالبة المالية ---------- */
+  const rteHtml = t => '<div class="field"><span>نص ' + (t === 'assign' ? 'القرار' : 'المطالبة') + '</span><div class="rte" data-rte="' + t + '"><div class="rte-bar"></div><div class="rte-area" contenteditable="true" dir="rtl" data-doc-rte="' + t + '.body" spellcheck="true"></div></div></div>';
+  const dateFields = (t, label) =>
+    '<div class="row2"><label class="field"><span>' + label + '</span><input type="text" data-doc-bind="' + t + '.number" placeholder="مثال: 1/2026"></label>' +
+    '<label class="field"><span>التاريخ (الموافق)</span><input type="date" data-doc-bind="' + t + '.date"></label></div>' +
+    '<label class="check"><input type="checkbox" data-doc-bind="' + t + '.showHijri"> <span>إظهار التاريخ الهجري</span></label>' +
+    '<label class="field" data-show-if="' + t + '.showHijri"><span>التاريخ الهجري <small>(يُحسب تلقائيًا ويمكن تعديله)</small></span><input type="text" data-doc-bind="' + t + '.hijri" placeholder="مثال: 30 جمادى الأولى 1448"></label>';
+  function addForm(type, html) {
+    const f = document.createElement('div');
+    f.className = 'doc-form'; f.dataset.form = type; f.hidden = true; f.innerHTML = html;
+    $('#sec-doc').insertBefore(f, $('#peopleBox'));
+  }
+  function buildAssignForm() {
+    addForm('assign',
+      '<h2 class="panel-title">بيانات قرار التكليف</h2>' +
+      '<label class="field"><span>اسم النادي <small>(يظهر بعد كلمة «نادي»)</small></span><input type="text" data-bind="clubName" placeholder="مثال: البتراء"></label>' +
+      dateFields('assign', 'رقم القرار') +
+      '<fieldset class="group"><legend>المكلَّف</legend><div class="row2">' +
+      '<label class="field"><span>الصفة</span><select data-doc-bind="assign.who"><option>السيدة</option><option>السيد</option><option>الآنسة</option><option>الأستاذ</option><option>الأستاذة</option></select></label>' +
+      '<label class="field"><span>الاسم</span><input type="text" data-doc-bind="assign.assignee" placeholder="الاسم الكامل"></label></div></fieldset>' +
+      '<fieldset class="group"><legend>تاريخ التكليف</legend>' +
+      '<label class="field"><span>اختر التاريخ <small>(يدخل تلقائيًا في نص القرار)</small></span><input type="date" data-doc-bind="assign.assignDate"></label>' +
+      '<label class="field"><span>أو اكتب التاريخ يدويًا <small>(اتركه فارغًا لاستخدام التاريخ المختار)</small></span><input type="text" data-doc-bind="assign.assignDateText" placeholder="مثال: 1/10/2026 أو 1 تشرين الأول 2026"></label>' +
+      '<div class="inline-btns"><button type="button" class="btn sm" id="btnInsDate">إدراج التاريخ في النص عند المؤشر</button><button type="button" class="btn sm ghost" id="btnAssignToday">تاريخ اليوم</button></div>' +
+      '<p class="hint">يظهر التاريخ في النص مكان الرمز <b>' + App.ASSIGN_TOKEN + '</b>؛ يمكنك نقله أو نسخه أو حذفه من النص، وتتحدّث الصفحة فورًا عند تغيير التاريخ.</p></fieldset>' +
+      '<label class="field"><span>الموضوع <small>(اسم الملف عند التنزيل، ولا يُطبع)</small></span><input type="text" data-doc-bind="assign.subject" placeholder="مثال: تكليف بأعمال التنظيف"></label>' +
+      rteHtml('assign') +
+      '<fieldset class="group"><legend>التوقيع والاعتماد</legend>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="assign.showHead"> <span>إظهار رئيس الهيئة الإدارية</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="assign.showManager"> <span>إظهار مدير النادي</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="assign.showFinance"> <span>إظهار صندوق «اللجنة المالية» أسفل رئيس الهيئة</span></label>' +
+      '<label class="field" data-show-if="assign.showFinance"><span>اللجنة المالية <small>(اسم في كل سطر)</small></span><textarea rows="3" data-doc-bind="assign.financeText" placeholder="أسماء أعضاء اللجنة المالية"></textarea></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="assign.showClosing"> <span>إظهار عبارة «واقبلوا فائق الاحترام والتقدير»</span></label></fieldset>');
+  }
+  function buildClaimForm() {
+    addForm('claim',
+      '<h2 class="panel-title">بيانات المطالبة المالية</h2>' +
+      '<label class="field"><span>اسم النادي <small>(يظهر بعد كلمة «نادي»)</small></span><input type="text" data-bind="clubName" placeholder="مثال: البتراء"></label>' +
+      '<label class="field"><span>عنوان المطالبة</span><input type="text" data-doc-bind="claim.title"></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="claim.showDateRow"> <span>إظهار شريط الرقم والتاريخ أسفل الترويسة</span></label>' +
+      '<div data-show-if="claim.showDateRow">' + dateFields('claim', 'رقم المطالبة') + '</div>' +
+      '<label class="field"><span>الموضوع <small>(اسم الملف عند التنزيل، ولا يُطبع)</small></span><input type="text" data-doc-bind="claim.subject" placeholder="مثال: مطالبة مالية عن شهر آذار"></label>' +
+      rteHtml('claim') +
+      '<label class="check"><input type="checkbox" data-doc-bind="claim.showClosing"> <span>إظهار عبارة الختام</span></label>' +
+      '<label class="field" data-show-if="claim.showClosing"><span>عبارة الختام</span><input type="text" data-doc-bind="claim.closing"></label>' +
+      '<fieldset class="group"><legend>صاحب الاستحقاق</legend>' +
+      '<div class="row2"><label class="field"><span>عنوان الحقل</span><input type="text" data-doc-bind="claim.lblOwner"></label><label class="field"><span>الاسم</span><input type="text" data-doc-bind="claim.owner" placeholder="اسم صاحب الاستحقاق"></label></div>' +
+      '<label class="field"><span>عنوان حقل التوقيع</span><input type="text" data-doc-bind="claim.lblSign"></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="claim.showClaimDate"> <span>إظهار حقل التاريخ</span></label>' +
+      '<div data-show-if="claim.showClaimDate"><label class="field"><span>عنوان الحقل</span><input type="text" data-doc-bind="claim.lblDate"></label>' +
+      '<div class="row2"><label class="field"><span>التاريخ</span><input type="date" data-doc-bind="claim.claimDate"></label><label class="field"><span>أو يدويًا</span><input type="text" data-doc-bind="claim.claimDateText"></label></div></div></fieldset>' +
+      '<fieldset class="group"><legend>اعتماد إضافي</legend>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="claim.showHead"> <span>إظهار رئيس الهيئة الإدارية</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="claim.showManager"> <span>إظهار مدير النادي</span></label></fieldset>');
+  }
+  function setupAssign() {
+    $('#btnInsDate').addEventListener('mousedown', e => e.preventDefault());
+    $('#btnInsDate').addEventListener('click', () => {
+      const area = $('[data-doc-rte="assign.body"]');
+      const sel = getSelection();
+      if (!(sel.rangeCount && area.contains(sel.anchorNode))) { area.focus(); const r = document.createRange(); r.selectNodeContents(area); r.collapse(false); sel.removeAllRanges(); sel.addRange(r); }
+      document.execCommand('insertText', false, App.ASSIGN_TOKEN);
+      S.assign.body = App.sanitize(area.innerHTML); changed();
+    });
+    $('#btnAssignToday').addEventListener('click', () => {
+      S.assign.assignDate = App.todayISO(); S.assign.assignDateText = ''; refreshControls(); changed();
+    });
+  }
+
+  /* ---------- مواضع الختم والتوقيع والأسماء ---------- */
+  const POS_ELS = [
+    ['head', 'sign', 'توقيع رئيس الهيئة'], ['head', 'stamp', 'ختم رئيس الهيئة'], ['head', 'name', 'اسم رئيس الهيئة'],
+    ['manager', 'sign', 'توقيع المدير'], ['manager', 'stamp', 'ختم المدير'], ['manager', 'name', 'اسم المدير']
+  ];
+  let geoSnap = null;
+  function snapPeople() {
+    const P = S.people;
+    return JSON.stringify({ a: [P.signSize, P.stampSize, P.stampPos, P.mode, P.gapName, P.gapImg, P.protect], h: P.head.pos, m: P.manager.pos });
+  }
+  function restorePeople(js) {
+    const o = JSON.parse(js), P = S.people;
+    [P.signSize, P.stampSize, P.stampPos, P.mode, P.gapName, P.gapImg, P.protect] = o.a;
+    P.head.pos = o.h; P.manager.pos = o.m;
+  }
+  /** فحص مواضع الأختام/التواقيع/الأسماء بعد تغيير؛ يتراجع عنه إن سبّب تداخلًا أو خروجًا عن الصفحة */
+  function issuesCount() {
+    const both = { showHead: true, showManager: true };
+    const cur = S[S.activeDoc] || both;
+    const types = ['assign'];
+    let n = App.signIssues(S, both, 'letter').length;
+    if (cur !== both) n += App.signIssues(S, cur, S.activeDoc).length;
+    if (S.activeDoc === 'assign') n += App.signIssues(S, Object.assign({}, S.assign), 'assign').length;
+    return { n, msgs: App.signIssues(S, both, 'letter').concat(cur !== both ? App.signIssues(S, cur, S.activeDoc) : []) };
+  }
+  function acceptGeo(skipCheck) {
+    if (skipCheck) { geoSnap = snapPeople(); return true; }
+    const after = issuesCount();
+    const prev = geoSnap; const keep = snapPeople();
+    if (prev) {
+      restorePeople(prev); const before = issuesCount(); restorePeople(keep);
+      if (S.people.protect && after.n > before.n) {
+        restorePeople(prev); toast(after.msgs[0] || 'لا يمكن تنفيذ هذه الحركة'); return false;
+      }
+    }
+    geoSnap = keep; return true;
+  }
+  function setupPositions() {
+    const list = $('#posList');
+    list.innerHTML = POS_ELS.map(([who, el, label]) =>
+      '<div class="pos-row" data-pos="' + who + '.' + el + '"><b>' + label + '</b>' +
+      '<div class="pos-pad">' +
+      '<button type="button" data-mv="0,-1" title="أعلى" aria-label="رفع ' + label + '">▲</button>' +
+      '<button type="button" data-mv="-1,0" title="يسار" aria-label="تحريك ' + label + ' لليسار">◀</button>' +
+      '<button type="button" data-mv="1,0" title="يمين" aria-label="تحريك ' + label + ' لليمين">▶</button>' +
+      '<button type="button" data-mv="0,1" title="أسفل" aria-label="إنزال ' + label + '">▼</button></div>' +
+      '<label>س <input type="number" step="0.5" min="-80" max="80" data-px="x" aria-label="الإزاحة الأفقية ' + label + '"></label>' +
+      '<label>ص <input type="number" step="0.5" min="-80" max="80" data-px="y" aria-label="الإزاحة الرأسية ' + label + '"></label>' +
+      '<button type="button" class="btn sm ghost" data-rst title="إعادة ضبط">↺</button></div>').join('');
+    const q = row => { const [who, el] = row.dataset.pos.split('.'); return S.people[who].pos[el]; };
+    const move = (row, dx, dy) => {
+      const o = q(row), old = [o.x, o.y];
+      o.x = Math.round((o.x + dx) * 10) / 10; o.y = Math.round((o.y + dy) * 10) / 10;
+      if (!acceptGeo()) { o.x = old[0]; o.y = old[1]; }
+      syncPos(); changed();
+    };
+    const step = () => +$('#posStep').value || 1;
+    let timer = null, rep = null;
+    const stop = () => { clearTimeout(timer); clearInterval(rep); };
+    list.addEventListener('pointerdown', e => {
+      const b = e.target.closest('[data-mv]'); if (!b) return;
+      e.preventDefault();
+      const [dx, dy] = b.dataset.mv.split(',').map(Number), row = b.closest('.pos-row');
+      move(row, dx * step(), dy * step());
+      timer = setTimeout(() => { rep = setInterval(() => move(row, dx * step(), dy * step()), 90); }, 400);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => list.addEventListener(ev, stop));
+    list.addEventListener('keydown', e => { // تفعيل الأزرار بلوحة المفاتيح
+      const b = e.target.closest('[data-mv]');
+      if (b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); const [dx, dy] = b.dataset.mv.split(',').map(Number); move(b.closest('.pos-row'), dx * step(), dy * step()); }
+    });
+    list.addEventListener('change', e => {
+      const inp = e.target.closest('[data-px]'); if (!inp) return;
+      const row = inp.closest('.pos-row'), o = q(row), old = [o.x, o.y];
+      const v = Math.max(-80, Math.min(80, +inp.value || 0));
+      o[inp.dataset.px] = v;
+      if (!acceptGeo()) { o.x = old[0]; o.y = old[1]; }
+      syncPos(); changed();
+    });
+    list.addEventListener('click', e => {
+      const b = e.target.closest('[data-rst]'); if (!b) return;
+      const o = q(b.closest('.pos-row')); o.x = 0; o.y = 0; geoSnap = snapPeople(); syncPos(); changed();
+    });
+    $('#posReset').addEventListener('click', () => {
+      ['head', 'manager'].forEach(k => { S.people[k].pos = { sign: { x: 0, y: 0 }, stamp: { x: 0, y: 0 }, name: { x: 0, y: 0 } }; });
+      geoSnap = snapPeople(); syncPos(); changed(); toast('أُعيد ضبط جميع المواضع');
+    });
+    geoSnap = snapPeople();
+  }
+  function syncPos() {
+    $$('#posList .pos-row').forEach(row => {
+      const [who, el] = row.dataset.pos.split('.'), o = S.people[who].pos[el];
+      const p = S.people[who];
+      $('[data-px=x]', row).value = o.x; $('[data-px=y]', row).value = o.y;
+      const has = el === 'name' || (el === 'sign' ? p.signImg : p.stampImg);
+      row.classList.toggle('dim', !has);
+    });
+  }
+
+  /* نسبة أبعاد التوقيع والختم (لحساب المواضع بدقة) */
+  function probeAR(url) {
+    return new Promise(res => { const im = new Image(); im.onload = () => res((im.naturalWidth || 1) / (im.naturalHeight || 1)); im.onerror = () => res(0); im.src = url; });
+  }
+  async function fillAR() {
+    let ch = false;
+    for (const k of ['head', 'manager']) {
+      const p = S.people[k];
+      if (p.signImg && !p.signAR) { p.signAR = Math.round((await probeAR(p.signImg)) * 1000) / 1000; ch = ch || !!p.signAR; }
+      if (p.stampImg && !p.stampAR) { p.stampAR = Math.round((await probeAR(p.stampImg)) * 1000) / 1000; ch = ch || !!p.stampAR; }
+    }
+    if (ch) changed();
+  }
+
   /* ---------- التبويبات ---------- */
   function setDoc(type) {
     S.activeDoc = type;
@@ -388,29 +599,15 @@
     $$('.panel').forEach(p => { p.hidden = p.id !== 'sec-' + sec; p.classList.toggle('active', !p.hidden); });
   }
   /* ---------- التصدير ---------- */
-  function download(blob, name) {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = name;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  }
-  App.download = download;
-  async function busy(btn, fn) {
-    const old = btn.disabled; btn.disabled = true;
-    try { await fn(); } catch (e) { console.error(e); toast('حدث خطأ أثناء التصدير: ' + (e.message || e)); }
-    finally { btn.disabled = old; }
-  }
+  const download = (blob, name) => App.saveFile(blob, name);
 
   function setupActions() {
-    $('#btnWord').addEventListener('click', e => busy(e.currentTarget, async () => {
-      const blob = await App.buildDocx(S, S.activeDoc);
-      download(blob, App.fileName(S, S.activeDoc) + '.docx'); toast('تم تنزيل ملف Word');
-    }));
-    $('#btnPdf').addEventListener('click', e => busy(e.currentTarget, async () => {
-      toast('جارٍ تجهيز ملف PDF…');
-      const blob = await App.buildPdf(S, S.activeDoc);
-      download(blob, App.fileName(S, S.activeDoc) + '.pdf'); toast('تم تنزيل ملف PDF');
-    }));
+    const exportAs = fmt => App.run(fmt === 'pdf' ? 'جارٍ تجهيز ملف PDF…' : 'جارٍ تجهيز ملف Word…', async () => {
+      const f = await App.getFile(S, S.activeDoc, fmt);
+      if (await App.saveFile(f.blob, f.name)) toast('تم تنزيل الملف: ' + f.name);
+    });
+    $('#btnWord').addEventListener('click', () => exportAs('docx'));
+    $('#btnPdf').addEventListener('click', () => exportAs('pdf'));
     $('#btnPrint').addEventListener('click', () => App.printDoc(S, S.activeDoc));
 
     $('#btnClearDoc').addEventListener('click', () => {
@@ -466,8 +663,8 @@
 
   /* ---------- البدء ---------- */
   function init() {
-    buildInternalForm(); buildThanksForm();
-    bindAll(); setupRte(); setupLogos(); setupPeople(); setupFonts(); setupActions(); setupZoom(); setupTheme(); applyTheme();
+    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); setupAssign();
+    bindAll(); setupRte(); setupLogos(); setupPeople(); setupFonts(); setupPositions(); syncPos(); fillAR(); setupActions(); setupZoom(); setupTheme(); applyTheme();
     App.attach.init(() => S.activeDoc, changed); App.initSend(() => S); App.drive.init(() => S);
     $$('.doc-tab').forEach(b => b.addEventListener('click', () => setDoc(b.dataset.doc)));
     $$('.side-tab').forEach(b => b.addEventListener('click', () => setSection(b.dataset.sec)));

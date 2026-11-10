@@ -96,7 +96,9 @@
         if (sh > 0) cx.drawImage(mainC, 0, Math.round(y * k), mainC.width, Math.round(sh * k), 0, Math.round(offTop * k), mainC.width, Math.round(sh * k));
         if (footC) cx.drawImage(footC, 0, Math.round((PAGE_H - footH) * k));
         if (!(page === 0 && takeFirst())) pdf.addPage([PAGE_W, PAGE_H], 'p');
-        pdf.addImage(pc.toDataURL('image/png'), 'PNG', 0, 0, PAGE_W, PAGE_H, undefined, 'FAST');
+        pdf.addImage(pc.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, PAGE_W, PAGE_H, undefined, 'FAST');
+        if (App.setBusyMsg) App.setBusyMsg('جارٍ تجهيز PDF… صفحة ' + (pdf.getNumberOfPages()));
+        await new Promise(r => setTimeout(r, 0));
         y += sh; page++;
         if (page > 30) break;
       }

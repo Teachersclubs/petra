@@ -28,7 +28,7 @@
     o = o || {};
     return new docx.Paragraph({
       children: runs, bidirectional: true, alignment: align(o.align || 'right'),
-      spacing: { before: o.before || 0, after: o.after == null ? 0 : o.after, line: o.line, lineRule: o.line ? docx.LineRuleType.AUTO : undefined },
+      spacing: { before: o.before || 0, after: o.after == null ? 0 : o.after, line: o.line, lineRule: o.line ? (o.exact ? docx.LineRuleType.EXACT : docx.LineRuleType.AUTO) : undefined },
       indent: o.indent, border: o.border, keepNext: o.keepNext, keepLines: o.keepLines,
       tabStops: o.tabStops
     });
@@ -189,7 +189,7 @@
           width: { size: widths[i], type: docx.WidthType.DXA },
           verticalAlign: opt.valign || docx.VerticalAlign.CENTER,
           borders: opt.rule ? { top: LINE, bottom: LINE, left: NONE, right: NONE } : NOBORDERS,
-          margins: opt.rule ? { top: mm(2), bottom: mm(2), left: 60, right: 60 } : undefined,
+          margins: opt.rule ? { top: mm(2), bottom: mm(2), left: 60, right: 60 } : (opt.nomargin ? { top: 0, bottom: 0, left: 0, right: 0 } : undefined),
           children: c
         }))
       })]
@@ -213,26 +213,62 @@
 
   function spacer(twips) { return mkPara([], { after: twips }); }
 
-  async function signCell(S, key) {
-    const f = S.font, size = S.bodySize, p = S.people[key];
-    const imgs = [];
-    const sg = p.showSign && p.signImg ? await fitImage(p.signImg, 60, S.people.signSize) : null;
-    const st = p.showStamp && p.stampImg ? await fitImage(p.stampImg, 60, S.people.stampSize) : null;
-    const pair = S.people.stampPos === 'left' ? [sg, st] : [st, sg];
-    pair.forEach(x => { if (x) { if (imgs.length) imgs.push(mkRun('  ', { font: f, size })); imgs.push(x); } });
-    return [
-      mkPara([mkRun(App.TITLES[key], { font: f, size, b: true })], { align: 'center', keepNext: true }),
-      ...(imgs.length ? [mkPara(imgs, { align: 'center', before: mm(1), keepNext: true })] : []),
-      mkPara([mkRun(p.name || ' ', { font: f, size })], { align: 'center', before: imgs.length ? mm(1) : mm(11) })
-    ];
+  const EMU_MM = 36000;
+  async function floatImg(url, rect) {
+    const w = Math.max(1, Math.round(rect.w * PX_PER_MM)), h = Math.max(1, Math.round(rect.h * PX_PER_MM));
+    return new docx.ImageRun({
+      type: /^data:image\/jpe?g/.test(url) ? 'jpg' : 'png', data: dataUrlToBytes(url),
+      transformation: { width: w, height: h },
+      floating: {
+        horizontalPosition: { relative: docx.HorizontalPositionRelativeFrom.COLUMN, offset: Math.round(rect.x * EMU_MM) },
+        verticalPosition: { relative: docx.VerticalPositionRelativeFrom.PARAGRAPH, offset: Math.round(rect.y * EMU_MM) },
+        behindDocument: false, allowOverlap: true, lockAnchor: true,
+        wrap: { type: docx.TextWrappingType.NONE }
+      }
+    });
+  }
+  function gapPara(h) { return docx.Paragraph ? new docx.Paragraph({ children: [], spacing: { before: 0, after: 0, line: Math.max(20, mm(h)), lineRule: docx.LineRuleType.EXACT } }) : null; }
+
+  /** صندوق موقّع واحد بنفس الهندسة المستخدمة في المعاينة */
+  async function signCell(S, key, who, fin) {
+    const SG = App.SG, f = S.font, size = S.bodySize, p = S.people[key];
+    const g = App.signGeomSafe(S, key, who, fin), R = g.rects;
+    const runs = [mkRun(App.TITLES[key], { font: f, size, b: true })];
+    if (R.sign) runs.push(await floatImg(p.signImg, R.sign));
+    if (R.stamp) runs.push(await floatImg(p.stampImg, R.stamp));
+    const out = [mkPara(runs, { align: 'center', line: mm(SG.TITLE_H), exact: true, keepNext: true })];
+    const gap = R.name.y - SG.TITLE_H;
+    if (gap > 0.3) out.push(gapPara(gap));
+    const dx = R.name.x + R.name.w / 2 - SG.W / 2; // إزاحة مركز الاسم عن مركز الصندوق
+    const ind = Math.abs(dx) > 0.05 ? (dx > 0 ? { end: Math.round(mm(2 * dx)) } : { start: Math.round(mm(-2 * dx)) }) : undefined;
+    out.push(mkPara([mkRun(p.name || ' ', { font: f, size })], { align: 'center', line: mm(SG.NAME_H), exact: true, indent: ind }));
+    const tail = g.H - R.name.y - SG.NAME_H;
+    if (tail > 0.3) out.push(gapPara(tail));
+    return out;
+  }
+  function finCell(S, d) {
+    const f = S.font, size = S.bodySize;
+    const out = [gapPara(2), mkPara([mkRun('اللجنة المالية:', { font: f, size, b: true })], { align: 'center', line: 300 })];
+    const lines = (d.financeText || '').split('\n').map(x => x.trim()).filter(Boolean);
+    (lines.length ? lines : [' ']).forEach(l => out.push(mkPara([mkRun(l, { font: f, size })], { align: 'center', line: 300 })));
+    return out;
   }
 
   async function signatureBlock(S, type) {
-    const w = mm(66), d = S[type];
-    const who = [d.showHead ? 'head' : '', d.showManager ? 'manager' : ''].filter(Boolean);
-    if (!who.length) return mkPara([], {});
-    if (who.length === 1) return mkTable([CONTENT_W - w, w], [[mkPara([], {})], await signCell(S, who[0])], { valign: docx.VerticalAlign.TOP });
-    return mkTable([w, CONTENT_W - 2 * w, w], [await signCell(S, 'head'), [mkPara([], {})], await signCell(S, 'manager')], { valign: docx.VerticalAlign.TOP });
+    const w = mm(App.SG.W), d = S[type], who = App.signers(d), fin = type === 'assign' && !!d.showFinance;
+    if (!who.length && !fin) return mkPara([], {});
+    const O = { valign: docx.VerticalAlign.TOP, nomargin: true };
+    const cellFor = async k => {
+      const c = [];
+      if (who.includes(k)) c.push(...await signCell(S, k, who, fin));
+      if (k === 'head' && fin) c.push(...finCell(S, d));
+      return c.length ? c : [mkPara([], {})];
+    };
+    const empty = [mkPara([], {})];
+    if (fin && !who.includes('head')) return mkTable([w, CONTENT_W - 2 * w, w], [await cellFor('head'), empty, who.includes('manager') ? await cellFor('manager') : empty], O);
+    if (who.length === 2) return mkTable([w, CONTENT_W - 2 * w, w], [await cellFor('head'), empty, await cellFor('manager')], O);
+    if (fin) return mkTable([w, CONTENT_W - w], [await cellFor('head'), empty], O);
+    return mkTable([CONTENT_W - w, w], [empty, await cellFor(who[0])], O);
   }
 
   async function buildMain(S, type, variant) {
@@ -241,6 +277,42 @@
     const d = S[type];
     const sp = v => mm(v);
 
+    const labDate = (d) => {
+      const lab = (t, v, a) => [mkPara([mkRun(t + ' ', { font: f, size: 11, b: true }), mkRun(v || '', { font: f, size: 11 })], { align: a })];
+      const greg = App.formatGregorian(d.date);
+      const w = [Math.round(CONTENT_W * 0.25), Math.round(CONTENT_W * 0.32)]; w.push(CONTENT_W - w[0] - w[1]);
+      return mkTable(w, [
+        lab('الرقم:', d.number, 'right'),
+        d.showHijri ? lab('التاريخ:', d.hijri, 'center') : [mkPara([], {})],
+        d.showHijri ? lab('الموافق:', greg, 'left') : lab('التاريخ:', greg, 'left')
+      ], { rule: true });
+    };
+    if (type === 'assign' || type === 'claim') {
+      out.push(spacer(sp(type === 'assign' || d.showDateRow ? 3 : 6)));
+      if (type === 'assign' || d.showDateRow) { out.push(labDate(d)); out.push(spacer(sp(3))); }
+      out.push(mkPara([mkRun(type === 'assign' ? 'قرار تكليف' : d.title, { font: f, size: 17, b: true })], { align: 'center', before: sp(5), after: sp(4) }));
+      let html = d.body;
+      if (type === 'assign') {
+        out.push(mkPara([mkRun(d.who + ': ', { font: f, size, b: true }), mkRun(d.assignee || '................', { font: f, size, b: true })], { align: 'right', after: sp(4) }));
+        const val = App.assignDateStr(d) || '................';
+        html = (html || '').split(App.ASSIGN_TOKEN).join('<b>' + App.esc(val) + '</b>');
+      }
+      out.push(...bodyParagraphs(html, S, 'justify'));
+      if (type === 'assign') {
+        if (d.showClosing) out.push(mkPara([mkRun(C.CLOSING, { font: f, size })], { align: 'center', before: sp(5), after: sp(6), keepNext: true }));
+        else out.push(spacer(sp(8)));
+      } else {
+        if (d.showClosing) out.push(mkPara([mkRun(d.closing, { font: f, size })], { align: 'center', before: sp(4), after: sp(8), keepNext: true }));
+        const dv = (d.claimDateText || '').trim() || App.shortDate(d.claimDate);
+        const ln = (lbl, val) => mkPara([mkRun(lbl + ' ', { font: f, size, b: true }), mkRun(val || '............................', { font: f, size })], { align: 'center', line: 400, keepNext: true });
+        out.push(ln(d.lblOwner, d.owner)); out.push(ln(d.lblSign, ''));
+        if (d.showClaimDate) out.push(ln(d.lblDate, dv));
+        out.push(spacer(sp(6)));
+      }
+      out.push(await signatureBlock(S, type));
+      out.push(mkPara([], {}));
+      return out;
+    }
     if (App.isLetter(type)) {
       const lab = (t, v, a) => [mkPara([mkRun(t + ' ', { font: f, size: 11, b: true }), mkRun(v || '', { font: f, size: 11 })], { align: a })];
       const greg = App.formatGregorian(d.date);
@@ -251,13 +323,14 @@
         d.showHijri ? lab('التاريخ:', d.hijri, 'center') : [mkPara([], {})],
         d.showHijri ? lab('الموافق:', greg, 'left') : lab('التاريخ:', greg, 'left')
       ], { rule: true }));
-      out.push(spacer(sp(3)));
+      const ty = type === 'thanks' ? (+d.toY || 0) : 0, tx = type === 'thanks' ? (+d.toX || 0) : 0;
+      out.push(spacer(Math.max(0, sp(3) + (ty < 0 ? mm(ty) : 0))));
       const to = [];
       if (type === 'internal' && d.toDir) {
         to.push(mkPara([mkRun(C.DIRECTOR + ' الأكرم', { font: f, size })], { align: 'center', line: 300 }));
         if (d.dirName.trim()) to.push(mkPara([mkRun(d.dirName.trim(), { font: f, size, b: true })], { align: 'center', line: 300 }));
       }
-      if (type === 'thanks') App.toLines(S, variant).forEach(x => to.push(mkPara([mkRun(x, { font: f, size })], { align: 'center', line: 300 })));
+      if (type === 'thanks') App.toLines(S, variant).forEach((x, i) => to.push(mkPara([mkRun(x, { font: f, size })], { align: 'center', line: 300, before: i === 0 && ty > 0 ? mm(ty) : 0, indent: tx ? (tx > 0 ? { end: mm(2 * tx) } : { start: mm(-2 * tx) }) : undefined })));
       [d.to0, d.to1, d.to2].forEach((on, i) => { if (on && type !== 'thanks') to.push(mkPara([mkRun(C.RECIPIENTS[i], { font: f, size })], { align: 'center', line: 300 })); });
       if (type === 'internal' && d.toCustom.trim()) d.toCustom.split('\n').filter(x => x.trim()).forEach(x => to.push(mkPara([mkRun(x.trim(), { font: f, size })], { align: 'center', line: 300 })));
       out.push(...to);
@@ -392,16 +465,26 @@
     return docx.Packer.toBlob(doc);
   }
 
-  const DOC_TITLES = { letter: 'كتاب للوزارة', internal: 'كتاب داخلي', thanks: 'كتاب شكر', circular: 'تعميم هيئة عامة' };
-  const LATIN = { letter: 'ministry-letter', internal: 'internal-letter', thanks: 'thanks-letter', circular: 'general-circular' };
-  /** اسم الملف = موضوع الكتاب (بعد إزالة المحارف غير المسموحة في أسماء الملفات) */
-  function fileName(S, type) {
-    let n = (S[type].subject || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/[. ]+$/, '');
+  const DOC_TITLES = { letter: 'كتاب للوزارة', internal: 'كتاب داخلي', thanks: 'كتاب شكر', circular: 'تعميم هيئة عامة', assign: 'قرار تكليف', claim: 'مطالبة مالية' };
+  const LATIN = { letter: 'ministry-letter', internal: 'internal-letter', thanks: 'thanks-letter', circular: 'general-circular', assign: 'assignment-decision', claim: 'financial-claim' };
+  /** اسم الملف = موضوع الكتاب: عربي ومسافات مسموحان، وتُزال المحارف الممنوعة والتحكّمية فقط */
+  function cleanName(t) {
+    let n = String(t || '').normalize('NFC')
+      .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '')
+      .replace(/[\\/:*?"<>|\u0000-\u001f\u007f]+/g, ' ')
+      .replace(/\s+/g, ' ').trim().replace(/[. ]+$/, '');
     if (n.length > 80) n = n.slice(0, 80).trim();
+    if (/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(n)) n = '_' + n;
+    return n;
+  }
+  function fileName(S, type) {
+    const d = S[type];
+    const n = cleanName(d.subject);
     if (n) return n;
-    const num = (S[type].number || '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    return LATIN[type] + (num ? '-' + num : '');
+    const extra = type === 'assign' ? d.assignee : type === 'claim' ? d.owner : '';
+    const fb = cleanName(DOC_TITLES[type] + (extra ? ' - ' + extra : '') + (d.number ? ' ' + d.number : ''));
+    return fb || LATIN[type];
   }
 
-  g.App = Object.assign(App, { buildDocx, fileName, DOC_TITLES });
+  g.App = Object.assign(App, { buildDocx, fileName, cleanName, DOC_TITLES });
 })(window);

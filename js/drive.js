@@ -7,18 +7,17 @@
   async function go(S, btn) {
     // تُفتح النافذة فورًا من نقرة المستخدم حتى لا يحجبها المتصفح
     const win = window.open('about:blank', '_blank');
-    btn.disabled = true;
+    let ok = false;
     try {
-      g.toast('جارٍ تجهيز الملف…');
-      const type = S.activeDoc, fmt = S.send.format === 'docx' ? 'docx' : 'pdf';
-      const blob = fmt === 'docx' ? await App.buildDocx(S, type) : await App.buildPdf(S, type);
-      App.download(blob, App.fileName(S, type) + '.' + fmt);
-      g.toast('نُزّل الملف — في صفحة Drive اختر «جديد ← رفع ملف» أو اسحب الملف إليها');
-      if (win) win.location.href = DRIVE_URL; else window.open(DRIVE_URL, '_blank');
-    } catch (e) {
-      console.error(e); if (win) win.close();
-      g.toast('تعذّر تجهيز الملف: ' + (e.message || e));
-    } finally { btn.disabled = false; }
+      ok = await App.run('جارٍ تجهيز الملف لرفعه إلى Drive…', async () => {
+        const f = await App.getFile(S, S.activeDoc, S.send.format === 'docx' ? 'docx' : 'pdf');
+        if (!(await App.saveFile(f.blob, f.name))) throw new Error('أُلغي التنزيل');
+        g.toast('نُزّل الملف — في صفحة Drive اختر «جديد ← رفع ملف» أو اسحب الملف إليها');
+      });
+    } finally {
+      if (ok) { if (win) win.location.href = DRIVE_URL; else window.open(DRIVE_URL, '_blank'); }
+      else if (win) win.close();
+    }
   }
 
   function init(getS) { document.getElementById('btnDrive').addEventListener('click', e => go(getS(), e.currentTarget)); }

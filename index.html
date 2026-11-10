@@ -45,6 +45,8 @@
     <button role="tab" class="doc-tab" data-doc="internal" aria-selected="false">كتاب داخلي</button>
     <button role="tab" class="doc-tab" data-doc="thanks" aria-selected="false">كتاب شكر</button>
     <button role="tab" class="doc-tab" data-doc="circular" aria-selected="false">تعميم هيئة عامة</button>
+    <button role="tab" class="doc-tab" data-doc="assign" aria-selected="false">قرار تكليف</button>
+    <button role="tab" class="doc-tab" data-doc="claim" aria-selected="false">مطالبة مالية</button>
   </nav>
 </header>
 
@@ -222,6 +224,26 @@
         <label class="check"><input type="checkbox" data-bind="people.removeBg"> <span>جعل الخلفية البيضاء شفافة عند رفع التوقيع أو الختم</span></label>
       </fieldset>
 
+      <fieldset class="group" id="posBox">
+        <legend>ضبط مواضع الختم والتوقيع والأسماء</legend>
+        <label class="field"><span>وضع الختم والتوقيع بالنسبة للاسم</span>
+          <select data-bind="people.mode" data-geo>
+            <option value="above">فوق الاسم (بينهما مسافة)</option>
+            <option value="overlap">فوق الاسم ومتراكب معه</option>
+            <option value="below">أسفل الاسم</option>
+          </select></label>
+        <div class="row2">
+          <label class="field"><span>المسافة بين الختم والتوقيع (مم)</span><input type="number" min="0" max="20" step="0.5" data-bind="people.gapImg" data-geo></label>
+          <label class="field"><span>المسافة بين الصور والاسم (مم)</span><input type="number" min="0" max="20" step="0.5" data-bind="people.gapName" data-geo></label>
+        </div>
+        <label class="check"><input type="checkbox" data-bind="people.protect" data-geo> <span>منع تداخل العناصر وخروجها عن حدود الصفحة</span></label>
+        <label class="field"><span>مقدار الحركة بكل ضغطة</span>
+          <select id="posStep"><option value="0.5">0.5 مم</option><option value="1" selected>1 مم</option><option value="2">2 مم</option><option value="5">5 مم</option></select></label>
+        <div id="posList" class="pos-list"></div>
+        <button type="button" class="btn sm ghost" id="posReset">إعادة ضبط جميع المواضع</button>
+        <p class="hint">لكل عنصر أزرار تحريك مستقلة (أعلى/أسفل/يمين/يسار)؛ لا يتأثر بقية العناصر. تُطبَّق المواضع نفسها على المعاينة وWord وPDF والطباعة وعلى جميع النماذج.</p>
+      </fieldset>
+
       <fieldset class="group" id="attBox">
         <legend>المرفقات <small id="attCount"></small></legend>
         <p class="hint">تُضاف المرفقات في صفحات مستقلة بعد المستند، وتدخل في Word وPDF والطباعة والإرسال، وتُحفظ في المتصفح.</p>
@@ -343,13 +365,22 @@
     <!-- ===== الإرسال ===== -->
     <section class="panel" id="sec-send" hidden>
       <h2 class="panel-title">إرسال المستند</h2>
-      <p class="hint">يُرسل المستند الحالي (مع مرفقاته) باسم موضوع الكتاب. المتصفحات لا تسمح بإرفاق ملف تلقائيًا في رسالة البريد أو واتساب، لذلك يُنزَّل الملف ثم تُفتح الرسالة جاهزة لتُرفقه بنفسك. على الهاتف تظهر قائمة المشاركة وفيها الملف مرفقًا.</p>
+      <p class="hint">يُرسل المستند الحالي (مع مرفقاته) باسم موضوع الكتاب. المتصفحات لا تسمح لأي موقع بإرفاق ملف داخل رسالة بريد أو واتساب تلقائيًا؛ لذلك يُجهَّز الملف ويُنزَّل ثم تُفتح الرسالة جاهزة ومعها خطوات الإرفاق. وعلى الهاتف أو عند تفعيل «قائمة المشاركة» يُرفق الملف تلقائيًا.</p>
       <label class="field"><span>البريد الإلكتروني المعتمد</span>
         <input type="email" class="ltr" dir="ltr" data-bind="send.email" placeholder="name@example.com"></label>
+      <label class="field"><span>موضوع الرسالة <small>(اتركه فارغًا لاستخدام موضوع الكتاب)</small></span>
+        <input type="text" data-bind="send.subject"></label>
+      <label class="field"><span>نص الرسالة <small>(اتركه فارغًا للنص التلقائي)</small></span>
+        <textarea rows="3" data-bind="send.message"></textarea></label>
       <label class="field"><span>رقم واتساب <small>(بمفتاح الدولة بدون +، مثال: 962791234567 — اختياري)</small></span>
         <input type="text" inputmode="tel" class="ltr" dir="ltr" data-bind="send.whatsapp" placeholder="962791234567"></label>
-      <label class="field"><span>صيغة الملف المرسل</span>
-        <select data-bind="send.format"><option value="pdf">PDF</option><option value="docx">Word</option></select></label>
+      <div class="row2">
+        <label class="field"><span>صيغة الملف المرسل</span>
+          <select data-bind="send.format"><option value="pdf">PDF</option><option value="docx">Word</option></select></label>
+        <label class="field"><span>برنامج البريد (الكمبيوتر)</span>
+          <select data-bind="send.mailApp"><option value="gmail">Gmail (ويب)</option><option value="outlook">Outlook (ويب)</option><option value="default">برنامج البريد الافتراضي</option></select></label>
+      </div>
+      <label class="check"><input type="checkbox" data-bind="send.useShare"> <span>استخدام قائمة المشاركة في النظام عند توفرها (يرفق الملف تلقائيًا)</span></label>
       <div class="send-btns">
         <button type="button" class="btn primary" id="btnMail">إرسال بالبريد الإلكتروني</button>
         <button type="button" class="btn wa" id="btnWa">إرسال إلى واتساب</button>
@@ -416,6 +447,8 @@
   </form>
 </dialog>
 
+<dialog class="dlg" id="sendDlg"><form method="dialog"><h3 id="sdTitle"></h3><div id="sdBody"></div><div class="dlg-btns" id="sdBtns"></div></form></dialog>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
 <!-- نسخة الطباعة -->
@@ -430,6 +463,7 @@
 <script src="js/render.js"></script>
 <script src="js/export-word.js"></script>
 <script src="js/export-pdf.js"></script>
+<script src="js/files.js"></script>
 <script src="js/attach.js"></script>
 <script src="js/send.js"></script>
 <script src="js/drive.js"></script>
