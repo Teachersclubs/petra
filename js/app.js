@@ -97,6 +97,7 @@
       img.hidden = !L.data; em.hidden = !!L.data;
       if (L.data) img.src = L.data;
     });
+    dgSync();
   }
 
   function onInput(el, path) {
@@ -104,7 +105,7 @@
     App.setPath(S, path, v);
     if (path === 'assign.assignDate') S.assign.assignDateText = '';
     if (path === 'claim.claimDate') S.claim.claimDateText = '';
-    const m = /^(letter|internal|thanks|circular|assign|claim)\.(date|hijri|showHijri)$/.exec(path);
+    const m = /^(letter|internal|thanks|circular|assign|claim|delegation)\.(date|hijri|showHijri)$/.exec(path);
     if (m) {
       const d = S[m[1]];
       if (m[2] === 'date') { if (!d.hijriManual) d.hijri = App.formatHijri(v); }
@@ -501,7 +502,7 @@
   }
 
   /* ---------- قرار التكليف والمطالبة المالية ---------- */
-  const rteHtml = t => '<div class="field"><span>نص ' + (t === 'assign' ? 'القرار' : 'المطالبة') + '</span><div class="rte" data-rte="' + t + '"><div class="rte-bar"></div><div class="rte-area" contenteditable="true" dir="rtl" data-doc-rte="' + t + '.body" spellcheck="true"></div></div></div>';
+  const rteHtml = t => '<div class="field"><span>نص ' + (t === 'assign' ? 'القرار' : t === 'delegation' ? 'الكتاب' : 'المطالبة') + '</span><div class="rte" data-rte="' + t + '"><div class="rte-bar"></div><div class="rte-area" contenteditable="true" dir="rtl" data-doc-rte="' + t + '.body" spellcheck="true"></div></div></div>';
   const dateFields = (t, label) =>
     '<div class="row2"><label class="field"><span>' + label + '</span><input type="text" data-doc-bind="' + t + '.number" placeholder="مثال: 1/2026"></label>' +
     '<label class="field"><span>التاريخ (الموافق)</span><input type="date" data-doc-bind="' + t + '.date"></label></div>' +
@@ -555,6 +556,118 @@
       '<label class="check"><input type="checkbox" data-doc-bind="claim.showHead"> <span>إظهار رئيس الهيئة الإدارية</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="claim.showManager"> <span>إظهار مدير النادي</span></label></fieldset>');
   }
+
+  /* ---------- الوفد المشارك ---------- */
+  const DG_FIELDS = {
+    admins: [['name', 'الاسم', 'wide'], ['ministryNo', 'الرقم الوزاري'], ['nationalNo', 'الرقم الوطني'], ['role', 'الصفة', 'wide', 'role']],
+    players: [['name', 'الاسم', 'wide'], ['ministryNo', 'الرقم الوزاري'], ['memberNo', 'رقم العضوية'], ['nationalNo', 'الرقم الوطني'], ['joinDate', 'تاريخ الانتساب', '', 'date'], ['role', 'الصفة', '', 'role']]
+  };
+  const DG_TITLE = { admins: 'المرافقون الإداريون', players: 'اللاعبون المشاركون' };
+  let dgSig = '';
+  const dgSigOf = () => JSON.stringify([S.delegation.admins, S.delegation.players]);
+  function dgEditorHTML(kind) {
+    const rows = S.delegation[kind].map((r, i) => {
+      const f = DG_FIELDS[kind].map(([k, lbl, cls, type]) => {
+        const id = ' data-dg="' + kind + '.' + i + '.' + k + '"';
+        const inp = type === 'role'
+          ? '<select' + id + '><option value="">— الصفة —</option>' + App.DG_ROLES.map(x => '<option' + (r[k] === x ? ' selected' : '') + '>' + x + '</option>').join('') + '</select>'
+          : '<input type="' + (type === 'date' ? 'date' : 'text') + '"' + id + ' value="' + App.esc(r[k]) + '" placeholder="' + lbl + '" title="' + lbl + '"' + (type === 'date' ? '' : '') + '>';
+        return '<label class="' + (cls || '') + '"><small>' + lbl + '</small>' + inp + '</label>';
+      }).join('');
+      return '<div class="dg-row"><div class="dg-rh"><b>' + (i + 1) + '</b>' + (kind === 'players' ? '<span class="dg-dur" data-dg-dur="' + i + '"></span>' : '<span class="dg-dur"></span>') +
+        '<button type="button" class="btn sm ghost" data-dg-act="del" data-k="' + kind + '" data-i="' + i + '" title="حذف الصف" aria-label="حذف الصف">✕ حذف</button></div><div class="dg-fields">' + f + '</div></div>';
+    }).join('');
+    return rows || '<p class="hint">لا توجد صفوف. استخدم «+ صف» لإضافة مشارك.</p>';
+  }
+  function dgRender() {
+    ['admins', 'players'].forEach(k => { const el = $('#dg-' + k); if (el) el.innerHTML = dgEditorHTML(k); });
+    dgSig = dgSigOf();
+  }
+  function dgSync() {
+    if (!$('#dg-players')) return;
+    if (dgSigOf() !== dgSig) dgRender();
+    const d = S.delegation;
+    S.delegation.players.forEach((r, i) => { const el = $('[data-dg-dur="' + i + '"]'); if (el) { const t = App.durationText(r.joinDate, d.date, d.showDays); el.textContent = t ? 'مدة الانتساب: ' + t : (r.joinDate ? 'تاريخ الانتساب بعد تاريخ الكتاب' : ''); } });
+    $$('[data-dg-kind]').forEach(b => { const on = b.dataset.dgKind === d.kind; b.classList.toggle('primary', on); b.setAttribute('aria-pressed', on); });
+    const lbl = $('#dgKindLbl'); if (lbl) lbl.textContent = App.DG_KINDS[d.kind][1];
+    const at = $('#dgAuto'); if (at) at.textContent = App.dgIntro(S);
+  }
+  function buildDelegationForm() {
+    const ed = k => '<fieldset class="group"><legend>' + DG_TITLE[k] + '</legend><div class="dg-tools">' +
+      '<button type="button" class="btn sm primary" data-dg-act="add" data-k="' + k + '">+ صف</button>' +
+      '<button type="button" class="btn sm" data-dg-act="add5" data-k="' + k + '">+ 5 صفوف</button>' +
+      '<button type="button" class="btn sm ghost" data-dg-act="clear" data-k="' + k + '">حذف كل الصفوف</button></div>' +
+      '<details class="dg-paste"><summary>إضافة أسماء دفعة واحدة</summary><textarea rows="4" id="dgPaste-' + k + '" placeholder="اكتب أو الصق الأسماء، اسم في كل سطر"></textarea>' +
+      '<button type="button" class="btn sm" data-dg-act="paste" data-k="' + k + '">إضافة الأسماء كصفوف</button></details>' +
+      '<div class="dg-ed" id="dg-' + k + '"></div></fieldset>';
+    addForm('delegation',
+      '<h2 class="panel-title">بيانات الوفد المشارك</h2>' +
+      '<label class="field"><span>اسم النادي <small>(يظهر بعد كلمة «نادي» وفي نص الكتاب تلقائيًا)</small></span><input type="text" data-bind="clubName" placeholder="مثال: البتراء"></label>' +
+      dateFields('delegation', 'رقم الكتاب') +
+      '<fieldset class="group"><legend>الجهات الموجه إليها <small>(اختياري)</small></legend>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.to0"> <span>معالي وزير التربية والتعليم وتنمية الموارد البشرية الأكرم</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.to1"> <span>عطوفة مدير إدارة النشاطات التربوية الأكرم</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.to2"> <span>عطوفة مدير أندية المعلمين والعاملين الأكرم</span></label>' +
+      '<label class="field"><span>جهة أخرى <small>(كل سطر جهة)</small></span><textarea rows="2" data-doc-bind="delegation.toCustom"></textarea></label></fieldset>' +
+      '<label class="field"><span>الموضوع</span><input type="text" data-doc-bind="delegation.subject" placeholder="مثال: كشف أسماء الوفد المشارك (يُستخدم أيضًا اسمًا للملف)"></label>' +
+      '<fieldset class="group"><legend>موضوع المشاركة</legend><div class="dg-seg">' +
+      '<button type="button" class="btn sm" data-dg-kind="tournament">المشارك في بطولة</button>' +
+      '<button type="button" class="btn sm" data-dg-kind="qualifiers">المشارك في تصفيات</button>' +
+      '<button type="button" class="btn sm" data-dg-kind="game">المشارك في لعبة</button></div>' +
+      '<label class="field"><span id="dgKindLbl">اسم التصفيات</span><input type="text" data-doc-bind="delegation.kindName"></label>' +
+      '<label class="field"><span>مكان الإقامة</span><input type="text" data-doc-bind="delegation.venue" placeholder="مثال: مدينة العقبة"></label></fieldset>' +
+      '<fieldset class="group"><legend>النص</legend>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.showIntro"> <span>إظهار الفقرة تحت «الموضوع»</span></label>' +
+      '<p class="hint">الفقرة التلقائية: <b id="dgAuto"></b></p>' +
+      '<label class="field"><span>نص مستقل <small>(إن كتبت فيه يظهر مكان الفقرة التلقائية)</small></span><textarea rows="3" data-doc-bind="delegation.introText" placeholder="اتركه فارغًا لاستخدام الفقرة التلقائية"></textarea></label>' +
+      rteHtml('delegation') +
+      '<div class="inline-btns"><button type="button" class="btn sm ghost" id="dgToBody">نقل الفقرة التلقائية إلى نص الكتاب للتعديل عليها</button></div></fieldset>' +
+      '<fieldset class="group"><legend>عناوين الجداول</legend>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.showAdmins"> <span>إظهار جدول المرافقين</span></label>' +
+      '<label class="field"><span>عنوان الجدول الأول</span><input type="text" data-doc-bind="delegation.titleAdmin"></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.showPlayers"> <span>إظهار جدول اللاعبين</span></label>' +
+      '<label class="field"><span>عنوان الجدول الثاني</span><input type="text" data-doc-bind="delegation.titlePlayers"></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.showDays"> <span>إظهار الأيام في مدة الانتساب</span></label></fieldset>' +
+      ed('admins') + ed('players') +
+      '<fieldset class="group"><legend>الختام والتوقيع</legend>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.showClosing"> <span>إظهار عبارة «واقبلوا فائق الاحترام والتقدير»</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.showHead"> <span>إظهار رئيس الهيئة الإدارية</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.showManager"> <span>إظهار مدير النادي</span></label></fieldset>');
+    const form = $('.doc-form[data-form="delegation"]');
+    const upd = e => {
+      const el = e.target.closest && e.target.closest('[data-dg]'); if (!el) return;
+      const [k, i, f] = el.dataset.dg.split('.');
+      const row = S.delegation[k][+i]; if (!row) return;
+      row[f] = el.value; dgSig = dgSigOf(); dgSync(); changed();
+    };
+    form.addEventListener('input', upd); form.addEventListener('change', upd);
+    form.addEventListener('click', e => {
+      const kb = e.target.closest('[data-dg-kind]');
+      if (kb) { S.delegation.kind = kb.dataset.dgKind; dgSync(); changed(); return; }
+      if (e.target.closest('#dgToBody')) {
+        const area = $('[data-doc-rte="delegation.body"]');
+        area.insertAdjacentHTML('beforeend', '<p>' + App.esc(App.dgIntro(S)) + '</p>');
+        S.delegation.body = App.sanitize(area.innerHTML); S.delegation.showIntro = false; S.delegation.introText = '';
+        refreshControls(); changed(); return;
+      }
+      const b = e.target.closest('[data-dg-act]'); if (!b) return;
+      const k = b.dataset.k, mk = k === 'admins' ? () => App.dgAdmin('إداري') : () => App.dgPlayer('لاعب'), rows = S.delegation[k];
+      const act = b.dataset.dgAct;
+      if (act === 'add') rows.push(mk());
+      else if (act === 'add5') for (let n = 0; n < 5; n++) rows.push(mk());
+      else if (act === 'del') rows.splice(+b.dataset.i, 1);
+      else if (act === 'clear') { if (rows.length && !confirm('حذف كل صفوف هذا الجدول؟')) return; rows.length = 0; }
+      else if (act === 'paste') {
+        const ta = $('#dgPaste-' + k), names = ta.value.split('\n').map(x => x.trim()).filter(Boolean);
+        if (!names.length) { toast('اكتب اسمًا واحدًا على الأقل'); return; }
+        names.forEach(n => { const r = mk(); r.name = n; rows.push(r); }); ta.value = '';
+      }
+      dgRender(); dgSync(); changed();
+      if (act === 'add' || act === 'add5') { const el = $('[data-dg="' + k + '.' + (rows.length - (act === 'add' ? 1 : 5)) + '.name"]'); el && el.focus(); }
+    });
+    dgRender();
+  }
+
   function setupAssign() {
     $('#btnInsDate').addEventListener('mousedown', e => e.preventDefault());
     $('#btnInsDate').addEventListener('click', () => {
@@ -830,7 +943,7 @@
 
   /* ---------- البدء ---------- */
   function init() {
-    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); setupAssign();
+    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); buildDelegationForm(); setupAssign();
     bindAll(); setupRte(); setupLogos(); setupPeople(); setupFonts(); setupPositions(); setupDrag(); syncPos(); fillAR(); setupActions(); setupZoom(); setupTheme(); applyTheme();
     App.attach.init(() => S.activeDoc, changed); App.initSend(() => S); App.drive.init(() => S);
     $$('.doc-tab').forEach(b => b.addEventListener('click', () => setDoc(b.dataset.doc)));

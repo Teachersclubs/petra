@@ -45,6 +45,68 @@
     return finishPdf(pdf, S, type, first);
   }
 
+  /** الوفد المشارك: لا يُقطع صف بين صفحتين، ويُكرَّر رأس الجدول في أول كل صفحة جديدة */
+  function paginateTables(mainEl, footH) {
+    const topGap = 38, bottomGap = 6;
+    let y = 0, page = 0;
+    for (let guard = 0; guard < 400; guard++) {
+      const avail = PAGE_H - footH - bottomGap - (page === 0 ? 0 : topGap);
+      if (y + avail >= mainEl.offsetHeight - 1) break;
+      let cut = y + avail;
+      const base = mainEl.getBoundingClientRect().top;
+      const rel = el => { const q = el.getBoundingClientRect(); return [q.top - base, q.bottom - base]; };
+      let done = false;
+      for (const table of mainEl.querySelectorAll('table.dg')) {
+        const [tt] = rel(table);
+        const head = Array.from(table.tHead ? table.tHead.rows : []), body = Array.from(table.tBodies[0].rows).filter(r => !r.classList.contains('dg-sp'));
+        const pushTable = () => {
+          if (tt <= y + 1) return false;
+          const sp = document.createElement('div'); sp.className = 'dg-sp-d'; sp.style.height = (cut - tt) + 'px';
+          table.before(sp); return true;
+        };
+        // رأس الجدول نفسه يعبر الحد، أو يبقى الرأس وحده أسفل الصفحة
+        const hb = head.length ? rel(head[head.length - 1])[1] : 0;
+        if (head.length && rel(head[0])[0] + 1 < cut && (hb > cut + 1 || (body.length && rel(body[0])[0] >= cut - 1 && hb <= cut + 1)) && pushTable()) { done = true; break; }
+        for (const tr of body) {
+          const [a, b] = rel(tr);
+          if (a + 1 < cut && cut < b - 1 && a > y) {
+            const prevIsHead = tr === body[0];
+            if (prevIsHead && pushTable()) { done = true; break; }
+            const sp = document.createElement('tr'); sp.className = 'dg-sp';
+            const td = document.createElement('td'); td.colSpan = head[head.length - 1].cells.length; td.style.height = (cut - a) + 'px'; sp.appendChild(td);
+            tr.before(sp);
+            head.forEach(h => { const c = h.cloneNode(true); c.classList.add('dg-rep'); tr.before(c); });
+            done = true; break;
+          }
+        }
+        if (!done && head.length) {
+          // الحد يقع بين صفّين تمامًا: يُكرَّر الرأس أعلى أول صف في الصفحة التالية
+          for (let i = 1; i < body.length; i++) {
+            const a = rel(body[i])[0], pb = rel(body[i - 1])[1];
+            if (a >= cut - 1 && pb <= cut + 1 && pb > y && cut - pb < 30) {
+              head.forEach(h => { const c = h.cloneNode(true); c.classList.add('dg-rep'); body[i].before(c); });
+              done = true; break;
+            }
+          }
+        }
+        if (done) break;
+      }
+      if (!done) {
+        // سطور نصية أو صور خارج الجداول تعبر الحد: نتراجع إلى بدايتها
+        const tops = [];
+        const w = document.createTreeWalker(mainEl, NodeFilter.SHOW_TEXT);
+        for (let n = w.nextNode(); n; n = w.nextNode()) {
+          if (!n.nodeValue.trim()) continue;
+          const rg = document.createRange(); rg.selectNodeContents(n);
+          Array.from(rg.getClientRects()).forEach(q => { if (q.height > 0 && q.top - base + 1 < cut && cut < q.bottom - base - 1) tops.push(q.top - base); });
+        }
+        mainEl.querySelectorAll('img').forEach(im => { const [a, b] = rel(im); if (a + 1 < cut && cut < b - 1) tops.push(a); });
+        if (tops.length) { const c = Math.min.apply(null, tops); if (c - y > 60) cut = c; }
+      }
+      y = cut; page++;
+    }
+  }
+
   async function addVariant(pdf, S, type, vi, takeFirst) {
     const { r } = sheetWrapper(S, type, false, vi);
     const stage = document.createElement('div');
@@ -57,7 +119,9 @@
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
       const opts = { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false };
       const mainEl = stage.querySelector('#pdfMain'), footEl = stage.querySelector('#pdfFoot');
-      const mainH = mainEl.offsetHeight, footH = r.foot ? footEl.offsetHeight : 0;
+      const footH = r.foot ? footEl.offsetHeight : 0;
+      if (type === 'delegation') paginateTables(mainEl, footH);
+      const mainH = mainEl.offsetHeight;
       const mainC = await html2canvas(mainEl, Object.assign({ width: PAGE_W, height: mainH, windowWidth: PAGE_W }, opts));
       const footC = footH ? await html2canvas(footEl, Object.assign({ width: PAGE_W, height: footH, windowWidth: PAGE_W }, opts)) : null;
 
