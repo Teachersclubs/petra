@@ -284,6 +284,36 @@
     return mkTable([CONTENT_W - w, w], [empty, await cellFor(who[0])], O);
   }
 
+  /** جدول الوفد: صف عنوان رمادي + صف رؤوس (يتكرّران في كل صفحة) + صفوف لا تنقسم */
+  function delegationTable(S, kind, title) {
+    const cols = App.DG_COLS[kind], rows = S.delegation[kind], f = S.font;
+    const w = App.dgWidths(S, kind).map(v => Math.round(v * 56.693));
+    const total = w.reduce((a, b) => a + b, 0), sz = Math.max(8, Math.round(S.bodySize * 0.85 * 2) / 2);
+    const B = { style: docx.BorderStyle.SINGLE, size: 6, color: '000000' }, BB = { top: B, bottom: B, left: B, right: B };
+    const cell = (txt, i, o) => new docx.TableCell({
+      width: { size: w[i], type: docx.WidthType.DXA }, borders: BB, verticalAlign: docx.VerticalAlign.CENTER,
+      margins: { top: 40, bottom: 40, left: 70, right: 70 },
+      shading: o.fill ? { type: docx.ShadingType.CLEAR, fill: o.fill, color: 'auto' } : undefined,
+      children: [mkPara([mkRun(txt || '', { font: f, size: o.size || sz, b: o.b })], { align: o.align || 'center' })]
+    });
+    const trs = [
+      new docx.TableRow({ cantSplit: true, tableHeader: true, children: [new docx.TableCell({
+        columnSpan: cols.length, width: { size: total, type: docx.WidthType.DXA }, borders: BB, verticalAlign: docx.VerticalAlign.CENTER,
+        shading: { type: docx.ShadingType.CLEAR, fill: 'D9D9D9', color: 'auto' }, margins: { top: 50, bottom: 50, left: 70, right: 70 },
+        children: [mkPara([mkRun(title || ' ', { font: f, size: Math.round(S.bodySize * 1.05 * 2) / 2, b: true })], { align: 'center', keepNext: true })]
+      })] }),
+      new docx.TableRow({ cantSplit: true, tableHeader: true, children: cols.map((c, i) => cell(c[1], i, { b: true, size: Math.max(8, sz - 1) })) })
+    ];
+    rows.forEach((r, ri) => trs.push(new docx.TableRow({
+      cantSplit: true, height: { value: 454, rule: docx.HeightRule.ATLEAST },
+      children: cols.map((c, i) => cell(App.dgCell(S, kind, r, ri, c[0]), i, { align: c[0] === 'name' ? 'right' : 'center' }))
+    })));
+    return new docx.Table({
+      width: { size: total, type: docx.WidthType.DXA }, columnWidths: w, layout: docx.TableLayoutType.FIXED, visuallyRightToLeft: true,
+      borders: { top: B, bottom: B, left: B, right: B, insideHorizontal: B, insideVertical: B }, rows: trs
+    });
+  }
+
   async function buildMain(S, type, variant) {
     const C = App.CONST, f = S.font, size = S.bodySize;
     const out = await headerBlock(S);
@@ -326,7 +356,7 @@
       out.push(mkPara([], {}));
       return out;
     }
-    if (App.isLetter(type)) {
+    if (App.isLetter(type) || type === 'delegation') {
       const lab = (t, v, a) => [mkPara([mkRun(t + ' ', { font: f, size: 11, b: true }), mkRun(v || '', { font: f, size: 11 })], { align: a })];
       const greg = App.formatGregorian(d.date);
       const w = [Math.round(CONTENT_W * 0.25), Math.round(CONTENT_W * 0.32)]; w.push(CONTENT_W - w[0] - w[1]);
@@ -345,7 +375,7 @@
       }
       if (type === 'thanks') App.toLines(S, variant).forEach((x, i) => to.push(mkPara([mkRun(x, { font: f, size })], { align: 'center', line: 300, before: i === 0 && ty > 0 ? mm(ty) : 0, indent: tx ? (tx > 0 ? { end: mm(2 * tx) } : { start: mm(-2 * tx) }) : undefined })));
       [d.to0, d.to1, d.to2].forEach((on, i) => { if (on && type !== 'thanks') to.push(mkPara([mkRun(C.RECIPIENTS[i], { font: f, size })], { align: 'center', line: 300 })); });
-      if (type === 'internal' && d.toCustom.trim()) d.toCustom.split('\n').filter(x => x.trim()).forEach(x => to.push(mkPara([mkRun(x.trim(), { font: f, size })], { align: 'center', line: 300 })));
+      if ((type === 'internal' || type === 'delegation') && d.toCustom.trim()) d.toCustom.split('\n').filter(x => x.trim()).forEach(x => to.push(mkPara([mkRun(x.trim(), { font: f, size })], { align: 'center', line: 300 })));
       out.push(...to);
       if (to.length) out.push(spacer(sp(3)));
       out.push(mkPara([
@@ -380,6 +410,20 @@
       ], { align: 'right', after: sp(3), keepNext: true }));
     }
 
+    if (type === 'delegation') {
+      if (d.showIntro) {
+        const t = d.introText.trim() ? d.introText.trim() : App.dgIntro(S);
+        out.push(mkPara(t.split('\n').map((x, i) => mkRun(x, { font: f, size, br: i > 0 })), { align: 'justify', after: sp(3), line: Math.round(S.lineHeight * 240) }));
+      }
+      if (d.body && d.body.replace(/<[^>]*>|&nbsp;|\s/g, '')) out.push(...bodyParagraphs(d.body, S, 'justify'));
+      out.push(spacer(sp(3)));
+      if (d.showAdmins) { out.push(delegationTable(S, 'admins', d.titleAdmin)); out.push(spacer(sp(6))); }
+      if (d.showPlayers) { out.push(delegationTable(S, 'players', d.titlePlayers)); out.push(spacer(sp(6))); }
+      if (d.showClosing) out.push(mkPara([mkRun(C.CLOSING, { font: f, size })], { align: 'center', before: sp(2), after: sp(6), keepNext: true }));
+      out.push(await signatureBlock(S, type));
+      out.push(mkPara([], {}));
+      return out;
+    }
     out.push(...bodyParagraphs(d.body, S, type === 'circular' ? d.bodyAlign : 'justify'));
     out.push(mkPara([mkRun(C.CLOSING, { font: f, size })], { align: 'center', before: sp(7), after: sp(8), keepNext: true }));
     out.push(await signatureBlock(S, type));
@@ -478,8 +522,8 @@
     return docx.Packer.toBlob(doc);
   }
 
-  const DOC_TITLES = { letter: 'كتاب للوزارة', internal: 'كتاب داخلي', thanks: 'كتاب شكر', circular: 'تعميم هيئة عامة', assign: 'قرار تكليف', claim: 'مطالبة مالية' };
-  const LATIN = { letter: 'ministry-letter', internal: 'internal-letter', thanks: 'thanks-letter', circular: 'general-circular', assign: 'assignment-decision', claim: 'financial-claim' };
+  const DOC_TITLES = { letter: 'كتاب للوزارة', internal: 'كتاب داخلي', thanks: 'كتاب شكر', circular: 'تعميم هيئة عامة', assign: 'قرار تكليف', claim: 'مطالبة مالية', delegation: 'الوفد المشارك' };
+  const LATIN = { letter: 'ministry-letter', internal: 'internal-letter', thanks: 'thanks-letter', circular: 'general-circular', assign: 'assignment-decision', claim: 'financial-claim', delegation: 'participating-delegation' };
   /** اسم الملف = موضوع الكتاب: عربي ومسافات مسموحان، وتُزال المحارف الممنوعة والتحكّمية فقط */
   function cleanName(t) {
     let n = String(t || '').normalize('NFC')

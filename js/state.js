@@ -75,6 +75,26 @@
     };
   }
 
+  /** الوفد المشارك: كشف أسماء الوفد (مرافقون إداريون + لاعبون) */
+  const DG_ROLES = ['لاعب', 'مدرب', 'عضو هيئة إدارية', 'مدير نادي', 'إداري', 'أمين صندوق', 'سائق', 'معالج'];
+  function dgAdmin(role) { return { name: '', ministryNo: '', nationalNo: '', role: role || '' }; }
+  function dgPlayer(role) { return { name: '', ministryNo: '', memberNo: '', nationalNo: '', joinDate: '', role: role || '' }; }
+  function delegationDefaults() {
+    return {
+      number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
+      to0: false, to1: false, to2: false, toCustom: '',
+      subject: '',
+      kind: 'qualifiers', kindName: 'كرة القدم للمربع الذهبي لدورة ميلاد القائد 23', venue: 'مدينة العقبة',
+      showIntro: true, introText: '', body: '',
+      showAdmins: true, titleAdmin: 'المرافقين الاداريين',
+      showPlayers: true, titlePlayers: 'أسماء اللاعبين المشاركين',
+      showDays: true,
+      admins: Array.from({ length: 5 }, () => dgAdmin()),
+      players: Array.from({ length: 8 }, () => dgPlayer()),
+      showClosing: false, showHead: true, showManager: true
+    };
+  }
+
   function defaults() {
     return {
       v: 2,
@@ -119,6 +139,7 @@
         owner: '', lblOwner: 'صاحب الاستحقاق:', lblSign: 'التوقيع:', lblDate: 'التاريخ:',
         showClaimDate: true, claimDate: '', claimDateText: '', showHead: false, showManager: false
       },
+      delegation: delegationDefaults(),
       circular: {
         number: '', subject: '', body: '',
         date: todayISO(), showDate: true, showHijri: true, hijri: '', hijriManual: false,
@@ -148,7 +169,7 @@
       const r = JSON.parse(JSON.stringify(raw));
       if (!r.fontV3) { r.font = 'Tajawal'; if (r.footer) r.footer.font = 'Tajawal'; r.fontV3 = 1; }
       if (r.people && !r.people.modeV2) { r.people.mode = 'below'; r.people.modeV2 = 1; }
-      ['letter', 'internal', 'thanks', 'circular', 'assign', 'claim'].forEach(k => {
+      ['letter', 'internal', 'thanks', 'circular', 'assign', 'claim', 'delegation'].forEach(k => {
         const d = r[k]; if (!d || d.showHead !== undefined) return;
         const who = d.signer || d.signWho || 'manager';
         d.showHead = who === 'head' || who === 'both'; d.showManager = who === 'manager' || who === 'both';
@@ -202,6 +223,11 @@
     if (!d.thanks.hijri && !d.thanks.hijriManual) d.thanks.hijri = formatHijri(d.thanks.date);
     if (!d.assign.hijri && !d.assign.hijriManual) d.assign.hijri = formatHijri(d.assign.date);
     if (!d.claim.hijri && !d.claim.hijriManual) d.claim.hijri = formatHijri(d.claim.date);
+    ['admins', 'players'].forEach(k => {
+      const mk = k === 'admins' ? dgAdmin : dgPlayer, a = d.delegation[k];
+      d.delegation[k] = (Array.isArray(a) ? a : []).filter(r => r && typeof r === 'object').map(r => { const o = mk(); Object.keys(o).forEach(f => { if (typeof r[f] === 'string') o[f] = r[f]; }); return o; });
+    });
+    if (!d.delegation.hijri && !d.delegation.hijriManual) d.delegation.hijri = formatHijri(d.delegation.date);
     if (!d.circular.hijri && !d.circular.hijriManual) d.circular.hijri = formatHijri(d.circular.date);
     return d;
   }
@@ -266,6 +292,6 @@
   g.App = Object.assign(g.App || {}, {
     KEY, FONTS, defaults, build, loadAsync, save, flush, wipe, getPath, setPath, migrate,
     isPersisted: () => App_persisted,
-    todayISO, formatGregorian, formatHijri, ASSIGN_TOKEN, ASSIGN_BODY, CLAIM_BODY
+    todayISO, formatGregorian, formatHijri, DG_ROLES, dgAdmin, dgPlayer, ASSIGN_TOKEN, ASSIGN_BODY, CLAIM_BODY
   });
 })(window);

@@ -62,7 +62,7 @@
   const PAGE_H = 1122;
   const TITLES = { head: 'رئيس الهيئة الإدارية', manager: 'مدير النادي' };
   const isLetter = t => t === 'letter' || t === 'internal' || t === 'thanks';
-  const DATE_DOC = t => isLetter(t) || t === 'assign' || t === 'claim';
+  const DATE_DOC = t => isLetter(t) || t === 'assign' || t === 'claim' || t === 'delegation';
 
   /* ---------- أيقونات الذيل ---------- */
   const ICONS = {
@@ -342,6 +342,7 @@
       signHTML(S, type);
   }
 
+
   function circularHTML(S, E) {
     const d = S.circular;
     const body = sanitize(d.body);
@@ -412,7 +413,99 @@
   function styleOf(S, type, E) {
     return 'font-family:' + fontCss(S.font) + ';--body-font:' + fontCss(E.bodyFont) + ';--body-size:' + E.bodySize + 'pt;--lh:' + E.lineHeight + ';--sp:' + E.sp;
   }
-  function mainHTML(S, type, E) { return type === 'circular' ? circularHTML(S, E) : type === 'assign' ? assignHTML(S, E) : type === 'claim' ? claimHTML(S, E) : letterHTML(S, type, E); }
+  /* ---------- الوفد المشارك ---------- */
+  const DG_KINDS = { tournament: ['بطولة', 'اسم البطولة'], qualifiers: ['تصفيات', 'اسم التصفيات'], game: ['لعبة', 'اسم اللعبة'] };
+  const DG_COLS = {
+    admins: [['no', 'م', 8, 8], ['name', 'الاسم', 40, 60], ['ministryNo', 'الرقم الوزاري', 17, 30], ['nationalNo', 'الرقم الوطني', 25, 30], ['role', 'الصفة', 18, 40]],
+    players: [['no', 'م', 8, 8], ['name', 'الاسم', 40, 60], ['ministryNo', 'الرقم الوزاري', 17, 30], ['memberNo', 'رقم العضوية', 17, 30], ['nationalNo', 'الرقم الوطني', 25, 30], ['joinDate', 'تاريخ الانتساب', 21, 30], ['duration', 'مدة الانتساب', 26, 44], ['role', 'الصفة', 18, 40]]
+  };
+  const ar = (n, one, two, few, many) => n === 1 ? one : n === 2 ? two : (n >= 3 && n <= 10) ? n + ' ' + few : n + ' ' + many;
+  /** مدة الانتساب من تاريخ الانتساب حتى تاريخ الكتاب: سنوات وأشهر وأيام */
+  function durationParts(fromISO, toISO) {
+    const a = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fromISO || ''), b = /^(\d{4})-(\d{2})-(\d{2})$/.exec(toISO || '');
+    if (!a || !b) return null;
+    const sy = +a[1], sm = +a[2], sd = +a[3], ey = +b[1], em = +b[2], ed = +b[3];
+    if (Date.UTC(ey, em - 1, ed) < Date.UTC(sy, sm - 1, sd)) return null;
+    let y = ey - sy, m = em - sm, d = ed - sd;
+    if (d < 0) { m--; d += new Date(ey, em - 1, 0).getDate(); }
+    if (m < 0) { y--; m += 12; }
+    return { y, m, d };
+  }
+  function durationText(fromISO, toISO, showDays) {
+    const p = durationParts(fromISO, toISO);
+    if (!p) return '';
+    const out = [];
+    if (p.y) out.push(ar(p.y, 'سنة', 'سنتان', 'سنوات', 'سنة'));
+    if (p.m) out.push(ar(p.m, 'شهر', 'شهران', 'أشهر', 'شهرًا'));
+    if (p.d && (showDays !== false || !out.length)) out.push(ar(p.d, 'يوم', 'يومان', 'أيام', 'يومًا'));
+    return out.length ? out.join(' و ') : 'أقل من يوم';
+  }
+  function dgClubPhrase(S) {
+    const n = (S.clubName || '').replace(/^\s*(ال)?نادي\s+/, '').trim();
+    if (!n) return 'للنادي';
+    return 'لنادي ' + (/^(معلمي|العاملين)/.test(n) ? '' : 'معلمي ') + n;
+  }
+  function dgIntro(S) {
+    const d = S.delegation, k = DG_KINDS[d.kind] || DG_KINDS.qualifiers;
+    return 'ارفق بطية كشف أسماء اللاعبين والوفد المشارك ' + dgClubPhrase(S) +
+      ' في ' + k[0] + (d.kindName.trim() ? ' ' + d.kindName.trim() : '') + (d.venue.trim() ? ' في ' + d.venue.trim() : '') + '.';
+  }
+  /** قيمة خلية: يعيد النص المعروض لعمود في صف */
+  function dgCell(S, kind, r, i, col) {
+    const d = S.delegation;
+    if (col === 'no') return String(i + 1);
+    if (col === 'joinDate') return shortDate(r.joinDate);
+    if (col === 'duration') return durationText(r.joinDate, d.date, d.showDays);
+    return r[col] || '';
+  }
+  /** عرض الأعمدة بالمليمتر (المجموع 176) حسب أطول محتوى في كل عمود */
+  function dgWidths(S, kind) {
+    const cols = DG_COLS[kind], rows = S.delegation[kind], TOT = 176;
+    const nat = cols.map(c => {
+      let hdr = Math.max.apply(null, c[1].split(' ').map(w => w.length));
+      let len = hdr;
+      rows.forEach((r, i) => { const t = dgCell(S, kind, r, i, c[0]); if (t.length > len) len = t.length; });
+      return Math.max(c[2] * 0.6, Math.min(c[3], len * 2.5 + 4));
+    });
+    nat[0] = 8;
+    let sum = nat.reduce((a, b) => a + b, 0);
+    const nameI = 1;
+    if (sum < TOT) nat[nameI] += TOT - sum;
+    else if (sum > TOT) { const k = (TOT - nat[0]) / (sum - nat[0]); for (let i = 1; i < nat.length; i++) nat[i] *= k; }
+    sum = nat.reduce((a, b) => a + b, 0);
+    const w = nat.map(v => Math.round(v * TOT / sum * 10) / 10);
+    w[nameI] = Math.round((w[nameI] + TOT - w.reduce((a, b) => a + b, 0)) * 10) / 10;
+    return w;
+  }
+  function dgTableHTML(S, kind, title) {
+    const cols = DG_COLS[kind], rows = S.delegation[kind], w = dgWidths(S, kind);
+    const th = cols.map(c => '<th>' + esc(c[1]) + '</th>').join('');
+    const body = rows.map((r, i) => '<tr>' + cols.map(c => {
+      const v = dgCell(S, kind, r, i, c[0]);
+      return '<td' + (c[0] === 'name' ? ' class="dg-name"' : '') + '>' + (v ? (/^(joinDate|ministryNo|memberNo|nationalNo)$/.test(c[0]) ? '<bdi>' + esc(v) + '</bdi>' : esc(v)) : '') + '</td>';
+    }).join('') + '</tr>').join('');
+    return '<table class="dg" dir="rtl"><colgroup>' + w.map(x => '<col style="width:' + x + 'mm">').join('') + '</colgroup>' +
+      '<thead><tr class="dg-t"><th colspan="' + cols.length + '">' + (title.trim() ? esc(title) : '&nbsp;') + '</th></tr><tr class="dg-h">' + th + '</tr></thead><tbody>' + body + '</tbody></table>';
+  }
+  function delegationHTML(S, E) {
+    const d = S.delegation;
+    const list = [];
+    [d.to0, d.to1, d.to2].forEach((on, i) => { if (on) list.push('<div>' + RECIPIENTS[i] + '</div>'); });
+    d.toCustom.split('\n').filter(x => x.trim()).forEach(x => list.push('<div>' + esc(x.trim()) + '</div>'));
+    const body = sanitize(d.body);
+    const intro = d.showIntro ? (d.introText.trim() ? esc(d.introText.trim()).replace(/\n/g, '<br>') : esc(dgIntro(S))) : '';
+    return headerHTML(S, E) + dateRowHTML(d) +
+      (list.length ? '<div class="recipients">' + list.join('') + '</div>' : '') +
+      '<div class="subject"><u>الموضوع:</u> ' + (d.subject ? '( ' + esc(d.subject) + ' )' : ph('(&nbsp;&nbsp;&nbsp;&nbsp;)')) + '</div>' +
+      (intro ? '<div class="body dg-intro">' + intro + '</div>' : '') +
+      (body ? '<div class="body dg-body">' + body + '</div>' : '') +
+      (d.showAdmins ? dgTableHTML(S, 'admins', d.titleAdmin) : '') +
+      (d.showPlayers ? dgTableHTML(S, 'players', d.titlePlayers) : '') +
+      (d.showClosing ? '<div class="closing">' + CLOSING + '</div>' : '<div style="height:' + 4 * E.sp + 'mm"></div>') +
+      signHTML(S, 'delegation');
+  }
+
+  function mainHTML(S, type, E) { return type === 'delegation' ? delegationHTML(S, E) : type === 'circular' ? circularHTML(S, E) : type === 'assign' ? assignHTML(S, E) : type === 'claim' ? claimHTML(S, E) : letterHTML(S, type, E); }
 
   /* ---------- القياس التلقائي: صفحة واحدة + ضبط الذيل في سطر ---------- */
   let cache = { key: '', val: null };
@@ -495,5 +588,5 @@
     return list.map(p => '<div class="att-page"><div class="att-cap">' + esc(p.cap) + '</div><img src="' + p.url + '" alt=""></div>');
   }
 
-  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
+  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, durationParts, durationText, dgIntro, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
 })(window);

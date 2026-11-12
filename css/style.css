@@ -387,12 +387,14 @@ dialog.dlg h3 { margin: 0 0 10px; }
 .doc-tab[data-doc="circular"] { --tc: #7c3aed; }
 .doc-tab[data-doc="assign"] { --tc: #15803d; }
 .doc-tab[data-doc="claim"] { --tc: #b45309; }
+.doc-tab[data-doc="delegation"] { --tc: #be185d; }
 :root[data-theme="dark"] .doc-tab[data-doc="letter"] { --tc: #6cb4f5; }
 :root[data-theme="dark"] .doc-tab[data-doc="internal"] { --tc: #4fd1c5; }
 :root[data-theme="dark"] .doc-tab[data-doc="thanks"] { --tc: #fb923c; }
 :root[data-theme="dark"] .doc-tab[data-doc="circular"] { --tc: #b794f6; }
 :root[data-theme="dark"] .doc-tab[data-doc="assign"] { --tc: #4ade80; }
 :root[data-theme="dark"] .doc-tab[data-doc="claim"] { --tc: #fbbf24; }
+:root[data-theme="dark"] .doc-tab[data-doc="delegation"] { --tc: #f472b6; }
 .doc-tab { background: color-mix(in srgb, var(--tc) 8%, transparent); border-bottom-color: color-mix(in srgb, var(--tc) 25%, transparent); }
 .doc-tab:not(.active):hover { background: color-mix(in srgb, var(--tc) 16%, var(--surface)); color: var(--tc); }
 .doc-tab.active { background: var(--tc); color: #fff; border-bottom-color: var(--tc); box-shadow: 0 -2px 10px color-mix(in srgb, var(--tc) 35%, transparent); }
@@ -444,3 +446,27 @@ dialog#apprDlg .btn.primary { padding: 9px 22px; }
 .rte-area img { max-width: 100%; height: auto; vertical-align: middle; cursor: pointer; }
 .rte-area img.rte-sel { outline: 2px solid var(--brand); outline-offset: 2px; }
 .body img[data-w] { max-width: 100%; height: auto; vertical-align: middle; }
+
+/* ===== الوفد المشارك: الجداول ===== */
+.dg-intro, .dg-body { min-height: 0; font-family: var(--body-font, inherit); }
+.dg { border-collapse: collapse; width: 176mm; max-width: 100%; table-layout: fixed; margin: 0 0 calc(7mm * var(--sp, 1)); font-size: calc(var(--body-size) * .85); color: #000; }
+.dg th, .dg td { border: 1px solid #000; padding: .8mm 1.4mm; text-align: center; vertical-align: middle; overflow-wrap: anywhere; line-height: 1.35; }
+.dg td { height: 8mm; }
+.dg .dg-t th { background: #d9d9d9; font-size: calc(var(--body-size) * 1.05); font-weight: 700; padding: 1mm 2mm; }
+.dg .dg-h th { font-weight: 700; font-size: calc(var(--body-size) * .8); }
+.dg td.dg-name { text-align: right; }
+.dg thead { display: table-header-group; }
+.dg tr { break-inside: avoid; page-break-inside: avoid; }
+.dg-sp td { border: 0 !important; padding: 0 !important; background: #fff; }
+
+/* محرر صفوف الوفد (لوحة التحرير) */
+.dg-ed { display: grid; gap: 8px; margin-top: 8px; }
+.dg-row { border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--surface); }
+.dg-rh { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.dg-rh b { min-width: 24px; height: 24px; border-radius: 50%; background: var(--brand); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
+.dg-rh .dg-dur { flex: 1; font-size: 12px; color: var(--muted, #667); }
+.dg-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.dg-fields .wide { grid-column: 1 / -1; }
+.dg-fields input, .dg-fields select { width: 100%; }
+.dg-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.dg-seg { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
