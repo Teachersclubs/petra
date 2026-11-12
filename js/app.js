@@ -782,7 +782,7 @@
       const d = App.defaults()[S.activeDoc];
       if (d.date && d.hijri !== undefined) d.hijri = App.formatHijri(d.date);
       S[S.activeDoc] = d;
-      $$('.rte-area').forEach(a => { a.innerHTML = App.getPath(S, a.dataset.docRte) || ''; });
+      $$$('.rte-area').forEach(a => { a.innerHTML = App.getPath(S, a.dataset.docRte) || ''; });
       refreshControls(); changed();
     });
 
@@ -833,7 +833,7 @@
           await App.replaceAll(nextState, nextAttachments);
           S = nextState;
           App.attach.setAll(nextAttachments);
-          $('.rte-area').forEach(area => { area.innerHTML = App.getPath(S, area.dataset.docRte) || ''; });
+          $$('.rte-area').forEach(area => { area.innerHTML = App.getPath(S, area.dataset.docRte) || ''; });
           setDoc(S.activeDoc);
           refreshControls();
           changed();
@@ -846,7 +846,7 @@
         const nextState = App.build(obj);
         await App.replaceAll(nextState, App.attach.store);
         S = nextState;
-        $('.rte-area').forEach(area => { area.innerHTML = App.getPath(S, area.dataset.docRte) || ''; });
+        $$('.rte-area').forEach(area => { area.innerHTML = App.getPath(S, area.dataset.docRte) || ''; });
         setDoc(S.activeDoc); refreshControls(); changed();
         toast('تمت استعادة الإعدادات القديمة مع الإبقاء على المرفقات');
       } catch (err) {
