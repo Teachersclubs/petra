@@ -252,6 +252,23 @@
       saveFailed = true;
     }
   }
+  /* استبدال الحالة والمرفقات معًا داخل معاملة واحدة؛ إما يُحفظ الاثنان أو لا يُحفظ أي منهما. */
+  async function replaceAll(state, attachments) {
+    if (!db) db = await openDb();
+    return new Promise((resolve, reject) => {
+      let tx;
+      try {
+        tx = db.transaction(STORE, 'readwrite');
+        const os = tx.objectStore(STORE);
+        os.put(JSON.parse(JSON.stringify(state)), 'state');
+        os.put(JSON.parse(JSON.stringify(attachments)), 'attachments');
+      } catch (e) { reject(e); return; }
+      tx.oncomplete = () => { saveFailed = false; g.App.lastSaved = Date.now(); resolve(); };
+      tx.onerror = () => reject(tx.error || new Error('فشل حفظ النسخة'));
+      tx.onabort = () => reject(tx.error || new Error('أُلغيت عملية الاستعادة'));
+    });
+  }
+
   async function wipe() {
     try { localStorage.removeItem(KEY); localStorage.removeItem('teachers-clubs-editor:v1'); } catch (e) { /* تجاهل */ }
     if (db) { db.close(); await new Promise(r => { const q = indexedDB.deleteDatabase(DB); q.onsuccess = q.onerror = q.onblocked = () => r(); }); }
@@ -264,7 +281,7 @@
   }
 
   g.App = Object.assign(g.App || {}, {
-    KEY, FONTS, defaults, build, loadAsync, save, flush, wipe, getPath, setPath, migrate,
+    KEY, FONTS, defaults, build, loadAsync, save, flush, replaceAll, wipe, getPath, setPath, migrate,
     isPersisted: () => App_persisted,
     todayISO, formatGregorian, formatHijri, ASSIGN_TOKEN, ASSIGN_BODY, CLAIM_BODY
   });
