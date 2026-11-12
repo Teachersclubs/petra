@@ -458,23 +458,31 @@
     if (col === 'duration') return durationText(r.joinDate, d.date, d.showDays);
     return r[col] || '';
   }
-  /** عرض الأعمدة بالمليمتر (المجموع 176) حسب أطول محتوى في كل عمود */
+  /** عرض الأعمدة بالمليمتر (المجموع 176): لا تُقسَّم كلمة ولا رقم؛ ويأخذ الاسم المتبقي */
   function dgWidths(S, kind) {
-    const cols = DG_COLS[kind], rows = S.delegation[kind], TOT = 176;
-    const nat = cols.map(c => {
-      let hdr = Math.max.apply(null, c[1].split(' ').map(w => w.length));
-      let len = hdr;
-      rows.forEach((r, i) => { const t = dgCell(S, kind, r, i, c[0]); if (t.length > len) len = t.length; });
-      return Math.max(c[2] * 0.6, Math.min(c[3], len * 2.5 + 4));
+    const cols = DG_COLS[kind], rows = S.delegation[kind], TOT = 176, HC = 2.15, CC = 2.25, PAD = 4.5;
+    const need = cols.map(c => {
+      let w = Math.max.apply(null, c[1].split(' ').map(x => x.length)) * HC + PAD;
+      rows.forEach((r, i) => {
+        const t = dgCell(S, kind, r, i, c[0]); if (!t) return;
+        if (c[0] === 'name') w = Math.max(w, Math.min(t.length, 30) * CC + PAD);
+        else if (c[0] === 'duration') w = Math.max(w, Math.min(Math.ceil(t.length / 3), 12) * CC + PAD);
+        else if (c[0] === 'role') w = Math.max(w, Math.max.apply(null, t.split(' ').map(x => x.length)) * CC + PAD);
+        else w = Math.max(w, t.length * CC + PAD);
+      });
+      return w;
     });
-    nat[0] = 8;
-    let sum = nat.reduce((a, b) => a + b, 0);
-    const nameI = 1;
-    if (sum < TOT) nat[nameI] += TOT - sum;
-    else if (sum > TOT) { const k = (TOT - nat[0]) / (sum - nat[0]); for (let i = 1; i < nat.length; i++) nat[i] *= k; }
-    sum = nat.reduce((a, b) => a + b, 0);
-    const w = nat.map(v => Math.round(v * TOT / sum * 10) / 10);
-    w[nameI] = Math.round((w[nameI] + TOT - w.reduce((a, b) => a + b, 0)) * 10) / 10;
+    need[0] = 8;
+    const ni = 1, fixed = need.reduce((a, b) => a + b, 0) - need[ni];
+    const minName = 30;
+    let w;
+    if (fixed + minName <= TOT) { w = need.slice(); w[ni] = Math.max(need[ni], TOT - fixed); }
+    else { const k = (TOT - minName - 8) / (fixed - 8); w = need.map((v, i) => i === 0 ? 8 : i === ni ? minName : v * k); }
+    const extra = TOT - w.reduce((a, b) => a + b, 0);
+    // أي فائض يذهب للاسم
+    w[ni] += extra;
+    w = w.map(v => Math.round(v * 10) / 10);
+    w[ni] = Math.round((w[ni] + TOT - w.reduce((a, b) => a + b, 0)) * 10) / 10;
     return w;
   }
   function dgTableHTML(S, kind, title) {
