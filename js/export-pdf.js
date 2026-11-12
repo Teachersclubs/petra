@@ -110,14 +110,24 @@
   async function addVariant(pdf, S, type, vi, takeFirst) {
     const { r } = sheetWrapper(S, type, false, vi);
     const stage = document.createElement('div');
-    stage.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + PAGE_W + 'px;direction:rtl;background:#fff;color:#000';
+    stage.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + PAGE_W + 'px;direction:rtl;background:#fff;color:#000;-webkit-text-size-adjust:none;text-size-adjust:none';
     stage.setAttribute('style', stage.getAttribute('style') + ';' + r.style);
     stage.innerHTML = '<div class="sheet-main" id="pdfMain" style="padding-bottom:0">' + r.main + '</div><div class="sheet-foot" id="pdfFoot">' + r.foot + '</div>';
     document.body.appendChild(stage);
     stage.querySelectorAll('.ph').forEach(e => { e.style.visibility = 'hidden'; });
     try {
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
-      const opts = { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false };
+      // الهواتف تضخّم الخطوط تلقائيًا (تكبير النص في النظام)، فتتباعد الكلمات في PDF؛ نعطّل ذلك داخل نسخة الالتقاط
+      const noBoost = d => { [d.documentElement, d.body].forEach(el => { if (el) { el.style.webkitTextSizeAdjust = 'none'; el.style.textSizeAdjust = 'none'; } }); };
+      const opts = { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, onclone: async d => {
+        noBoost(d);
+        // نسخة الالتقاط وثيقة جديدة: ننتظر تحميل الخطوط فيها قبل القياس حتى لا يُقاس النص بخط بديل أعرض
+        try {
+          const names = [S.font, S.footer && S.footer.font, S[type] && S[type].bodyFont].filter(Boolean);
+          await Promise.all(names.flatMap(n => ['400', '700'].map(w => d.fonts.load(w + " 16px '" + n + "'", 'ابجد 123'))));
+          await d.fonts.ready;
+        } catch (e) { /* نكمل بما توفّر */ }
+      } };
       const mainEl = stage.querySelector('#pdfMain'), footEl = stage.querySelector('#pdfFoot');
       const footH = r.foot ? footEl.offsetHeight : 0;
       if (type === 'delegation') paginateTables(mainEl, footH);
