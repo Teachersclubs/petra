@@ -40,7 +40,7 @@
   --on-brand: #ffffff;
   --danger: #b3321f;
   --radius: 10px;
-  --font-ui: 'Cairo', 'Segoe UI', Tahoma, 'Noto Sans Arabic', Arial, sans-serif;
+  --font-ui: 'Tajawal', 'Segoe UI', Tahoma, 'Noto Sans Arabic', Arial, sans-serif;
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
