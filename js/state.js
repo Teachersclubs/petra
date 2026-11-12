@@ -246,10 +246,10 @@
       } else {
         localStorage.setItem(KEY, JSON.stringify(state));
       }
-      saveFailed = false; g.App.lastSaved = Date.now();
+      saveFailed = false; g.App.lastSaved = Date.now(); return true;
     } catch (e) {
       if (!saveFailed && g.toast) g.toast('تعذّر الحفظ التلقائي (التخزين ممتلئ أو معطّل في المتصفح)');
-      saveFailed = true;
+      saveFailed = true; return false;
     }
   }
   /* استبدال الحالة والمرفقات معًا داخل معاملة واحدة؛ إما يُحفظ الاثنان أو لا يُحفظ أي منهما. */
