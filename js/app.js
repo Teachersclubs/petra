@@ -793,7 +793,7 @@
     });
     $('#btnExportSettings').addEventListener('click', async () => {
       try {
-        await App.flush(S);
+        if (await App.flush(S) === false) throw new Error('storage');
         const backup = {
           format: 'teachers-clubs-editor-full-backup',
           version: 1,
