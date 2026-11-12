@@ -189,6 +189,10 @@
       if (!d.logos.ministry.data && g.DEFAULT_MINISTRY_LOGO) { d.logos.ministry.data = g.DEFAULT_MINISTRY_LOGO; d.logos.ministry.show = true; }
       d.ministrySeeded = true;
     }
+    // الشعاران ثابتان: لا يُستبدلان ولا يُزالان ولا يُخفيان؛ يتحكم المستخدم بحجمهما فقط
+    if (g.DEFAULT_CLUB_LOGO) { d.logos.club.data = g.DEFAULT_CLUB_LOGO; }
+    if (g.DEFAULT_MINISTRY_LOGO) { d.logos.ministry.data = g.DEFAULT_MINISTRY_LOGO; }
+    d.logos.club.show = true; d.logos.ministry.show = true;
     const known = f => FONTS.some(x => x[0] === f);
     if (!known(d.font)) d.font = 'Tajawal';
     if (!known(d.footer.font)) d.footer.font = 'Tajawal';

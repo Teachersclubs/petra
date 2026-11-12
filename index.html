@@ -253,7 +253,10 @@
         <div class="att-btns">
           <label class="btn">صور من الجهاز<input type="file" id="attImg" accept="image/*" multiple hidden></label>
           <label class="btn">ملف PDF<input type="file" id="attPdf" accept="application/pdf" multiple hidden></label>
-          <label class="btn">صورة من الماسح الضوئي<input type="file" id="attScan" accept="image/*" capture="environment" hidden></label>
+          <button type="button" class="btn" id="btnScan">الماسح الضوئي</button>
+          <button type="button" class="btn" id="btnCam">تصوير بالكاميرا</button>
+          <input type="file" id="attScan" accept="image/*,application/pdf" multiple hidden>
+          <input type="file" id="attCam" accept="image/*" capture="environment" hidden>
         </div>
         <ul class="att-list" id="attList"></ul>
       </fieldset>
@@ -266,30 +269,16 @@
     <!-- ===== الشعارات ===== -->
     <section class="panel" id="sec-logos" hidden>
       <h2 class="panel-title">إعدادات الشعارات</h2>
-      <p class="hint">تُرفع الشعارات من جهازك وتُحفظ في متصفحك فقط. الشعار الأول يظهر في يمين الترويسة والثاني في يسارها.</p>
+      <p class="hint">شعار الوزارة (يمين الترويسة) وشعار الأندية (يسارها) ثابتان لا يمكن تغييرهما أو إزالتهما. يمكنك التحكم بحجمهما فقط.</p>
 
       <div class="logo-card" data-logo="ministry">
-        <div class="logo-head"><h3>شعار الوزارة</h3>
-          <label class="switch"><input type="checkbox" data-bind="logos.ministry.show"><i></i><span>إظهار في الترويسة</span></label></div>
-        <div class="logo-body">
-          <div class="logo-thumb"><img alt="" hidden><em>لم يُرفع شعار</em></div>
-          <div class="logo-btns">
-            <label class="btn">رفع شعار<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden></label>
-            <button class="btn ghost danger" data-remove hidden>إزالة</button>
-          </div>
-        </div>
+        <div class="logo-head"><h3>شعار الوزارة</h3></div>
+        <div class="logo-body"><div class="logo-thumb"><img alt="" hidden><em></em></div></div>
       </div>
 
       <div class="logo-card" data-logo="club">
-        <div class="logo-head"><h3>شعار الأندية</h3>
-          <label class="switch"><input type="checkbox" data-bind="logos.club.show"><i></i><span>إظهار في الترويسة</span></label></div>
-        <div class="logo-body">
-          <div class="logo-thumb"><img alt="" hidden><em>لم يُرفع شعار</em></div>
-          <div class="logo-btns">
-            <label class="btn">رفع شعار<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden></label>
-            <button class="btn ghost danger" data-remove hidden>إزالة</button>
-          </div>
-        </div>
+        <div class="logo-head"><h3>شعار الأندية</h3></div>
+        <div class="logo-body"><div class="logo-thumb"><img alt="" hidden><em></em></div></div>
       </div>
 
       <label class="field"><span>حجم الشعار في الترويسة: <b data-out="logoSize"></b> مم</span>
@@ -451,6 +440,20 @@
 </dialog>
 
 <dialog class="dlg" id="sendDlg"><form method="dialog"><h3 id="sdTitle"></h3><div id="sdBody"></div><div class="dlg-btns" id="sdBtns"></div></form></dialog>
+
+<dialog class="dlg" id="camDlg" aria-labelledby="cmTitle"><div class="cam">
+  <h3 id="cmTitle">التصوير بالكاميرا</h3>
+  <div class="cam-view"><video id="camVideo" autoplay playsinline muted></video><p id="camMsg" class="hint" hidden></p></div>
+  <p class="hint" id="camCount">وجّه الكاميرا نحو الورقة ثم اضغط «التقاط». يمكنك التقاط عدة صور متتالية.</p>
+  <div class="dlg-btns"><button type="button" class="btn" id="camSwitch">تبديل الكاميرا</button><button type="button" class="btn primary" id="camShot">التقاط</button><button type="button" class="btn" id="camClose">إنهاء</button></div>
+</div></dialog>
+
+<dialog class="dlg" id="scanDlg" aria-labelledby="scTitle"><div class="cam">
+  <h3 id="scTitle">الماسح الضوئي</h3>
+  <p class="hint">المتصفحات لا تستطيع تشغيل تعريف الماسح الضوئي مباشرة من الصفحة (قيد أمني في المتصفح). الطريقة المعتمدة:</p>
+  <ol class="scan-steps"><li>افتح برنامج المسح الخاص بطابعتك أو «Windows Scan / مسح» وامسح الورقة واحفظها صورة أو PDF.</li><li>اضغط الزر أدناه لاختيار الملف الناتج وإضافته للمرفقات مباشرة.</li></ol>
+  <div class="dlg-btns"><button type="button" class="btn primary" id="scanPick">اختيار ملف الماسح الضوئي…</button><button type="button" class="btn" id="scanClose">إغلاق</button></div>
+</div></dialog>
 
 <dialog class="dlg" id="apprDlg" aria-labelledby="apTitle"><form method="dialog" class="appr">
   <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.800-1-8-4.500-8-9V6z"/><path d="M8.500 12l2.500 2.500 4.500-5"/></svg>

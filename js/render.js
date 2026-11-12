@@ -39,6 +39,14 @@
           if (und) r = '<u>' + r + '</u>'; if (ital) r = '<i>' + r + '</i>'; if (bold) r = '<b>' + r + '</b>';
           out += r; return;
         }
+        if (n.tagName === 'IMG') {
+          const src = n.getAttribute('src') || '';
+          if (!/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(src)) return;
+          const w = Math.max(8, Math.min(170, parseFloat(n.getAttribute('data-w')) || 60));
+          const ar = Math.max(0.05, Math.min(20, parseFloat(n.getAttribute('data-ar')) || 0.75));
+          out += '<img src="' + src + '" data-w="' + (Math.round(w * 10) / 10) + '" data-ar="' + (Math.round(ar * 1000) / 1000) + '" style="width:' + (Math.round(w * 10) / 10) + 'mm;max-width:100%;height:auto">';
+          return;
+        }
         if (!tag) { out += inner; return; }
         if (tag === 'br') { out += '<br>'; return; }
         let attr = '';

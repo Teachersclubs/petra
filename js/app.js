@@ -96,8 +96,6 @@
       const L = S.logos[k], img = $('img', card), em = $('em', card);
       img.hidden = !L.data; em.hidden = !!L.data;
       if (L.data) img.src = L.data;
-      $('[data-remove]', card).hidden = !L.data;
-      $('label.btn', card).firstChild.nodeValue = L.data ? 'استبدال الشعار' : 'رفع شعار';
     });
   }
 
@@ -154,8 +152,87 @@
     ['insertUnorderedList', '•≡', 'قائمة نقطية'], ['insertOrderedList', '1.', 'قائمة رقمية'], '|',
     ['justifyRight', '⇥', 'محاذاة لليمين'], ['justifyCenter', '≡', 'توسيط'], ['justifyLeft', '⇤', 'محاذاة لليسار'], ['justifyFull', '☰', 'ضبط'], '|',
     ['undo', '↶', 'تراجع'], ['redo', '↷', 'إعادة'], '|',
-    ['table', '▦ جدول', 'إدراج جدول']
+    ['table', '▦ جدول', 'إدراج جدول'],
+    ['image', '🖼 صورة', 'إدراج صورة داخل النص'], '|',
+    ['kashida', 'ـــ كشيدة', 'مدّ الحرف (كشيدة): ضع المؤشر داخل الكلمة أو حدّد نصًا ثم اضغط'],
+    ['unkashida', 'إزالة الكشيدة', 'إزالة الكشيدة من التحديد أو بجوار المؤشر']
   ];
+
+  /* ---------- الكشيدة (التطويل) ---------- */
+  const AR = /[\u0621-\u064A]/;
+  const NOJOIN = /[\u0621\u0622\u0623\u0624\u0625\u0627\u062F\u0630\u0631\u0632\u0648\u0629\u0649]/; // حروف لا تتصل بما بعدها
+  function kashidaText(t) {
+    return t.replace(/[\u0621-\u064A\u0640\u064B-\u065F]{3,}/g, w => {
+      const ch = Array.from(w); let best = -1, mid = ch.length / 2, bd = 1e9;
+      for (let i = 0; i < ch.length - 1; i++) {
+        const a = ch[i], b = ch[i + 1];
+        if (!AR.test(a) || NOJOIN.test(a) || !AR.test(b) || b === '\u0640') continue;
+        if (a === '\u0640' ) continue;
+        const d = Math.abs(i + 0.5 - mid); if (d < bd) { bd = d; best = i; }
+      }
+      if (best < 0) return w;
+      ch.splice(best + 1, 0, '\u0640');
+      return ch.join('');
+    });
+  }
+  function textNodesIn(range) {
+    const out = [], root = range.commonAncestorContainer.nodeType === 3 ? range.commonAncestorContainer.parentNode : range.commonAncestorContainer;
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) if (range.intersectsNode(n)) out.push(n);
+    return out;
+  }
+  function applyKashida(area, remove) {
+    const sel = getSelection();
+    if (!sel.rangeCount || !area.contains(sel.anchorNode)) { area.focus(); return false; }
+    const r = sel.getRangeAt(0);
+    if (r.collapsed) {
+      if (remove) {
+        const n = r.startContainer, o = r.startOffset;
+        if (n.nodeType !== 3) return false;
+        const v = n.nodeValue;
+        if (v[o - 1] === '\u0640') { n.nodeValue = v.slice(0, o - 1) + v.slice(o); r.setStart(n, o - 1); r.collapse(true); }
+        else if (v[o] === '\u0640') { n.nodeValue = v.slice(0, o) + v.slice(o + 1); }
+        else return false;
+      } else document.execCommand('insertText', false, '\u0640');
+      return true;
+    }
+    let changed = false, first = null, last = null, so = 0, eo = 0;
+    textNodesIn(r).forEach(n => {
+      const s = n === r.startContainer ? r.startOffset : 0, e = n === r.endContainer ? r.endOffset : n.nodeValue.length;
+      const v = n.nodeValue, mid = v.slice(s, e);
+      const nm = remove ? mid.replace(/\u0640/g, '') : kashidaText(mid);
+      if (nm !== mid) { n.nodeValue = v.slice(0, s) + nm + v.slice(e); changed = true; }
+      if (!first) { first = n; so = s; }
+      last = n; eo = s + nm.length;
+    });
+    if (first) { try { const nr = document.createRange(); nr.setStart(first, so); nr.setEnd(last, Math.min(eo, last.nodeValue.length)); sel.removeAllRanges(); sel.addRange(nr); } catch (x) { /* لا شيء */ } }
+    return changed;
+  }
+
+  /* ---------- صورة داخل النص ---------- */
+  function readImageFile(file) {
+    return new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onerror = rej;
+      fr.onload = () => {
+        const im = new Image();
+        im.onerror = rej;
+        im.onload = () => {
+          const k = Math.min(1, 1400 / Math.max(im.naturalWidth, im.naturalHeight));
+          const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
+          const x = c.getContext('2d');
+          const png = /png|gif|webp|svg/.test(file.type);
+          if (!png) { x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); }
+          x.drawImage(im, 0, 0, c.width, c.height);
+          let url = png ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.88);
+          if (png && url.length > 1.8e6) url = c.toDataURL('image/jpeg', 0.85);
+          res({ url, ar: c.height / c.width });
+        };
+        im.src = fr.result;
+      };
+      fr.readAsDataURL(file);
+    });
+  }
   function cellOf(area) {
     const sel = getSelection();
     if (!sel.rangeCount) return null;
@@ -230,9 +307,11 @@
         const btn = document.createElement('button');
         btn.type = 'button'; btn.innerHTML = b[1]; btn.title = b[2]; btn.setAttribute('aria-label', b[2]);
         btn.addEventListener('mousedown', e => e.preventDefault());
-        if (b[0] === 'table') btn.style.padding = '0 8px';
+        if (/^(table|image|kashida|unkashida)$/.test(b[0])) btn.style.padding = '0 8px';
         btn.addEventListener('click', () => {
           if (b[0] === 'table') { openTableDialog(area, sync); return; }
+          if (b[0] === 'image') { pickImage(); return; }
+          if (b[0] === 'kashida' || b[0] === 'unkashida') { area.focus(); if (applyKashida(area, b[0] === 'unkashida')) sync(); else toast('ضع المؤشر داخل كلمة عربية أو حدّد نصًا أولًا'); return; }
           area.focus(); document.execCommand(b[0], false, null); sync();
         });
         bar.appendChild(btn);
@@ -245,7 +324,40 @@
         tools.appendChild(tb);
       });
       bar.appendChild(tools);
-      document.addEventListener('selectionchange', () => { tools.classList.toggle('on', !!cellOf(area)); });
+      document.addEventListener('selectionchange', () => { tools.classList.toggle('on', !!cellOf(area)); const s = getSelection(); if (s.rangeCount && area.contains(s.anchorNode)) lastRange = s.getRangeAt(0).cloneRange(); });
+      // صورة داخل النص: اختيار، تكبير/تصغير، حذف
+      let lastRange = null, selImg = null;
+      const imgTools = document.createElement('span'); imgTools.className = 'tbl-tools img-tools';
+      const setImgSel = im => { area.querySelectorAll('img.rte-sel').forEach(x => x.classList.remove('rte-sel')); selImg = im; if (im) im.classList.add('rte-sel'); imgTools.classList.toggle('on', !!im); };
+      const resizeImg = d => {
+        if (!selImg) return;
+        const w = Math.max(10, Math.min(170, (parseFloat(selImg.getAttribute('data-w')) || 60) + d));
+        selImg.setAttribute('data-w', w); selImg.style.width = w + 'mm'; sync();
+      };
+      [['−  تصغير', () => resizeImg(-10)], ['+  تكبير', () => resizeImg(10)], ['حذف الصورة', () => { if (selImg) { selImg.remove(); setImgSel(null); sync(); } }]].forEach(([t, fn]) => {
+        const tb = document.createElement('button'); tb.type = 'button'; tb.textContent = t;
+        tb.addEventListener('mousedown', e => e.preventDefault()); tb.addEventListener('click', fn); imgTools.appendChild(tb);
+      });
+      bar.appendChild(imgTools);
+      area.addEventListener('click', e => setImgSel(e.target.tagName === 'IMG' ? e.target : null));
+      area.addEventListener('keydown', e => { if (selImg && (e.key === 'Delete' || e.key === 'Backspace') && getSelection().isCollapsed === false) { /* حذف عادي */ } });
+      const picker = document.createElement('input'); picker.type = 'file'; picker.accept = 'image/*'; picker.hidden = true; bar.appendChild(picker);
+      const pickImage = () => picker.click();
+      picker.addEventListener('change', async () => {
+        const f = picker.files[0]; picker.value = '';
+        if (!f) return;
+        if (!/^image\//.test(f.type)) { toast('الملف المختار ليس صورة'); return; }
+        try {
+          const { url, ar } = await readImageFile(f);
+          area.focus();
+          const s = getSelection();
+          if (lastRange) { s.removeAllRanges(); s.addRange(lastRange); }
+          else { const r = document.createRange(); r.selectNodeContents(area); r.collapse(false); s.removeAllRanges(); s.addRange(r); }
+          const html = '<img src="' + url + '" data-w="60" data-ar="' + ar.toFixed(3) + '" style="width:60mm;max-width:100%;height:auto">';
+          if (!document.execCommand('insertHTML', false, html)) area.insertAdjacentHTML('beforeend', html);
+          sync(); toast('تم إدراج الصورة — انقر عليها للتكبير أو التصغير');
+        } catch (err) { toast('تعذّر قراءة الصورة'); }
+      });
       const sync = () => { App.setPath(S, path, App.sanitize(area.innerHTML)); changed(); };
       area.addEventListener('input', sync);
       area.addEventListener('keydown', e => {
@@ -299,24 +411,7 @@
       fr.readAsDataURL(file);
     });
   }
-  function setupLogos() {
-    $$('.logo-card').forEach(card => {
-      const k = card.dataset.logo;
-      $('input[type=file]', card).addEventListener('change', async e => {
-        const f = e.target.files[0]; e.target.value = '';
-        if (!f) return;
-        if (!/^image\//.test(f.type)) { toast('الملف المختار ليس صورة'); return; }
-        try {
-          S.logos[k].data = await normalizeImage(f);
-          S.logos[k].show = true;
-          refreshControls(); changed(); toast('تم رفع الشعار');
-        } catch (err) { toast('تعذّر قراءة الصورة، جرّب ملفًا آخر'); }
-      });
-      $('[data-remove]', card).addEventListener('click', () => {
-        S.logos[k].data = ''; refreshControls(); changed();
-      });
-    });
-  }
+  function setupLogos() { /* الشعاران ثابتان: لا رفع ولا إزالة */ }
 
   /* ---------- التواقيع والأختام ---------- */
   function setupPeople() {
