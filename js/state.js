@@ -254,6 +254,7 @@
   }
   /* استبدال الحالة والمرفقات معًا داخل معاملة واحدة؛ إما يُحفظ الاثنان أو لا يُحفظ أي منهما. */
   async function replaceAll(state, attachments) {
+    clearTimeout(saveTimer); saveTimer = null;
     if (!db) db = await openDb();
     return new Promise((resolve, reject) => {
       let tx;
