@@ -791,20 +791,70 @@
       await App.wipe();
       location.reload();
     });
-    $('#btnExportSettings').addEventListener('click', () => {
-      const copy = JSON.parse(JSON.stringify(S));
-      download(new Blob([JSON.stringify(copy)], { type: 'application/json' }), 'teachers-clubs-settings.json');
+    $('#btnExportSettings').addEventListener('click', async () => {
+      try {
+        await App.flush(S);
+        const backup = {
+          format: 'teachers-clubs-editor-full-backup',
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          appVersion: S.v || 2,
+          state: JSON.parse(JSON.stringify(S)),
+          attachments: JSON.parse(JSON.stringify(App.attach.store))
+        };
+        const stamp = new Date().toISOString().slice(0, 10);
+        download(new Blob([JSON.stringify(backup)], { type: 'application/json;charset=utf-8' }),
+          'teachers-clubs-full-backup-' + stamp + '.json');
+        toast('تم إنشاء النسخة الاحتياطية الكاملة');
+      } catch (err) { console.error(err); toast('تعذّر إنشاء النسخة الاحتياطية؛ تحقق من مساحة التخزين'); }
     });
     $('#fileImportSettings').addEventListener('change', async e => {
       const f = e.target.files[0]; e.target.value = '';
       if (!f) return;
       try {
         const obj = JSON.parse(await f.text());
-        if (!obj || typeof obj !== 'object' || !obj.v) throw new Error('bad');
-        S = App.build(obj);
-        $$('.rte-area').forEach(a => { a.innerHTML = App.getPath(S, a.dataset.docRte) || ''; });
-        setDoc(S.activeDoc); refreshControls(); changed(); toast('تمت استعادة الإعدادات');
-      } catch (err) { toast('ملف الإعدادات غير صالح'); }
+        if (!obj || typeof obj !== 'object') throw new Error('bad');
+        if (obj.format === 'teachers-clubs-editor-full-backup') {
+          if (obj.version !== 1 || !obj.state || typeof obj.state !== 'object' || !obj.state.v ||
+              !obj.attachments || typeof obj.attachments !== 'object') throw new Error('bad backup');
+          const keys = ['letter', 'internal', 'thanks', 'circular', 'assign', 'claim'];
+          for (const k of keys) {
+            if (!Array.isArray(obj.attachments[k])) throw new Error('bad attachments');
+            for (const item of obj.attachments[k]) {
+              if (!item || !Array.isArray(item.pages) ||
+                  item.pages.some(p => !p || typeof p.url !== 'string' || !p.url.startsWith('data:image/')))
+                throw new Error('bad attachment page');
+            }
+          }
+          if (!confirm('ستُستبدل جميع بيانات هذا المتصفح بالنسخة المختارة، بما فيها النماذج والمرفقات والشعارات والتواقيع والأختام والإعدادات. لا يمكن التراجع من داخل الموقع بعد التأكيد. هل تريد المتابعة؟')) return;
+          const nextState = App.build(obj.state);
+          const nextAttachments = {};
+          keys.forEach(k => { nextAttachments[k] = obj.attachments[k]; });
+          await App.replaceAll(nextState, nextAttachments);
+          S = nextState;
+          App.attach.setAll(nextAttachments);
+          $('.rte-area').forEach(area => { area.innerHTML = App.getPath(S, area.dataset.docRte) || ''; });
+          setDoc(S.activeDoc);
+          refreshControls();
+          changed();
+          toast('تمت استعادة النسخة الكاملة بنجاح');
+          return;
+        }
+        // دعم ملفات الإعدادات القديمة التي صدّرتها الإصدارات السابقة، دون حذف المرفقات الحالية.
+        if (!obj.v) throw new Error('bad legacy');
+        if (!confirm('هذه نسخة إعدادات قديمة ولا تحتوي على المرفقات. ستُستعاد الإعدادات فقط مع الإبقاء على المرفقات الحالية. متابعة؟')) return;
+        const nextState = App.build(obj);
+        await App.replaceAll(nextState, App.attach.store);
+        S = nextState;
+        $('.rte-area').forEach(area => { area.innerHTML = App.getPath(S, area.dataset.docRte) || ''; });
+        setDoc(S.activeDoc); refreshControls(); changed();
+        toast('تمت استعادة الإعدادات القديمة مع الإبقاء على المرفقات');
+      } catch (err) {
+        console.error(err);
+        toast(err && err.message && /Quota|quota|storage/i.test(err.message)
+          ? 'تعذّرت الاستعادة: مساحة التخزين غير كافية'
+          : 'تعذّرت الاستعادة: الملف غير صالح أو تعذّر حفظ البيانات');
+      }
     });
   }
 
