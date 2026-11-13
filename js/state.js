@@ -76,9 +76,13 @@
   }
 
   /** الوفد المشارك: كشف أسماء الوفد (مرافقون إداريون + لاعبون) */
-  const DG_ROLES = ['لاعب', 'لاعبة', 'مدرب', 'عضو هيئة إدارية', 'مدير نادي', 'إداري', 'أمين صندوق', 'سائق', 'معالج'];
-  function dgAdmin(role) { return { name: '', ministryNo: '', nationalNo: '', role: role || '', game: '' }; }
-  function dgPlayer(role) { return { name: '', ministryNo: '', memberNo: '', nationalNo: '', joinDate: '', role: role || '', game: '' }; }
+  const DG_ROLES = ['لاعب', 'لاعبة', 'مشارك', 'مشاركة', 'مدرب', 'عضو هيئة إدارية', 'مدير نادي', 'إداري', 'أمين صندوق', 'سائق', 'معالج'];
+  const DG_STD = {
+    admins: ['no', 'name', 'ministryNo', 'nationalNo', 'role'],
+    players: ['no', 'name', 'ministryNo', 'memberNo', 'nationalNo', 'joinDate', 'duration', 'role']
+  };
+  function dgAdmin(role) { return { name: '', ministryNo: '', nationalNo: '', role: role || '', game: '', x: {} }; }
+  function dgPlayer(role) { return { name: '', ministryNo: '', memberNo: '', nationalNo: '', joinDate: '', role: role || '', game: '', x: {} }; }
   function delegationDefaults() {
     return {
       number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
@@ -89,6 +93,7 @@
       showAdmins: true, titleAdmin: 'المرافقين الاداريين',
       showPlayers: true, titlePlayers: 'أسماء اللاعبين المشاركين',
       showDays: true,
+      colsAdmins: DG_STD.admins.slice(), colsPlayers: DG_STD.players.slice(), customAdmins: [], customPlayers: [],
       admins: Array.from({ length: 5 }, () => dgAdmin()),
       players: Array.from({ length: 8 }, () => dgPlayer()),
       showClosing: false, showHead: true, showManager: true
@@ -225,7 +230,12 @@
     if (!d.claim.hijri && !d.claim.hijriManual) d.claim.hijri = formatHijri(d.claim.date);
     ['admins', 'players'].forEach(k => {
       const mk = k === 'admins' ? dgAdmin : dgPlayer, a = d.delegation[k];
-      d.delegation[k] = (Array.isArray(a) ? a : []).filter(r => r && typeof r === 'object').map(r => { const o = mk(); Object.keys(o).forEach(f => { if (typeof r[f] === 'string') o[f] = r[f]; }); return o; });
+      d.delegation[k] = (Array.isArray(a) ? a : []).filter(r => r && typeof r === 'object').map(r => { const o = mk(); Object.keys(o).forEach(f => { if (f !== 'x' && typeof r[f] === 'string') o[f] = r[f]; }); if (r.x && typeof r.x === 'object') Object.keys(r.x).forEach(c => { if (typeof r.x[c] === 'string') o.x[c] = r.x[c]; }); return o; });
+      const ck = k === 'admins' ? 'colsAdmins' : 'colsPlayers', uk = k === 'admins' ? 'customAdmins' : 'customPlayers', dl = d.delegation;
+      dl[uk] = (Array.isArray(dl[uk]) ? dl[uk] : []).filter(c => c && typeof c.id === 'string' && typeof c.label === 'string');
+      const ok = new Set(DG_STD[k].concat(dl[uk].map(c => c.id)));
+      let ids = Array.isArray(dl[ck]) ? dl[ck].filter(id => ok.has(id)) : DG_STD[k].slice();
+      dl[ck] = ids.length ? ids : DG_STD[k].slice();
     });
     if (!d.delegation.hijri && !d.delegation.hijriManual) d.delegation.hijri = formatHijri(d.delegation.date);
     if (!d.circular.hijri && !d.circular.hijriManual) d.circular.hijri = formatHijri(d.circular.date);
@@ -292,6 +302,6 @@
   g.App = Object.assign(g.App || {}, {
     KEY, FONTS, defaults, build, loadAsync, save, flush, wipe, getPath, setPath, migrate,
     isPersisted: () => App_persisted,
-    todayISO, formatGregorian, formatHijri, DG_ROLES, dgAdmin, dgPlayer, ASSIGN_TOKEN, ASSIGN_BODY, CLAIM_BODY
+    todayISO, formatGregorian, formatHijri, DG_ROLES, DG_STD, dgAdmin, dgPlayer, ASSIGN_TOKEN, ASSIGN_BODY, CLAIM_BODY
   });
 })(window);

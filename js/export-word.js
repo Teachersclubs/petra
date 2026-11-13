@@ -286,7 +286,7 @@
 
   /** جدول الوفد: صف عنوان رمادي + صف رؤوس (يتكرّران في كل صفحة) + صفوف لا تنقسم */
   function delegationTable(S, kind, title) {
-    const cols = App.DG_COLS[kind], rows = S.delegation[kind], f = S.font;
+    const cols = App.dgCols(S, kind), rows = S.delegation[kind], f = S.font;
     const w = App.dgWidths(S, kind).map(v => Math.round(v * 56.693));
     const total = w.reduce((a, b) => a + b, 0), sz = Math.max(8, Math.round(S.bodySize * 0.8 * 2) / 2);
     const B = { style: docx.BorderStyle.SINGLE, size: 6, color: '000000' }, BB = { top: B, bottom: B, left: B, right: B };
