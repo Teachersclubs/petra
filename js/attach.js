@@ -2,7 +2,7 @@
 (function (g) {
   'use strict';
   const App = g.App;
-  const store = { letter: [], internal: [], thanks: [], circular: [], assign: [], claim: [], delegation: [] };
+  const store = { letter: [], internal: [], thanks: [], circular: [], assign: [], claim: [], delegation: [], members: [] };
   let uid = 0, getType = () => 'letter', onChange = () => {};
 
   const readDataUrl = f => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(f); });
@@ -153,6 +153,6 @@
     renderList();
   }
 
-  function setAll(o) { ['letter', 'internal', 'thanks', 'circular', 'assign', 'claim', 'delegation'].forEach(k => { store[k] = Array.isArray(o && o[k]) ? o[k] : []; uid = Math.max(uid, ...store[k].map(a => a.id || 0), 0); }); }
+  function setAll(o) { ['letter', 'internal', 'thanks', 'circular', 'assign', 'claim', 'delegation', 'members'].forEach(k => { store[k] = Array.isArray(o && o[k]) ? o[k] : []; uid = Math.max(uid, ...store[k].map(a => a.id || 0), 0); }); }
   g.App = Object.assign(App, { attach: { init, flat, renderList, store, setAll } });
 })(window);

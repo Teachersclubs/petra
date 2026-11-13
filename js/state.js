@@ -100,6 +100,40 @@
     };
   }
 
+  function membersDefaults() {
+    return {
+      number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
+      to0: false, to1: false, to2: false, toCustom: '',
+      subject: 'الانتساب الجديد/الاقتطاع الشهري', amount: 'دينارا واحدا',
+      showIntro: true, introText: '', body: '', tableTitle: '', fitOne: false,
+      rows: Array.from({ length: 5 }, () => mbRow()),
+      showClosing: false, showHead: true, showManager: true
+    };
+  }
+  function mbRow() { return { name: '', ministryNo: '', nationalNo: '' }; }
+  const AR_DIG = { '٠': 0, '١': 1, '٢': 2, '٣': 3, '٤': 4, '٥': 5, '٦': 6, '٧': 7, '٨': 8, '٩': 9, '۰': 0, '۱': 1, '۲': 2, '۳': 3, '۴': 4, '۵': 5, '۶': 6, '۷': 7, '۸': 8, '۹': 9 };
+  /** يحوّل النص المنسوخ إلى صفوف: الرقم الوطني = 10 أرقام، الرقم الوزاري = رقم آخر، والباقي الاسم */
+  function parseMembers(text) {
+    const out = [];
+    String(text || '').replace(/[٠-٩۰-۹]/g, c => AR_DIG[c]).split(/\r?\n/).forEach(raw => {
+      let line = raw.replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '').trim();
+      if (!line) return;
+      let nat = '', min = '';
+      // رقم تسلسلي في بداية السطر (1- أو 1. أو 1) أو 1 ثم اسم)
+      line = line.replace(/^\d{1,3}\s*[-.)\u060C:،]\s*(?=\S)/, '').replace(/^\d{1,3}\s+(?=[^\d\s])/, '');
+      line = line.replace(/\d[\d ]*\d|\d/g, m => {
+        const t = m.replace(/ /g, '');
+        if (!nat && t.length === 10) { nat = t; return ' '; }
+        const parts = m.split(/ +/);
+        parts.forEach(x => { if (!nat && x.length === 10) nat = x; else if (!min && x.length >= 3) min = x; });
+        return ' ';
+      });
+      const name = line.replace(/[\t,;|\u060C\u061B:/\\\-–—_.()\[\]]+/g, ' ').replace(/\s+/g, ' ').trim();
+      if (name || nat || min) out.push({ name, ministryNo: min, nationalNo: nat });
+    });
+    return out;
+  }
+
   function defaults() {
     return {
       v: 2,
@@ -145,6 +179,7 @@
         showClaimDate: true, claimDate: '', claimDateText: '', showHead: false, showManager: false
       },
       delegation: delegationDefaults(),
+      members: membersDefaults(),
       circular: {
         number: '', subject: '', body: '',
         date: todayISO(), showDate: true, showHijri: true, hijri: '', hijriManual: false,
@@ -174,7 +209,7 @@
       const r = JSON.parse(JSON.stringify(raw));
       if (!r.fontV3) { r.font = 'Tajawal'; if (r.footer) r.footer.font = 'Tajawal'; r.fontV3 = 1; }
       if (r.people && !r.people.modeV2) { r.people.mode = 'below'; r.people.modeV2 = 1; }
-      ['letter', 'internal', 'thanks', 'circular', 'assign', 'claim', 'delegation'].forEach(k => {
+      ['letter', 'internal', 'thanks', 'circular', 'assign', 'claim', 'delegation', 'members'].forEach(k => {
         const d = r[k]; if (!d || d.showHead !== undefined) return;
         const who = d.signer || d.signWho || 'manager';
         d.showHead = who === 'head' || who === 'both'; d.showManager = who === 'manager' || who === 'both';
@@ -237,6 +272,8 @@
       let ids = Array.isArray(dl[ck]) ? dl[ck].filter(id => ok.has(id)) : DG_STD[k].slice();
       dl[ck] = ids.length ? ids : DG_STD[k].slice();
     });
+    d.members.rows = (Array.isArray(d.members.rows) ? d.members.rows : []).filter(r => r && typeof r === 'object').map(r => { const o = mbRow(); Object.keys(o).forEach(f => { if (typeof r[f] === 'string') o[f] = r[f]; }); return o; });
+    if (!d.members.hijri && !d.members.hijriManual) d.members.hijri = formatHijri(d.members.date);
     if (!d.delegation.hijri && !d.delegation.hijriManual) d.delegation.hijri = formatHijri(d.delegation.date);
     if (!d.circular.hijri && !d.circular.hijriManual) d.circular.hijri = formatHijri(d.circular.date);
     return d;
@@ -302,6 +339,6 @@
   g.App = Object.assign(g.App || {}, {
     KEY, FONTS, defaults, build, loadAsync, save, flush, wipe, getPath, setPath, migrate,
     isPersisted: () => App_persisted,
-    todayISO, formatGregorian, formatHijri, DG_ROLES, DG_STD, dgAdmin, dgPlayer, ASSIGN_TOKEN, ASSIGN_BODY, CLAIM_BODY
+    todayISO, formatGregorian, formatHijri, DG_ROLES, DG_STD, dgAdmin, dgPlayer, mbRow, parseMembers, ASSIGN_TOKEN, ASSIGN_BODY, CLAIM_BODY
   });
 })(window);

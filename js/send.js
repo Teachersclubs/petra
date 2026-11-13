@@ -9,7 +9,7 @@
   function subjectText(S) {
     const t = S.activeDoc, d = S[t];
     if ((S.send.subject || '').trim()) return S.send.subject.trim();
-    const kind = { circular: 'تعميم رقم ', assign: 'قرار تكليف ', claim: 'مطالبة مالية ', delegation: 'كشف الوفد المشارك ' }[t] || 'كتاب رقم ';
+    const kind = { circular: 'تعميم رقم ', assign: 'قرار تكليف ', claim: 'مطالبة مالية ', delegation: 'كشف الوفد المشارك ', members: 'تقرير المنتسبين الجدد ' }[t] || 'كتاب رقم ';
     return kind + (d.number || '') + (d.subject ? ' – ' + d.subject : '');
   }
   const clubLine = S => 'نادي ' + (S.clubName || '');

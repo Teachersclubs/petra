@@ -54,7 +54,7 @@
       const bar = $('.preview-bar > span');
       const eff = App.lastEff;
       bar.innerHTML = 'معاينة مباشرة · A4' + (pages > 1 ? ' · ' + pages + ' صفحات' : '') +
-        ((S.onePage || (S.activeDoc === 'delegation' && S.delegation.fitOne)) && eff ? (eff.fits ? (eff.scale < 1 ? ' · <small>ضُبط على صفحة واحدة</small>' : '') : ' · <span class="warn-fit">تعذّر حصر المستند في صفحة واحدة</span>') : '');
+        ((S.onePage || ((S.activeDoc === 'delegation' || S.activeDoc === 'members') && S[S.activeDoc].fitOne)) && eff ? (eff.fits ? (eff.scale < 1 ? ' · <small>ضُبط على صفحة واحدة</small>' : '') : ' · <span class="warn-fit">تعذّر حصر المستند في صفحة واحدة</span>') : '');
     }
     holder.style.zoom = zoom;
     $('#zoomVal').textContent = Math.round(zoom * 100) + '%';
@@ -97,7 +97,7 @@
       img.hidden = !L.data; em.hidden = !!L.data;
       if (L.data) img.src = L.data;
     });
-    dgSync();
+    dgSync(); mbSync();
   }
 
   function onInput(el, path) {
@@ -105,7 +105,7 @@
     App.setPath(S, path, v);
     if (path === 'assign.assignDate') S.assign.assignDateText = '';
     if (path === 'claim.claimDate') S.claim.claimDateText = '';
-    const m = /^(letter|internal|thanks|circular|assign|claim|delegation)\.(date|hijri|showHijri)$/.exec(path);
+    const m = /^(letter|internal|thanks|circular|assign|claim|delegation|members)\.(date|hijri|showHijri)$/.exec(path);
     if (m) {
       const d = S[m[1]];
       if (m[2] === 'date') { if (!d.hijriManual) d.hijri = App.formatHijri(v); }
@@ -502,7 +502,7 @@
   }
 
   /* ---------- قرار التكليف والمطالبة المالية ---------- */
-  const rteHtml = t => '<div class="field"><span>نص ' + (t === 'assign' ? 'القرار' : t === 'delegation' ? 'الكتاب' : 'المطالبة') + '</span><div class="rte" data-rte="' + t + '"><div class="rte-bar"></div><div class="rte-area" contenteditable="true" dir="rtl" data-doc-rte="' + t + '.body" spellcheck="true"></div></div></div>';
+  const rteHtml = t => '<div class="field"><span>نص ' + (t === 'assign' ? 'القرار' : (t === 'delegation' || t === 'members') ? 'الكتاب' : 'المطالبة') + '</span><div class="rte" data-rte="' + t + '"><div class="rte-bar"></div><div class="rte-area" contenteditable="true" dir="rtl" data-doc-rte="' + t + '.body" spellcheck="true"></div></div></div>';
   const dateFields = (t, label) =>
     '<div class="row2"><label class="field"><span>' + label + '</span><input type="text" data-doc-bind="' + t + '.number" placeholder="مثال: 1/2026"></label>' +
     '<label class="field"><span>التاريخ (الموافق)</span><input type="date" data-doc-bind="' + t + '.date"></label></div>' +
@@ -708,6 +708,86 @@
       if (act === 'add' || act === 'add5') { const el = $('[data-dg="' + k + '.' + (rows.length - (act === 'add' ? 1 : 5)) + '.name"]'); el && el.focus(); }
     });
     dgRender();
+  }
+
+  /* ---------- تقرير المنتسبين الجدد ---------- */
+  let mbSig = '';
+  const mbSigOf = () => JSON.stringify(S.members.rows);
+  function mbEditorHTML() {
+    const rows = S.members.rows.map((r, i) => '<div class="dg-row"><div class="dg-rh"><b>' + (i + 1) + '</b><span class="dg-dur" data-mb-warn="' + i + '"></span>' +
+      '<button type="button" class="btn sm ghost" data-mb-act="del" data-i="' + i + '" title="حذف الصف" aria-label="حذف الصف">✕ حذف</button></div><div class="dg-fields">' +
+      '<label class="wide"><small>الاسم</small><input type="text" data-mb="' + i + '.name" value="' + App.esc(r.name) + '" placeholder="الاسم"></label>' +
+      '<label><small>الرقم الوزاري</small><input type="text" inputmode="numeric" data-mb="' + i + '.ministryNo" value="' + App.esc(r.ministryNo) + '" placeholder="الرقم الوزاري"></label>' +
+      '<label><small>الرقم الوطني</small><input type="text" inputmode="numeric" data-mb="' + i + '.nationalNo" value="' + App.esc(r.nationalNo) + '" placeholder="الرقم الوطني (10 أرقام)"></label></div></div>').join('');
+    return rows || '<p class="hint">لا توجد صفوف. استخدم «+ صف» أو الصق الأسماء في الصندوق أعلاه.</p>';
+  }
+  function mbSync() {
+    const ed = $('#mb-ed'); if (!ed) return;
+    if (mbSigOf() !== mbSig) { ed.innerHTML = mbEditorHTML(); mbSig = mbSigOf(); }
+    S.members.rows.forEach((r, i) => { const el = $('[data-mb-warn="' + i + '"]'); if (el) el.textContent = r.nationalNo && !/^\d{10}$/.test(r.nationalNo) ? '⚠ الرقم الوطني ليس 10 أرقام' : ''; });
+    const at = $('#mbAuto'); if (at) at.textContent = App.mbIntro(S);
+  }
+  function buildMembersForm() {
+    addForm('members',
+      '<h2 class="panel-title">بيانات تقرير المنتسبين الجدد</h2>' +
+      '<label class="field"><span>اسم النادي <small>(يظهر بعد كلمة «نادي» وفي نص الكتاب تلقائيًا)</small></span><input type="text" data-bind="clubName" placeholder="مثال: البتراء"></label>' +
+      dateFields('members', 'رقم الكتاب') +
+      '<fieldset class="group"><legend>الجهات الموجه إليها <small>(اختياري)</small></legend>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="members.to0"> <span>معالي وزير التربية والتعليم وتنمية الموارد البشرية الأكرم</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="members.to1"> <span>عطوفة مدير إدارة النشاطات التربوية الأكرم</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="members.to2"> <span>عطوفة مدير أندية المعلمين والعاملين الأكرم</span></label>' +
+      '<label class="field"><span>جهة أخرى <small>(كل سطر جهة)</small></span><textarea rows="2" data-doc-bind="members.toCustom"></textarea></label></fieldset>' +
+      '<label class="field"><span>الموضوع</span><input type="text" data-doc-bind="members.subject" placeholder="يُستخدم أيضًا اسمًا للملف"></label>' +
+      '<fieldset class="group"><legend>النص</legend>' +
+      '<label class="field"><span>مبلغ الاقتطاع الشهري</span><input type="text" data-doc-bind="members.amount" placeholder="مثال: دينارا واحدا"></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="members.showIntro"> <span>إظهار الفقرة تحت «الموضوع»</span></label>' +
+      '<p class="hint">الفقرة التلقائية: <b id="mbAuto"></b></p>' +
+      '<label class="field"><span>نص مستقل <small>(إن كتبت فيه يظهر مكان الفقرة التلقائية)</small></span><textarea rows="3" data-doc-bind="members.introText" placeholder="اتركه فارغًا لاستخدام الفقرة التلقائية"></textarea></label>' +
+      rteHtml('members') + '</fieldset>' +
+      '<fieldset class="group"><legend>الجدول</legend>' +
+      '<label class="field"><span>عنوان الجدول <small>(اختياري)</small></span><input type="text" data-doc-bind="members.tableTitle" placeholder="اتركه فارغًا بلا عنوان"></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="members.fitOne"> <span>إبقاء الكتاب والجدول في صفحة واحدة <small>(يصغّر الخط والمسافات تلقائيًا ما أمكن)</small></span></label>' +
+      '<details class="dg-paste" open><summary>إدخال الأسماء تلقائيًا (لصق)</summary>' +
+      '<textarea rows="5" id="mbPaste" placeholder="الصق الأسماء كما نُسخت: الاسم + الرقم الوزاري + الرقم الوطني (10 أرقام) في سطر لكل شخص. يُفرز كل جزء إلى خانته تلقائيًا"></textarea>' +
+      '<button type="button" class="btn sm primary" data-mb-act="paste">إضافة إلى الجدول</button></details>' +
+      '<div class="dg-tools"><button type="button" class="btn sm primary" data-mb-act="add">+ صف</button>' +
+      '<button type="button" class="btn sm" data-mb-act="add5">+ 5 صفوف</button>' +
+      '<button type="button" class="btn sm ghost" data-mb-act="clear">حذف كل الصفوف</button></div>' +
+      '<div class="dg-ed" id="mb-ed"></div></fieldset>' +
+      '<fieldset class="group"><legend>الختام والتوقيع</legend>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="members.showClosing"> <span>إظهار عبارة «واقبلوا فائق الاحترام والتقدير»</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="members.showHead"> <span>إظهار رئيس الهيئة الإدارية</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="members.showManager"> <span>إظهار مدير النادي</span></label></fieldset>');
+    const form = $('.doc-form[data-form="members"]');
+    const upd = e => {
+      const el = e.target.closest && e.target.closest('[data-mb]'); if (!el) return;
+      const [i, f] = el.dataset.mb.split('.'), row = S.members.rows[+i]; if (!row) return;
+      row[f] = el.value; mbSig = mbSigOf(); mbSync(); changed();
+    };
+    form.addEventListener('input', upd); form.addEventListener('change', upd);
+    const addParsed = () => {
+      const ta = $('#mbPaste'), list = App.parseMembers(ta.value);
+      if (!list.length) { toast('الصق اسمًا واحدًا على الأقل'); return; }
+      const rows = S.members.rows;
+      if (rows.length && rows.every(r => !r.name && !r.ministryNo && !r.nationalNo)) rows.length = 0;
+      list.forEach(r => rows.push(Object.assign(App.mbRow(), r)));
+      ta.value = ''; mbSync(); changed();
+      const bad = list.filter(r => !r.nationalNo).length;
+      toast('أُضيف ' + list.length + ' صف' + (bad ? ' · ' + bad + ' بلا رقم وطني' : ''));
+    };
+    $('#mbPaste').addEventListener('paste', () => setTimeout(addParsed, 0));
+    form.addEventListener('click', e => {
+      const b = e.target.closest('[data-mb-act]'); if (!b) return;
+      const rows = S.members.rows, act = b.dataset.mbAct;
+      if (act === 'paste') { addParsed(); return; }
+      if (act === 'add') rows.push(App.mbRow());
+      else if (act === 'add5') for (let n = 0; n < 5; n++) rows.push(App.mbRow());
+      else if (act === 'del') rows.splice(+b.dataset.i, 1);
+      else if (act === 'clear') { if (rows.length && !confirm('حذف كل صفوف الجدول؟')) return; rows.length = 0; }
+      mbSync(); changed();
+      if (act === 'add' || act === 'add5') { const el = $('[data-mb="' + (rows.length - (act === 'add' ? 1 : 5)) + '.name"]'); el && el.focus(); }
+    });
+    mbSync();
   }
 
   function setupAssign() {
@@ -985,7 +1065,7 @@
 
   /* ---------- البدء ---------- */
   function init() {
-    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); buildDelegationForm(); setupAssign();
+    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); buildDelegationForm(); buildMembersForm(); setupAssign();
     bindAll(); setupRte(); setupLogos(); setupPeople(); setupFonts(); setupPositions(); setupDrag(); syncPos(); fillAR(); setupActions(); setupZoom(); setupTheme(); applyTheme();
     App.attach.init(() => S.activeDoc, changed); App.initSend(() => S); App.drive.init(() => S);
     $$('.doc-tab').forEach(b => b.addEventListener('click', () => setDoc(b.dataset.doc)));
