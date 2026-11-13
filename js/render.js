@@ -419,6 +419,11 @@
     admins: [['no', 'م', 8, 8], ['name', 'الاسم', 40, 60], ['ministryNo', 'الرقم الوزاري', 17, 30], ['nationalNo', 'الرقم الوطني', 25, 30], ['role', 'الصفة', 18, 40]],
     players: [['no', 'م', 8, 8], ['name', 'الاسم', 40, 60], ['ministryNo', 'الرقم الوزاري', 17, 30], ['memberNo', 'رقم العضوية', 17, 30], ['nationalNo', 'الرقم الوطني', 25, 30], ['joinDate', 'تاريخ الانتساب', 21, 30], ['duration', 'مدة الانتساب', 26, 44], ['role', 'الصفة', 18, 40]]
   };
+  /** أعمدة الجدول الحالية بالترتيب (أساسية + مخصصة) */
+  function dgCols(S, kind) {
+    const d = S.delegation, ids = d[kind === 'admins' ? 'colsAdmins' : 'colsPlayers'], cu = d[kind === 'admins' ? 'customAdmins' : 'customPlayers'];
+    return ids.map(id => { const st = DG_COLS[kind].find(c => c[0] === id), cc = cu.find(c => c.id === id); return st || (cc ? [id, cc.label, 17, 30] : null); }).filter(Boolean);
+  }
   const ar = (n, one, two, few, many) => n === 1 ? one : n === 2 ? two : (n >= 3 && n <= 10) ? n + ' ' + few : n + ' ' + many;
   /** مدة الانتساب من تاريخ الانتساب حتى تاريخ الكتاب: سنوات وأشهر وأيام */
   function durationParts(fromISO, toISO) {
@@ -456,37 +461,45 @@
     if (col === 'no') return String(i + 1);
     if (col === 'joinDate') return shortDate(r.joinDate);
     if (col === 'duration') return durationText(r.joinDate, d.date, d.showDays);
+    if (col === 'role' && /^(لاعب|لاعبة)$/.test(r.role || '') && (r.game || '').trim()) return r.role + ' ' + r.game.trim();
+    if (!/^(name|ministryNo|memberNo|nationalNo|role)$/.test(col)) return (r.x && r.x[col]) || '';
     return r[col] || '';
   }
   /** عرض الأعمدة بالمليمتر (المجموع 176): لا تُقسَّم كلمة ولا رقم؛ ويأخذ الاسم المتبقي */
   function dgWidths(S, kind) {
-    const cols = DG_COLS[kind], rows = S.delegation[kind], TOT = 176, HC = 2.15, CC = 2.25, PAD = 4.5;
+    const cols = dgCols(S, kind), rows = S.delegation[kind], TOT = 176, HC = 2.15, CC = 2.25, PAD = 4.5, NO = 8;
     const need = cols.map(c => {
+      if (c[0] === 'no') return NO;
       let w = Math.max.apply(null, c[1].split(' ').map(x => x.length)) * HC + PAD;
       rows.forEach((r, i) => {
         const t = dgCell(S, kind, r, i, c[0]); if (!t) return;
         if (c[0] === 'name') w = Math.max(w, Math.min(t.length, 30) * CC + PAD);
         else if (c[0] === 'duration') w = Math.max(w, Math.min(Math.ceil(t.length / 3), 12) * CC + PAD);
-        else if (c[0] === 'role') w = Math.max(w, Math.max.apply(null, t.split(' ').map(x => x.length)) * CC + PAD);
+        else if (c[0] === 'role' || !/^(ministryNo|memberNo|nationalNo|joinDate)$/.test(c[0])) w = Math.max(w, Math.min(Math.max.apply(null, t.split(' ').map(x => x.length)), 14) * CC + PAD);
         else w = Math.max(w, t.length * CC + PAD);
       });
       return w;
     });
-    need[0] = 8;
-    const ni = 1, fixed = need.reduce((a, b) => a + b, 0) - need[ni];
-    const minName = 30;
+    const ni = cols.findIndex(c => c[0] === 'name'), isNo = i => cols[i][0] === 'no';
+    const noW = need.reduce((a, v, i) => a + (isNo(i) ? v : 0), 0), flex = need.reduce((a, v, i) => a + (isNo(i) ? 0 : v), 0);
     let w;
-    if (fixed + minName <= TOT) { w = need.slice(); w[ni] = Math.max(need[ni], TOT - fixed); }
-    else { const k = (TOT - minName - 8) / (fixed - 8); w = need.map((v, i) => i === 0 ? 8 : i === ni ? minName : v * k); }
-    const extra = TOT - w.reduce((a, b) => a + b, 0);
-    // أي فائض يذهب للاسم
-    w[ni] += extra;
+    if (noW + flex <= TOT) {
+      // الفائض للاسم، وإن لم يوجد عمود اسم فيُوزَّع على بقية الأعمدة بالتناسب
+      w = need.map((v, i) => ni >= 0 ? (i === ni ? v + (TOT - noW - flex) : v) : isNo(i) ? v : v + (TOT - noW - flex) * v / flex);
+    } else {
+      const minName = ni >= 0 ? 30 : 0, others = flex - (ni >= 0 ? need[ni] : 0);
+      const k = others > 0 ? Math.max(0.5, (TOT - noW - minName) / others) : 1;
+      w = need.map((v, i) => isNo(i) ? v : i === ni ? minName : v * k);
+      const t = w.reduce((a, v) => a + v, 0), f = (TOT - noW) / (t - noW);
+      w = w.map((v, i) => isNo(i) ? v : v * f);
+    }
     w = w.map(v => Math.round(v * 10) / 10);
-    w[ni] = Math.round((w[ni] + TOT - w.reduce((a, b) => a + b, 0)) * 10) / 10;
+    const fix = ni >= 0 ? ni : w.findIndex((v, i) => !isNo(i));
+    w[fix < 0 ? 0 : fix] = Math.round((w[fix < 0 ? 0 : fix] + TOT - w.reduce((a, v) => a + v, 0)) * 10) / 10;
     return w;
   }
   function dgTableHTML(S, kind, title) {
-    const cols = DG_COLS[kind], rows = S.delegation[kind], w = dgWidths(S, kind);
+    const cols = dgCols(S, kind), rows = S.delegation[kind], w = dgWidths(S, kind);
     const th = cols.map(c => '<th>' + esc(c[1]) + '</th>').join('');
     const body = rows.map((r, i) => '<tr>' + cols.map(c => {
       const v = dgCell(S, kind, r, i, c[0]);
@@ -596,5 +609,5 @@
     return list.map(p => '<div class="att-page"><div class="att-cap">' + esc(p.cap) + '</div><img src="' + p.url + '" alt=""></div>');
   }
 
-  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, durationParts, durationText, dgIntro, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
+  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, durationParts, durationText, dgIntro, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
 })(window);

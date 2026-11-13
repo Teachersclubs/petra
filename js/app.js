@@ -558,21 +558,34 @@
   }
 
   /* ---------- الوفد المشارك ---------- */
-  const DG_FIELDS = {
-    admins: [['name', 'الاسم', 'wide'], ['ministryNo', 'الرقم الوزاري'], ['nationalNo', 'الرقم الوطني'], ['role', 'الصفة', 'wide', 'role']],
-    players: [['name', 'الاسم', 'wide'], ['ministryNo', 'الرقم الوزاري'], ['memberNo', 'رقم العضوية'], ['nationalNo', 'الرقم الوطني'], ['joinDate', 'تاريخ الانتساب', '', 'date'], ['role', 'الصفة', '', 'role']]
-  };
+  function dgFieldsFor(kind) {
+    const has = id => App.dgCols(S, kind).some(c => c[0] === id), d = S.delegation, out = [];
+    if (has('name')) out.push(['name', 'الاسم', 'wide']);
+    if (has('ministryNo')) out.push(['ministryNo', 'الرقم الوزاري']);
+    if (has('memberNo')) out.push(['memberNo', 'رقم العضوية']);
+    if (has('nationalNo')) out.push(['nationalNo', 'الرقم الوطني']);
+    if (has('joinDate') || has('duration')) out.push(['joinDate', 'تاريخ الانتساب', '', 'date']);
+    if (has('role')) out.push(['role', 'الصفة', '', 'role']);
+    d[kind === 'admins' ? 'customAdmins' : 'customPlayers'].forEach(c => { if (has(c.id)) out.push(['x:' + c.id, c.label, '', 'x']); });
+    return out;
+  }
   const DG_TITLE = { admins: 'المرافقون الإداريون', players: 'اللاعبون المشاركون' };
   let dgSig = '';
-  const dgSigOf = () => JSON.stringify([S.delegation.admins, S.delegation.players]);
+  const dgSigOf = () => { const d = S.delegation; return JSON.stringify([d.admins, d.players, d.colsAdmins, d.colsPlayers, d.customAdmins, d.customPlayers]); };
   function dgEditorHTML(kind) {
     const rows = S.delegation[kind].map((r, i) => {
-      const f = DG_FIELDS[kind].map(([k, lbl, cls, type]) => {
+      const f = dgFieldsFor(kind).map(([k, lbl, cls, type]) => {
         const id = ' data-dg="' + kind + '.' + i + '.' + k + '"';
+        const val = type === 'x' ? ((r.x || {})[k.slice(2)] || '') : r[k];
         const inp = type === 'role'
           ? '<select' + id + '><option value="">— الصفة —</option>' + App.DG_ROLES.map(x => '<option' + (r[k] === x ? ' selected' : '') + '>' + x + '</option>').join('') + '</select>'
-          : '<input type="' + (type === 'date' ? 'date' : 'text') + '"' + id + ' value="' + App.esc(r[k]) + '" placeholder="' + lbl + '" title="' + lbl + '"' + (type === 'date' ? '' : '') + '>';
-        return '<label class="' + (cls || '') + '"><small>' + lbl + '</small>' + inp + '</label>';
+          : '<input type="' + (type === 'date' ? 'date' : 'text') + '"' + id + ' value="' + App.esc(val) + '" placeholder="' + lbl + '" title="' + lbl + '"' + (type === 'date' ? '' : '') + '>';
+        let extra = '';
+        if (type === 'role') {
+          const on = /^(لاعب|لاعبة)$/.test(r.role);
+          extra = '<label class="wide dg-game"' + (on ? '' : ' hidden') + '><small>اللعبة <span>(بعد كلمة ' + (r.role || 'لاعب') + ')</span></small><input type="text" data-dg="' + kind + '.' + i + '.game" value="' + App.esc(r.game || '') + '" placeholder="اسم اللعبة، مثال: كرة قدم (اتركه فارغًا ليظهر «' + (r.role || 'لاعب') + '» فقط)"></label>';
+        }
+        return '<label class="' + (cls || '') + '"><small>' + lbl + '</small>' + inp + '</label>' + extra;
       }).join('');
       return '<div class="dg-row"><div class="dg-rh"><b>' + (i + 1) + '</b>' + (kind === 'players' ? '<span class="dg-dur" data-dg-dur="' + i + '"></span>' : '<span class="dg-dur"></span>') +
         '<button type="button" class="btn sm ghost" data-dg-act="del" data-k="' + kind + '" data-i="' + i + '" title="حذف الصف" aria-label="حذف الصف">✕ حذف</button></div><div class="dg-fields">' + f + '</div></div>';
@@ -580,7 +593,12 @@
     return rows || '<p class="hint">لا توجد صفوف. استخدم «+ صف» لإضافة مشارك.</p>';
   }
   function dgRender() {
-    ['admins', 'players'].forEach(k => { const el = $('#dg-' + k); if (el) el.innerHTML = dgEditorHTML(k); });
+    ['admins', 'players'].forEach(k => {
+      const el = $('#dg-' + k); if (el) el.innerHTML = dgEditorHTML(k);
+      const cols = App.dgCols(S, k), ch = $('#dgc-' + k), sel = $('#dgcSel-' + k);
+      if (ch) ch.innerHTML = cols.map(c => '<span class="dg-chip">' + App.esc(c[1]) + ' <button type="button" data-dg-act="delcol" data-k="' + k + '" data-id="' + c[0] + '" title="إزالة العمود" aria-label="إزالة عمود ' + App.esc(c[1]) + '">✕</button></span>').join('');
+      if (sel) sel.innerHTML = '<option value="">عمود جديد (اكتب اسمه)</option>' + App.DG_COLS[k].filter(c => !cols.some(x => x[0] === c[0])).map(c => '<option value="' + c[0] + '">استرجاع: ' + c[1] + '</option>').join('');
+    });
     dgSig = dgSigOf();
   }
   function dgSync() {
@@ -593,10 +611,13 @@
     const at = $('#dgAuto'); if (at) at.textContent = App.dgIntro(S);
   }
   function buildDelegationForm() {
-    const ed = k => '<fieldset class="group"><legend>' + DG_TITLE[k] + '</legend><div class="dg-tools">' +
+    const ed = k => '<fieldset class="group"><legend>' + DG_TITLE[k] + '</legend>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.' + (k === 'admins' ? 'showAdmins' : 'showPlayers') + '"> <span>إظهار هذا الجدول في الكتاب <small>(ألغِ التأشير لإزالته)</small></span></label><div class="dg-tools">' +
       '<button type="button" class="btn sm primary" data-dg-act="add" data-k="' + k + '">+ صف</button>' +
       '<button type="button" class="btn sm" data-dg-act="add5" data-k="' + k + '">+ 5 صفوف</button>' +
       '<button type="button" class="btn sm ghost" data-dg-act="clear" data-k="' + k + '">حذف كل الصفوف</button></div>' +
+      '<details class="dg-paste"><summary>الأعمدة: إضافة / إزالة</summary><div class="dg-chips" id="dgc-' + k + '"></div>' +
+      '<div class="dg-addcol"><select id="dgcSel-' + k + '"></select><input type="text" id="dgcName-' + k + '" placeholder="اسم العمود الجديد"><button type="button" class="btn sm" data-dg-act="addcol" data-k="' + k + '">+ إضافة عمود</button></div></details>' +
       '<details class="dg-paste"><summary>إضافة أسماء دفعة واحدة</summary><textarea rows="4" id="dgPaste-' + k + '" placeholder="اكتب أو الصق الأسماء، اسم في كل سطر"></textarea>' +
       '<button type="button" class="btn sm" data-dg-act="paste" data-k="' + k + '">إضافة الأسماء كصفوف</button></details>' +
       '<div class="dg-ed" id="dg-' + k + '"></div></fieldset>';
@@ -623,9 +644,7 @@
       rteHtml('delegation') +
       '<div class="inline-btns"><button type="button" class="btn sm ghost" id="dgToBody">نقل الفقرة التلقائية إلى نص الكتاب للتعديل عليها</button></div></fieldset>' +
       '<fieldset class="group"><legend>عناوين الجداول</legend>' +
-      '<label class="check"><input type="checkbox" data-doc-bind="delegation.showAdmins"> <span>إظهار جدول المرافقين</span></label>' +
       '<label class="field"><span>عنوان الجدول الأول</span><input type="text" data-doc-bind="delegation.titleAdmin"></label>' +
-      '<label class="check"><input type="checkbox" data-doc-bind="delegation.showPlayers"> <span>إظهار جدول اللاعبين</span></label>' +
       '<label class="field"><span>عنوان الجدول الثاني</span><input type="text" data-doc-bind="delegation.titlePlayers"></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="delegation.showDays"> <span>إظهار الأيام في مدة الانتساب</span></label></fieldset>' +
       ed('admins') + ed('players') +
@@ -638,7 +657,13 @@
       const el = e.target.closest && e.target.closest('[data-dg]'); if (!el) return;
       const [k, i, f] = el.dataset.dg.split('.');
       const row = S.delegation[k][+i]; if (!row) return;
-      row[f] = el.value; dgSig = dgSigOf(); dgSync(); changed();
+      if (f.startsWith('x:')) { row.x = row.x || {}; row.x[f.slice(2)] = el.value; } else row[f] = el.value;
+      dgSig = dgSigOf();
+      if (f === 'role') {
+        const g = el.closest('.dg-fields').querySelector('.dg-game');
+        if (g) { g.hidden = !/^(لاعب|لاعبة)$/.test(row.role); const sp = g.querySelector('small span'); if (sp) sp.textContent = '(بعد كلمة ' + (row.role || 'لاعب') + ')'; g.querySelector('input').placeholder = 'اسم اللعبة، مثال: كرة قدم (اتركه فارغًا ليظهر «' + (row.role || 'لاعب') + '» فقط)'; }
+      }
+      dgSync(); changed();
     };
     form.addEventListener('input', upd); form.addEventListener('change', upd);
     form.addEventListener('click', e => {
@@ -652,7 +677,23 @@
       }
       const b = e.target.closest('[data-dg-act]'); if (!b) return;
       const k = b.dataset.k, mk = k === 'admins' ? () => App.dgAdmin('إداري') : () => App.dgPlayer('لاعب'), rows = S.delegation[k];
-      const act = b.dataset.dgAct;
+      const act = b.dataset.dgAct, d = S.delegation, ck = k === 'admins' ? 'colsAdmins' : 'colsPlayers', uk = k === 'admins' ? 'customAdmins' : 'customPlayers';
+      if (act === 'delcol') {
+        if (d[ck].length <= 1) { toast('يجب أن يبقى عمود واحد على الأقل'); return; }
+        const id = b.dataset.id; d[ck] = d[ck].filter(x => x !== id);
+        d[uk] = d[uk].filter(c => c.id !== id); rows.forEach(r => { if (r.x) delete r.x[id]; });
+        dgRender(); dgSync(); changed(); return;
+      }
+      if (act === 'addcol') {
+        const sel = $('#dgcSel-' + k).value, inp = $('#dgcName-' + k);
+        if (sel) { const keep = new Set(d[ck].concat([sel])); d[ck] = App.DG_STD[k].filter(x => keep.has(x)).concat(d[ck].filter(x => !App.DG_STD[k].includes(x))); }
+        else {
+          const name = inp.value.trim(); if (!name) { toast('اكتب اسم العمود الجديد'); inp.focus(); return; }
+          const id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+          d[uk].push({ id, label: name }); d[ck].push(id);
+        }
+        inp.value = ''; dgRender(); dgSync(); changed(); return;
+      }
       if (act === 'add') rows.push(mk());
       else if (act === 'add5') for (let n = 0; n < 5; n++) rows.push(mk());
       else if (act === 'del') rows.splice(+b.dataset.i, 1);

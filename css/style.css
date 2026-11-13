@@ -472,3 +472,9 @@ dialog#apprDlg .btn.primary { padding: 9px 22px; }
 .dg-fields input, .dg-fields select { width: 100%; }
 .dg-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .dg-seg { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.dg-game[hidden] { display: none !important; } .dg-game small span { opacity: .7; }
+.dg-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.dg-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 10px; border: 1px solid var(--line, #ccd); border-radius: 999px; font-size: .85em; background: var(--surface, #fff); }
+.dg-chip button { border: 0; background: transparent; cursor: pointer; font-size: 1em; color: inherit; padding: 0 4px; line-height: 1; }
+.dg-addcol { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
+.dg-addcol select, .dg-addcol input { width: 100%; min-width: 0; }
