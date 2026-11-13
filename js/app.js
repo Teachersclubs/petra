@@ -572,7 +572,12 @@
         const inp = type === 'role'
           ? '<select' + id + '><option value="">— الصفة —</option>' + App.DG_ROLES.map(x => '<option' + (r[k] === x ? ' selected' : '') + '>' + x + '</option>').join('') + '</select>'
           : '<input type="' + (type === 'date' ? 'date' : 'text') + '"' + id + ' value="' + App.esc(r[k]) + '" placeholder="' + lbl + '" title="' + lbl + '"' + (type === 'date' ? '' : '') + '>';
-        return '<label class="' + (cls || '') + '"><small>' + lbl + '</small>' + inp + '</label>';
+        let extra = '';
+        if (type === 'role') {
+          const on = /^(لاعب|لاعبة)$/.test(r.role);
+          extra = '<label class="wide dg-game"' + (on ? '' : ' hidden') + '><small>اللعبة <span>(بعد كلمة ' + (r.role || 'لاعب') + ')</span></small><input type="text" data-dg="' + kind + '.' + i + '.game" value="' + App.esc(r.game || '') + '" placeholder="اسم اللعبة، مثال: كرة قدم (اتركه فارغًا ليظهر «' + (r.role || 'لاعب') + '» فقط)"></label>';
+        }
+        return '<label class="' + (cls || '') + '"><small>' + lbl + '</small>' + inp + '</label>' + extra;
       }).join('');
       return '<div class="dg-row"><div class="dg-rh"><b>' + (i + 1) + '</b>' + (kind === 'players' ? '<span class="dg-dur" data-dg-dur="' + i + '"></span>' : '<span class="dg-dur"></span>') +
         '<button type="button" class="btn sm ghost" data-dg-act="del" data-k="' + kind + '" data-i="' + i + '" title="حذف الصف" aria-label="حذف الصف">✕ حذف</button></div><div class="dg-fields">' + f + '</div></div>';
@@ -638,7 +643,12 @@
       const el = e.target.closest && e.target.closest('[data-dg]'); if (!el) return;
       const [k, i, f] = el.dataset.dg.split('.');
       const row = S.delegation[k][+i]; if (!row) return;
-      row[f] = el.value; dgSig = dgSigOf(); dgSync(); changed();
+      row[f] = el.value; dgSig = dgSigOf();
+      if (f === 'role') {
+        const g = el.closest('.dg-fields').querySelector('.dg-game');
+        if (g) { g.hidden = !/^(لاعب|لاعبة)$/.test(row.role); const sp = g.querySelector('small span'); if (sp) sp.textContent = '(بعد كلمة ' + (row.role || 'لاعب') + ')'; g.querySelector('input').placeholder = 'اسم اللعبة، مثال: كرة قدم (اتركه فارغًا ليظهر «' + (row.role || 'لاعب') + '» فقط)'; }
+      }
+      dgSync(); changed();
     };
     form.addEventListener('input', upd); form.addEventListener('change', upd);
     form.addEventListener('click', e => {

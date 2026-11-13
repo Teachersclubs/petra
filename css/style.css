@@ -472,3 +472,4 @@ dialog#apprDlg .btn.primary { padding: 9px 22px; }
 .dg-fields input, .dg-fields select { width: 100%; }
 .dg-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .dg-seg { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.dg-game[hidden] { display: none !important; } .dg-game small span { opacity: .7; }

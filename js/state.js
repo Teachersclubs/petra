@@ -76,9 +76,9 @@
   }
 
   /** الوفد المشارك: كشف أسماء الوفد (مرافقون إداريون + لاعبون) */
-  const DG_ROLES = ['لاعب', 'مدرب', 'عضو هيئة إدارية', 'مدير نادي', 'إداري', 'أمين صندوق', 'سائق', 'معالج'];
-  function dgAdmin(role) { return { name: '', ministryNo: '', nationalNo: '', role: role || '' }; }
-  function dgPlayer(role) { return { name: '', ministryNo: '', memberNo: '', nationalNo: '', joinDate: '', role: role || '' }; }
+  const DG_ROLES = ['لاعب', 'لاعبة', 'مدرب', 'عضو هيئة إدارية', 'مدير نادي', 'إداري', 'أمين صندوق', 'سائق', 'معالج'];
+  function dgAdmin(role) { return { name: '', ministryNo: '', nationalNo: '', role: role || '', game: '' }; }
+  function dgPlayer(role) { return { name: '', ministryNo: '', memberNo: '', nationalNo: '', joinDate: '', role: role || '', game: '' }; }
   function delegationDefaults() {
     return {
       number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,

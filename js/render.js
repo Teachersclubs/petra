@@ -456,6 +456,7 @@
     if (col === 'no') return String(i + 1);
     if (col === 'joinDate') return shortDate(r.joinDate);
     if (col === 'duration') return durationText(r.joinDate, d.date, d.showDays);
+    if (col === 'role' && /^(لاعب|لاعبة)$/.test(r.role || '') && (r.game || '').trim()) return r.role + ' ' + r.game.trim();
     return r[col] || '';
   }
   /** عرض الأعمدة بالمليمتر (المجموع 176): لا تُقسَّم كلمة ولا رقم؛ ويأخذ الاسم المتبقي */
