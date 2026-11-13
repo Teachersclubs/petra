@@ -466,46 +466,52 @@
     return r[col] || '';
   }
   /** عرض الأعمدة بالمليمتر (المجموع 176): لا تُقسَّم كلمة ولا رقم؛ ويأخذ الاسم المتبقي */
-  function dgWidths(S, kind) {
-    const cols = dgCols(S, kind), rows = S.delegation[kind], TOT = 176, HC = 2.15, CC = 2.25, PAD = 4.5, NO = 8;
-    const need = cols.map(c => {
+  /** يختار حجم خط الجدول وعرض الأعمدة معًا: يصغّر الخط (حتى 55%) بدل أن تنكسر الكلمات حرفًا حرفًا */
+  function dgFit(S, kind) {
+    const cols = dgCols(S, kind), rows = S.delegation[kind], TOT = 176, PAD = 4.5, NO = 8, MINNAME = 24;
+    const ni = cols.findIndex(c => c[0] === 'name'), isNo = i => cols[i][0] === 'no';
+    const needAt = f => cols.map(c => {
       if (c[0] === 'no') return NO;
+      const HC = 2.15 * f, CC = 2.25 * f;
       let w = Math.max.apply(null, c[1].split(' ').map(x => x.length)) * HC + PAD;
       rows.forEach((r, i) => {
         const t = dgCell(S, kind, r, i, c[0]); if (!t) return;
         if (c[0] === 'name') w = Math.max(w, Math.min(t.length, 30) * CC + PAD);
         else if (c[0] === 'duration') w = Math.max(w, Math.min(Math.ceil(t.length / 3), 12) * CC + PAD);
-        else if (c[0] === 'role' || !/^(ministryNo|memberNo|nationalNo|joinDate)$/.test(c[0])) w = Math.max(w, Math.min(Math.max.apply(null, t.split(' ').map(x => x.length)), 14) * CC + PAD);
+        else if (!/^(ministryNo|memberNo|nationalNo|joinDate)$/.test(c[0])) w = Math.max(w, Math.max.apply(null, t.split(' ').map(x => x.length)) * CC + PAD);
         else w = Math.max(w, t.length * CC + PAD);
       });
       return w;
     });
-    const ni = cols.findIndex(c => c[0] === 'name'), isNo = i => cols[i][0] === 'no';
-    const noW = need.reduce((a, v, i) => a + (isNo(i) ? v : 0), 0), flex = need.reduce((a, v, i) => a + (isNo(i) ? 0 : v), 0);
+    let f = 1, need = needAt(1), tight = false;
+    const must = n => n.reduce((a, v, i) => a + (i === ni ? MINNAME * 0 + Math.min(v, MINNAME) : v), 0);
+    for (; f >= 0.55; f = Math.round((f - 0.05) * 100) / 100) { need = needAt(f); if (must(need) <= TOT) break; }
+    if (f < 0.55) { f = 0.55; need = needAt(f); tight = true; }
+    const flex = need.reduce((a, v, i) => a + (isNo(i) ? 0 : v), 0), noW = need.reduce((a, v, i) => a + (isNo(i) ? v : 0), 0);
     let w;
     if (noW + flex <= TOT) {
-      // الفائض للاسم، وإن لم يوجد عمود اسم فيُوزَّع على بقية الأعمدة بالتناسب
       w = need.map((v, i) => ni >= 0 ? (i === ni ? v + (TOT - noW - flex) : v) : isNo(i) ? v : v + (TOT - noW - flex) * v / flex);
     } else {
-      const minName = ni >= 0 ? 30 : 0, others = flex - (ni >= 0 ? need[ni] : 0);
-      const k = others > 0 ? Math.max(0.5, (TOT - noW - minName) / others) : 1;
-      w = need.map((v, i) => isNo(i) ? v : i === ni ? minName : v * k);
-      const t = w.reduce((a, v) => a + v, 0), f = (TOT - noW) / (t - noW);
-      w = w.map((v, i) => isNo(i) ? v : v * f);
+      const nameW = ni >= 0 ? Math.min(need[ni], MINNAME) : 0, others = flex - (ni >= 0 ? need[ni] : 0);
+      const k = others > 0 ? (TOT - noW - nameW) / others : 1;
+      w = need.map((v, i) => isNo(i) ? v : i === ni ? nameW : v * Math.max(k, 0.3));
+      const t = w.reduce((a, v) => a + v, 0), g = (TOT - noW) / (t - noW);
+      w = w.map((v, i) => isNo(i) ? v : v * g);
     }
     w = w.map(v => Math.round(v * 10) / 10);
-    const fix = ni >= 0 ? ni : w.findIndex((v, i) => !isNo(i));
-    w[fix < 0 ? 0 : fix] = Math.round((w[fix < 0 ? 0 : fix] + TOT - w.reduce((a, v) => a + v, 0)) * 10) / 10;
-    return w;
+    const fix = ni >= 0 ? ni : w.findIndex((v, i) => !isNo(i)), fi = fix < 0 ? 0 : fix;
+    w[fi] = Math.round((w[fi] + TOT - w.reduce((a, v) => a + v, 0)) * 10) / 10;
+    return { w, f, tight };
   }
+  const dgWidths = (S, kind) => dgFit(S, kind).w;
   function dgTableHTML(S, kind, title) {
-    const cols = dgCols(S, kind), rows = S.delegation[kind], w = dgWidths(S, kind);
+    const cols = dgCols(S, kind), rows = S.delegation[kind], fit = dgFit(S, kind), w = fit.w;
     const th = cols.map(c => '<th>' + esc(c[1]) + '</th>').join('');
     const body = rows.map((r, i) => '<tr>' + cols.map(c => {
       const v = dgCell(S, kind, r, i, c[0]);
       return '<td' + (c[0] === 'name' ? ' class="dg-name"' : '') + '>' + (v ? (/^(joinDate|ministryNo|memberNo|nationalNo)$/.test(c[0]) ? '<bdi>' + esc(v) + '</bdi>' : esc(v)) : '') + '</td>';
     }).join('') + '</tr>').join('');
-    return '<table class="dg" dir="rtl"><colgroup>' + w.map(x => '<col style="width:' + x + 'mm">').join('') + '</colgroup>' +
+    return '<table class="dg' + (fit.tight ? ' dg-tight' : '') + '" dir="rtl" style="--dgf:' + fit.f + '"><colgroup>' + w.map(x => '<col style="width:' + x + 'mm">').join('') + '</colgroup>' +
       '<thead><tr class="dg-t"><th colspan="' + cols.length + '">' + (title.trim() ? esc(title) : '&nbsp;') + '</th></tr><tr class="dg-h">' + th + '</tr></thead><tbody>' + body + '</tbody></table>';
   }
   function delegationHTML(S, E) {
@@ -571,7 +577,7 @@
           E.footSize = next;
         }
       }
-      if (S.onePage) {
+      if (S.onePage || (type === 'delegation' && d.fitOne)) {
         let s = 1;
         for (let n = 0; n < 16; n++) {
           if (budget()) break;
@@ -609,5 +615,5 @@
     return list.map(p => '<div class="att-page"><div class="att-cap">' + esc(p.cap) + '</div><img src="' + p.url + '" alt=""></div>');
   }
 
-  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, durationParts, durationText, dgIntro, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
+  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, dgFit, durationParts, durationText, dgIntro, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
 })(window);

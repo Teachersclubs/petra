@@ -92,7 +92,7 @@
       showIntro: true, introText: '', body: '',
       showAdmins: true, titleAdmin: 'المرافقين الاداريين',
       showPlayers: true, titlePlayers: 'أسماء اللاعبين المشاركين',
-      showDays: true,
+      showDays: true, fitOne: true,
       colsAdmins: DG_STD.admins.slice(), colsPlayers: DG_STD.players.slice(), customAdmins: [], customPlayers: [],
       admins: Array.from({ length: 5 }, () => dgAdmin()),
       players: Array.from({ length: 8 }, () => dgPlayer()),
