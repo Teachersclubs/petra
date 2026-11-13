@@ -54,7 +54,7 @@
       const bar = $('.preview-bar > span');
       const eff = App.lastEff;
       bar.innerHTML = 'معاينة مباشرة · A4' + (pages > 1 ? ' · ' + pages + ' صفحات' : '') +
-        (S.onePage && eff ? (eff.fits ? (eff.scale < 1 ? ' · <small>ضُبط على صفحة واحدة</small>' : '') : ' · <span class="warn-fit">تعذّر حصر المستند في صفحة واحدة</span>') : '');
+        ((S.onePage || (S.activeDoc === 'delegation' && S.delegation.fitOne)) && eff ? (eff.fits ? (eff.scale < 1 ? ' · <small>ضُبط على صفحة واحدة</small>' : '') : ' · <span class="warn-fit">تعذّر حصر المستند في صفحة واحدة</span>') : '');
     }
     holder.style.zoom = zoom;
     $('#zoomVal').textContent = Math.round(zoom * 100) + '%';
@@ -646,7 +646,8 @@
       '<fieldset class="group"><legend>عناوين الجداول</legend>' +
       '<label class="field"><span>عنوان الجدول الأول</span><input type="text" data-doc-bind="delegation.titleAdmin"></label>' +
       '<label class="field"><span>عنوان الجدول الثاني</span><input type="text" data-doc-bind="delegation.titlePlayers"></label>' +
-      '<label class="check"><input type="checkbox" data-doc-bind="delegation.showDays"> <span>إظهار الأيام في مدة الانتساب</span></label></fieldset>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.showDays"> <span>إظهار الأيام في مدة الانتساب</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.fitOne"> <span>إبقاء الكتاب والجدولين في صفحة واحدة <small>(يصغّر الخط والمسافات تلقائيًا ما أمكن)</small></span></label></fieldset>' +
       ed('admins') + ed('players') +
       '<fieldset class="group"><legend>الختام والتوقيع</legend>' +
       '<label class="check"><input type="checkbox" data-doc-bind="delegation.showClosing"> <span>إظهار عبارة «واقبلوا فائق الاحترام والتقدير»</span></label>' +

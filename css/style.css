@@ -449,13 +449,14 @@ dialog#apprDlg .btn.primary { padding: 9px 22px; }
 
 /* ===== الوفد المشارك: الجداول ===== */
 .dg-intro, .dg-body { min-height: 0; font-family: var(--body-font, inherit); }
-.dg { border-collapse: separate; border-spacing: 0; width: 176mm; max-width: 100%; table-layout: fixed; margin: 0 0 calc(7mm * var(--sp, 1)); font-size: calc(var(--body-size) * .8); color: #000; }
-.dg th, .dg td { border: 0; border-left: 1px solid #000; border-bottom: 1px solid #000; padding: .8mm 1.4mm; text-align: center; vertical-align: middle; overflow-wrap: break-word; line-height: 1.35; }
+.dg { border-collapse: separate; border-spacing: 0; width: 176mm; max-width: 100%; table-layout: fixed; margin: 0 0 calc(7mm * var(--sp, 1)); font-size: calc(var(--body-size) * .8 * var(--dgf, 1)); color: #000; }
+.dg th, .dg td { border: 0; border-left: 1px solid #000; border-bottom: 1px solid #000; padding: .8mm 1.4mm; text-align: center; vertical-align: middle; overflow-wrap: normal; word-break: normal; line-height: 1.35; }
+.dg-tight th, .dg-tight td { overflow-wrap: anywhere; }
 .dg th:first-child, .dg td:first-child { border-right: 1px solid #000; }
 .dg .dg-t th { border-top: 1px solid #000; }
-.dg td { height: 8mm; }
-.dg .dg-t th { background: #d9d9d9; font-size: calc(var(--body-size) * 1.05); font-weight: 700; padding: 1mm 2mm; }
-.dg .dg-h th { font-weight: 700; font-size: calc(var(--body-size) * .72); }
+.dg td { height: calc(var(--body-size) * 1.62 * var(--dgf, 1)); }
+.dg .dg-t th { background: #d9d9d9; font-size: calc(var(--body-size) * 1.05 * var(--dgf, 1)); font-weight: 700; padding: 1mm 2mm; }
+.dg .dg-h th { font-weight: 700; font-size: calc(var(--body-size) * .72 * var(--dgf, 1)); }
 .dg td.dg-name { text-align: right; }
 .dg thead { display: table-header-group; }
 .dg tr { break-inside: avoid; page-break-inside: avoid; }
