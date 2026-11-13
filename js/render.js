@@ -394,7 +394,7 @@
     if (f.name.trim()) h += '<div class="foot-name" style="font-size:' + f.nameSize + 'pt;text-align:' + f.nameAlign + ';font-weight:' + (f.nameBold ? 700 : 400) + '">' + esc(f.name.trim()) + '</div>';
     const items = footItems(S);
     if (items.length) {
-      h += '<div class="foot-info" style="justify-content:' + jc + ';gap:0 ' + f.gap + 'mm">';
+      h += '<div class="foot-info" style="justify-content:' + jc + ';gap:0 ' + (E.footGap == null ? f.gap : E.footGap) + 'mm">';
       items.forEach(it => {
         const icon = it.icon ? iconSVG(it.icon, f.color, f.iconSize, 'pt') : '';
         const val = it.ltr ? '<bdi dir="ltr">' + esc(it.value) + '</bdi>' : esc(it.value);
@@ -573,12 +573,22 @@
     };
     try {
       if (S.footer.show) {
-        for (let i = 0; i < 4 && !budget(); i++) {
-          const row = measure().querySelector('.foot-info');
+        // قياس الذيل وحده (سريع): يصغَّر الخط ثم المسافات حتى يبقى السطر واحدًا دون تجاوز عرض الصفحة
+        const fm = () => {
+          stage.innerHTML = '<div class="sheet measure" dir="rtl" style="' + styleOf(S, type, E) + '"><div class="sheet-main"></div><div class="sheet-foot">' + footerHTML(S, E).replace(/src="data:image\/[^"]*"/g, 'src="' + PIX + '"') + '</div></div>';
+          return stage.firstChild.querySelector('.foot-info');
+        };
+        for (let i = 0; i < 16; i++) {
+          const row = fm();
           if (!row || row.scrollWidth <= row.clientWidth + 1) break;
-          const next = Math.max(6, Math.floor(E.footSize * (row.clientWidth / row.scrollWidth) * 4) / 4 - 0.25);
-          if (next >= E.footSize) break;
-          E.footSize = next;
+          const g = E.footGap == null ? S.footer.gap : E.footGap;
+          if (g > 2) E.footGap = Math.max(2, g * 0.6);
+          else if (E.footSize > 4.5) {
+            const next = Math.max(4.5, Math.floor(E.footSize * (row.clientWidth / row.scrollWidth) * 4) / 4 - 0.25);
+            E.footSize = next < E.footSize ? next : Math.max(4.5, E.footSize - 0.25);
+          } else if (g > 0.5) {
+            E.footGap = Math.max(0.5, g / 2);
+          } else break;
         }
       }
       if (S.onePage || (type === 'delegation' && d.fitOne)) {
@@ -603,7 +613,7 @@
   /** نسخة من الحالة بالقيم الفعلية (للتصدير إلى Word) */
   function withEffective(S, type) {
     const E = effective(S, type);
-    return Object.assign({}, S, { bodySize: E.bodySize, lineHeight: E.lineHeight, logoSize: E.logoSize, bodyFont: E.bodyFont, footer: Object.assign({}, S.footer, { size: E.footSize }) });
+    return Object.assign({}, S, { bodySize: E.bodySize, lineHeight: E.lineHeight, logoSize: E.logoSize, bodyFont: E.bodyFont, footer: Object.assign({}, S.footer, { size: E.footSize, gap: E.footGap == null ? S.footer.gap : E.footGap }) });
   }
 
   /** يعيد HTML القسمين: الرأس+المحتوى، والذيل */
