@@ -479,3 +479,4 @@ dialog#apprDlg .btn.primary { padding: 9px 22px; }
 .dg-chip button { border: 0; background: transparent; cursor: pointer; font-size: 1em; color: inherit; padding: 0 4px; line-height: 1; }
 .dg-addcol { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
 .dg-addcol select, .dg-addcol input { width: 100%; min-width: 0; }
+.dg td.dg-num { white-space: nowrap; } .dg-nw td.dg-name { white-space: nowrap; }
