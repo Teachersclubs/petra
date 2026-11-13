@@ -130,7 +130,7 @@
       } };
       const mainEl = stage.querySelector('#pdfMain'), footEl = stage.querySelector('#pdfFoot');
       const footH = r.foot ? footEl.offsetHeight : 0;
-      if (type === 'delegation') paginateTables(mainEl, footH);
+      if (type === 'delegation' || type === 'members') paginateTables(mainEl, footH);
       const mainH = mainEl.offsetHeight;
       const mainC = await html2canvas(mainEl, Object.assign({ width: PAGE_W, height: mainH, windowWidth: PAGE_W }, opts));
       const footC = footH ? await html2canvas(footEl, Object.assign({ width: PAGE_W, height: footH, windowWidth: PAGE_W }, opts)) : null;

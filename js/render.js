@@ -62,7 +62,7 @@
   const PAGE_H = 1122;
   const TITLES = { head: 'رئيس الهيئة الإدارية', manager: 'مدير النادي' };
   const isLetter = t => t === 'letter' || t === 'internal' || t === 'thanks';
-  const DATE_DOC = t => isLetter(t) || t === 'assign' || t === 'claim' || t === 'delegation';
+  const DATE_DOC = t => isLetter(t) || t === 'assign' || t === 'claim' || t === 'delegation' || t === 'members';
 
   /* ---------- أيقونات الذيل ---------- */
   const ICONS = {
@@ -516,7 +516,7 @@
       return '<td' + (c[0] === 'name' ? ' class="dg-name"' : /^(joinDate|ministryNo|memberNo|nationalNo)$/.test(c[0]) ? ' class="dg-num"' : '') + '>' + (v ? (/^(joinDate|ministryNo|memberNo|nationalNo)$/.test(c[0]) ? '<bdi>' + esc(v) + '</bdi>' : esc(v)) : '') + '</td>';
     }).join('') + '</tr>').join('');
     return '<table class="dg' + (fit.tight ? ' dg-tight' : '') + (fit.nw ? ' dg-nw' : '') + '" dir="rtl" style="--dgf:' + fit.f + '"><colgroup>' + w.map(x => '<col style="width:' + x + 'mm">').join('') + '</colgroup>' +
-      '<thead><tr class="dg-t"><th colspan="' + cols.length + '">' + (title.trim() ? esc(title) : '&nbsp;') + '</th></tr><tr class="dg-h">' + th + '</tr></thead><tbody>' + body + '</tbody></table>';
+      '<thead>' + (title == null ? '' : '<tr class="dg-t"><th colspan="' + cols.length + '">' + (title.trim() ? esc(title) : '&nbsp;') + '</th></tr>') + '<tr class="dg-h">' + th + '</tr></thead><tbody>' + body + '</tbody></table>';
   }
   function delegationHTML(S, E) {
     const d = S.delegation;
@@ -536,7 +536,33 @@
       signHTML(S, 'delegation');
   }
 
-  function mainHTML(S, type, E) { return type === 'delegation' ? delegationHTML(S, E) : type === 'circular' ? circularHTML(S, E) : type === 'assign' ? assignHTML(S, E) : type === 'claim' ? claimHTML(S, E) : letterHTML(S, type, E); }
+  /* ---------- تقرير المنتسبين الجدد (يعيد استخدام جدول الوفد) ---------- */
+  const MB_COLS = ['no', 'name', 'ministryNo', 'nationalNo'];
+  function memView(S) {
+    const m = S.members;
+    return Object.assign({}, S, { delegation: { admins: m.rows, colsAdmins: MB_COLS, customAdmins: [], players: [], colsPlayers: ['no', 'name'], customPlayers: [], date: m.date, showDays: true } });
+  }
+  function mbIntro(S) {
+    const m = S.members;
+    return 'ارجو التكرم بالإيعاز لمن يلزم باقتطاع مبلغ ' + (m.amount.trim() || 'دينارا واحدا') + ' شهريا للمنتسبين الجدد ' + dgClubPhrase(S) + ' المذكرين ادناه:';
+  }
+  function membersHTML(S, E) {
+    const d = S.members, list = [];
+    [d.to0, d.to1, d.to2].forEach((on, i) => { if (on) list.push('<div>' + RECIPIENTS[i] + '</div>'); });
+    d.toCustom.split('\n').filter(x => x.trim()).forEach(x => list.push('<div>' + esc(x.trim()) + '</div>'));
+    const body = sanitize(d.body);
+    const intro = d.showIntro ? (d.introText.trim() ? esc(d.introText.trim()).replace(/\n/g, '<br>') : esc(mbIntro(S))) : '';
+    return headerHTML(S, E) + dateRowHTML(d) +
+      (list.length ? '<div class="recipients">' + list.join('') + '</div>' : '') +
+      '<div class="subject"><u>الموضوع:</u> ' + (d.subject ? '( ' + esc(d.subject) + ' )' : ph('(&nbsp;&nbsp;&nbsp;&nbsp;)')) + '</div>' +
+      (intro ? '<div class="body dg-intro">' + intro + '</div>' : '') +
+      (body ? '<div class="body dg-body">' + body + '</div>' : '') +
+      dgTableHTML(memView(S), 'admins', d.tableTitle.trim() ? d.tableTitle : null) +
+      (d.showClosing ? '<div class="closing">' + CLOSING + '</div>' : '<div style="height:' + 4 * E.sp + 'mm"></div>') +
+      signHTML(S, 'members');
+  }
+
+  function mainHTML(S, type, E) { return type === 'members' ? membersHTML(S, E) : type === 'delegation' ? delegationHTML(S, E) : type === 'circular' ? circularHTML(S, E) : type === 'assign' ? assignHTML(S, E) : type === 'claim' ? claimHTML(S, E) : letterHTML(S, type, E); }
 
   /* ---------- القياس التلقائي: صفحة واحدة + ضبط الذيل في سطر ---------- */
   let cache = { key: '', val: null };
@@ -591,7 +617,7 @@
           } else break;
         }
       }
-      if (S.onePage || (type === 'delegation' && d.fitOne)) {
+      if (S.onePage || ((type === 'delegation' || type === 'members') && d.fitOne)) {
         let s = 1;
         for (let n = 0; n < 16; n++) {
           if (budget()) break;
@@ -629,5 +655,5 @@
     return list.map(p => '<div class="att-page"><div class="att-cap">' + esc(p.cap) + '</div><img src="' + p.url + '" alt=""></div>');
   }
 
-  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, dgFit, durationParts, durationText, dgIntro, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
+  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, dgFit, durationParts, durationText, dgIntro, mbIntro, memView, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
 })(window);
