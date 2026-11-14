@@ -484,3 +484,9 @@ dialog#apprDlg .btn.primary { padding: 9px 22px; }
 .dg td.dg-num { white-space: nowrap; } .dg-nw td.dg-name { white-space: nowrap; }
 
 .sheet-foot, .foot { max-width: 100%; overflow: hidden; }
+
+/* ===== خلفية ترويسة الموقع: صورة بشفافية تحت العنوان ===== */
+.topbar { position: relative; isolation: isolate; overflow: hidden; }
+.topbar::before { content: ""; position: absolute; inset: 0; z-index: -1; background: url('../img/header-bg.jpg') center 24% / cover no-repeat; opacity: .36; pointer-events: none; }
+.topbar::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 35%, transparent), color-mix(in srgb, var(--surface) 70%, transparent)); pointer-events: none; }
+:root[data-theme="dark"] .topbar::before { opacity: .22; }
