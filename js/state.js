@@ -88,7 +88,7 @@
       number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
       to0: false, to1: false, to2: false, toCustom: '',
       subject: '',
-      kind: 'qualifiers', kindName: 'كرة القدم للمربع الذهبي لدورة ميلاد القائد 23', venue: 'مدينة العقبة',
+      kind: 'qualifiers', kindName: 'المربع الذهبي لبطولة كرة القدم', eventName: 'دورة ميلاد القائد الثالثة والعشرين', venue: 'مدينة العقبة',
       showIntro: true, introText: '', body: '',
       showAdmins: true, titleAdmin: 'المرافقين الاداريين',
       showPlayers: true, titlePlayers: 'أسماء اللاعبين المشاركين',
@@ -104,7 +104,7 @@
     return {
       number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
       to0: false, to1: false, to2: false, toCustom: '',
-      subject: 'الانتساب الجديد/الاقتطاع الشهري', amount: 'دينارا واحدا',
+      subject: 'الانتساب الجديد/الاقتطاع الشهري', amount: 'دينار واحد',
       showIntro: true, introText: '', body: '', tableTitle: '', fitOne: false,
       rows: Array.from({ length: 5 }, () => mbRow()),
       showClosing: false, showHead: true, showManager: true
@@ -273,6 +273,8 @@
       dl[ck] = ids.length ? ids : DG_STD[k].slice();
     });
     d.members.rows = (Array.isArray(d.members.rows) ? d.members.rows : []).filter(r => r && typeof r === 'object').map(r => { const o = mbRow(); Object.keys(o).forEach(f => { if (typeof r[f] === 'string') o[f] = r[f]; }); return o; });
+    if (d.members.amount === 'دينارا واحدا') d.members.amount = 'دينار واحد';
+    if (d.delegation.kindName === 'كرة القدم للمربع الذهبي لدورة ميلاد القائد 23') d.delegation.kindName = 'المربع الذهبي لبطولة كرة القدم';
     if (!d.members.hijri && !d.members.hijriManual) d.members.hijri = formatHijri(d.members.date);
     if (!d.delegation.hijri && !d.delegation.hijriManual) d.delegation.hijri = formatHijri(d.delegation.date);
     if (!d.circular.hijri && !d.circular.hijriManual) d.circular.hijri = formatHijri(d.circular.date);

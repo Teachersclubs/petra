@@ -452,8 +452,10 @@
   }
   function dgIntro(S) {
     const d = S.delegation, k = DG_KINDS[d.kind] || DG_KINDS.qualifiers;
-    return 'ارفق بطية كشف أسماء اللاعبين والوفد المشارك ' + dgClubPhrase(S) +
-      ' في ' + k[0] + (d.kindName.trim() ? ' ' + d.kindName.trim() : '') + (d.venue.trim() ? ' في ' + d.venue.trim() : '') + '.';
+    const club = dgClubPhrase(S).replace(/^ل(?=نادي)/, '').replace(/^للنادي$/, 'النادي');
+    return 'نرفق لكم طيّاً كشفاً بأسماء اللاعبين وأعضاء الوفد المشارك عن ' + club +
+      ' في ' + k[0] + (d.kindName.trim() ? ' ' + d.kindName.trim() : '') +
+      (d.eventName.trim() ? '، ضمن فعاليات ' + d.eventName.trim() : '') + (d.venue.trim() ? '، والمقامة في ' + d.venue.trim() : '') + '، وذلك للاطلاع واتخاذ ما يلزم.';
   }
   /** قيمة خلية: يعيد النص المعروض لعمود في صف */
   function dgCell(S, kind, r, i, col) {
@@ -544,7 +546,7 @@
   }
   function mbIntro(S) {
     const m = S.members;
-    return 'ارجو التكرم بالإيعاز لمن يلزم باقتطاع مبلغ ' + (m.amount.trim() || 'دينارا واحدا') + ' شهريا للمنتسبين الجدد ' + dgClubPhrase(S) + ' المذكرين ادناه:';
+    return 'يرجى التكرم بالإيعاز إلى من يلزم لاتخاذ الإجراءات اللازمة باقتطاع مبلغ ' + (m.amount.trim() || 'دينار واحد') + ' شهرياً من رواتب المنتسبين الجدد ' + dgClubPhrase(S) + '، الواردة أسماؤهم في الكشف المرفق أدناه، وذلك اعتباراً من تاريخه، وفقاً للتعليمات والإجراءات المعتمدة.';
   }
   function membersHTML(S, E) {
     const d = S.members, list = [];
