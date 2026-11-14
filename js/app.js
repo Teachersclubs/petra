@@ -636,6 +636,7 @@
       '<button type="button" class="btn sm" data-dg-kind="qualifiers">المشارك في تصفيات</button>' +
       '<button type="button" class="btn sm" data-dg-kind="game">المشارك في لعبة</button></div>' +
       '<label class="field"><span id="dgKindLbl">اسم التصفيات</span><input type="text" data-doc-bind="delegation.kindName"></label>' +
+      '<label class="field"><span>ضمن فعاليات <small>(اتركه فارغًا لحذفها من الجملة)</small></span><input type="text" data-doc-bind="delegation.eventName"></label>' +
       '<label class="field"><span>مكان الإقامة</span><input type="text" data-doc-bind="delegation.venue" placeholder="مثال: مدينة العقبة"></label></fieldset>' +
       '<fieldset class="group"><legend>النص</legend>' +
       '<label class="check"><input type="checkbox" data-doc-bind="delegation.showIntro"> <span>إظهار الفقرة تحت «الموضوع»</span></label>' +
@@ -739,7 +740,7 @@
       '<label class="field"><span>جهة أخرى <small>(كل سطر جهة)</small></span><textarea rows="2" data-doc-bind="members.toCustom"></textarea></label></fieldset>' +
       '<label class="field"><span>الموضوع</span><input type="text" data-doc-bind="members.subject" placeholder="يُستخدم أيضًا اسمًا للملف"></label>' +
       '<fieldset class="group"><legend>النص</legend>' +
-      '<label class="field"><span>مبلغ الاقتطاع الشهري</span><input type="text" data-doc-bind="members.amount" placeholder="مثال: دينارا واحدا"></label>' +
+      '<label class="field"><span>مبلغ الاقتطاع الشهري</span><input type="text" data-doc-bind="members.amount" placeholder="مثال: دينار واحد"></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="members.showIntro"> <span>إظهار الفقرة تحت «الموضوع»</span></label>' +
       '<p class="hint">الفقرة التلقائية: <b id="mbAuto"></b></p>' +
       '<label class="field"><span>نص مستقل <small>(إن كتبت فيه يظهر مكان الفقرة التلقائية)</small></span><textarea rows="3" data-doc-bind="members.introText" placeholder="اتركه فارغًا لاستخدام الفقرة التلقائية"></textarea></label>' +
