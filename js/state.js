@@ -145,6 +145,7 @@
       logoSize: 24,
       onePage: false,
       logoSeeded: false,
+      logoV2: false,
       ministrySeeded: false,
       logos: {
         ministry: { show: true, data: '' },
@@ -244,6 +245,11 @@
     if (!d.logoSeeded) {
       if (!d.logos.club.data && g.DEFAULT_CLUB_LOGO) { d.logos.club.data = g.DEFAULT_CLUB_LOGO; d.logos.club.show = true; }
       d.logoSeeded = true;
+    }
+    // استبدال شعار الأندية بالشعار الجديد (مرة واحدة فقط؛ بعدها يبقى ما يختاره المستخدم)
+    if (!d.logoV2) {
+      if (g.DEFAULT_CLUB_LOGO) { d.logos.club.data = g.DEFAULT_CLUB_LOGO; d.logos.club.show = true; }
+      d.logoV2 = true;
     }
     // شعار الوزارة الافتراضي (مرة واحدة فقط)
     if (!d.ministrySeeded) {
