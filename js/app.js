@@ -1066,6 +1066,7 @@
 
   /* ---------- البدء ---------- */
   function init() {
+    const bl = document.getElementById('brandLogo'); if (bl && window.DEFAULT_CLUB_LOGO) bl.src = window.DEFAULT_CLUB_LOGO;
     buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); buildDelegationForm(); buildMembersForm(); setupAssign();
     bindAll(); setupRte(); setupLogos(); setupPeople(); setupFonts(); setupPositions(); setupDrag(); syncPos(); fillAR(); setupActions(); setupZoom(); setupTheme(); applyTheme();
     App.attach.init(() => S.activeDoc, changed); App.initSend(() => S); App.drive.init(() => S);
