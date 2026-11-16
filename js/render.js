@@ -6,14 +6,16 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   const MINISTRY = 'وزارة التربية والتعليم وتنمية الموارد البشرية';
-  const DEPT = 'إدارة النشاطات التربوية';
+  const DEPT = 'إدارة شؤون المعلمين والطلبة';
+  const DEPT2 = 'مديرية النشاطات المدرسية';
   const CLUBS = 'أندية المعلمين والعاملين';
   const CLUB_PREFIX = 'نــــــادي';
   const CLOSING = 'واقبلوا فائق الاحترام والتقدير.';
   const DIRECTOR = 'عطوفة مدير التربية والتعليم';
   const RECIPIENTS = [
     'معالي وزير التربية والتعليم وتنمية الموارد البشرية الأكرم',
-    'عطوفة مدير إدارة النشاطات التربوية الأكرم',
+    'عطوفة مدير ادارة شؤون المعلمين والطلبة الأكرم',
+    'عطوفة مدير مديرية النشاطات المدرسية الأكرم',
     'عطوفة مدير أندية المعلمين والعاملين الأكرم'
   ];
 
@@ -84,14 +86,15 @@
   }
 
   function headerHTML(S, E) {
-    const size = E.logoSize;
+    const hs = (S.headerScale || 100) / 100, size = Math.round(E.logoSize * hs * 10) / 10;
     const R = logoImg(S.logos.ministry, size), L = logoImg(S.logos.club, size);
     const both = (S.logos.ministry.show && S.logos.ministry.data) || (S.logos.club.show && S.logos.club.data);
     const col = (c) => both ? '<div class="h-logo" style="width:' + size + 'mm;height:' + size + 'mm">' + c + '</div>' : '';
-    return '<div class="hdr">' + col(R) +
+    return '<div class="hdr" style="--hs:' + hs + '">' + col(R) +
       '<div class="h-text">' +
       '<div class="h1">' + MINISTRY + '</div>' +
       '<div class="h2">' + DEPT + '</div>' +
+      '<div class="h2">' + DEPT2 + '</div>' +
       '<div class="h3">' + CLUBS + '</div>' +
       '<div class="h4">' + CLUB_PREFIX + (S.clubName ? ' ' + esc(S.clubName) : '') + '</div>' +
       '</div>' + col(L) + '</div>';
@@ -323,7 +326,7 @@
       dateCells = '<div class="dr-c"></div><div class="dr-l"><b>التاريخ:</b> <bdi>' + esc(dl.greg) + '</bdi></div>';
     }
     const list = [];
-    if (type !== 'thanks') [d.to0, d.to1, d.to2].forEach((on, i) => { if (on) list.push('<div>' + RECIPIENTS[i] + '</div>'); });
+    if (type !== 'thanks') [d.to0, d.to1, d.to3, d.to2].forEach((on, i) => { if (on) list.push('<div>' + RECIPIENTS[i] + '</div>'); });
     if (type === 'internal') {
       if (d.toDir) list.unshift('<div>' + DIRECTOR + ' الأكرم</div>' + (d.dirName.trim() ? '<div class="to-name">' + esc(d.dirName.trim()) + '</div>' : ''));
       if (d.toCustom.trim()) d.toCustom.split('\n').filter(x => x.trim()).forEach(x => list.push('<div>' + esc(x.trim()) + '</div>'));
@@ -523,7 +526,7 @@
   function delegationHTML(S, E) {
     const d = S.delegation;
     const list = [];
-    [d.to0, d.to1, d.to2].forEach((on, i) => { if (on) list.push('<div>' + RECIPIENTS[i] + '</div>'); });
+    [d.to0, d.to1, d.to3, d.to2].forEach((on, i) => { if (on) list.push('<div>' + RECIPIENTS[i] + '</div>'); });
     d.toCustom.split('\n').filter(x => x.trim()).forEach(x => list.push('<div>' + esc(x.trim()) + '</div>'));
     const body = sanitize(d.body);
     const intro = d.showIntro ? (d.introText.trim() ? esc(d.introText.trim()).replace(/\n/g, '<br>') : esc(dgIntro(S))) : '';
@@ -550,7 +553,7 @@
   }
   function membersHTML(S, E) {
     const d = S.members, list = [];
-    [d.to0, d.to1, d.to2].forEach((on, i) => { if (on) list.push('<div>' + RECIPIENTS[i] + '</div>'); });
+    [d.to0, d.to1, d.to3, d.to2].forEach((on, i) => { if (on) list.push('<div>' + RECIPIENTS[i] + '</div>'); });
     d.toCustom.split('\n').filter(x => x.trim()).forEach(x => list.push('<div>' + esc(x.trim()) + '</div>'));
     const body = sanitize(d.body);
     const intro = d.showIntro ? (d.introText.trim() ? esc(d.introText.trim()).replace(/\n/g, '<br>') : esc(mbIntro(S))) : '';
@@ -570,7 +573,7 @@
   let cache = { key: '', val: null };
   function sigKey(S, type) {
     const P = S.people, mark = v => (typeof v === 'string' && v.length > 200 ? v.length : v);
-    return JSON.stringify([type, S[type], S.font, S.bodySize, S.lineHeight, S.logoSize, S.onePage, S.clubName, S.footer,
+    return JSON.stringify([type, S[type], S.font, S.bodySize, S.lineHeight, S.logoSize, S.headerScale, S.onePage, S.clubName, S.footer,
       S.logos.ministry.show, mark(S.logos.ministry.data), S.logos.club.show, mark(S.logos.club.data),
       [P.signSize, P.stampSize, P.stampPos, P.mode, P.gapName, P.gapImg], ['head', 'manager'].map(k => [P[k].name, P[k].showSign, P[k].showStamp, mark(P[k].signImg), mark(P[k].stampImg), P[k].signAR, P[k].stampAR, P[k].pos]),
       document.fonts && document.fonts.status]);
@@ -657,5 +660,5 @@
     return list.map(p => '<div class="att-page"><div class="att-cap">' + esc(p.cap) + '</div><img src="' + p.url + '" alt=""></div>');
   }
 
-  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, dgFit, durationParts, durationText, dgIntro, mbIntro, memView, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
+  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, dgFit, durationParts, durationText, dgIntro, mbIntro, memView, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, DEPT2, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
 })(window);

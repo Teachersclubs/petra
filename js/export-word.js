@@ -207,13 +207,14 @@
 
   async function headerBlock(S) {
     const C = App.CONST, f = S.font;
-    const [r, l] = await Promise.all([logoRun(S.logos.ministry, S.logoSize), logoRun(S.logos.club, S.logoSize)]);
+    const hs = (S.headerScale || 100) / 100, hz = v => Math.round(v * hs * 2) / 2, LS = Math.round(S.logoSize * hs * 10) / 10;
+    const [r, l] = await Promise.all([logoRun(S.logos.ministry, LS), logoRun(S.logos.club, LS)]);
     const both = r || l || (S.logos.ministry.show && S.logos.ministry.data) || (S.logos.club.show && S.logos.club.data);
-    const t = (text, size, b) => mkPara([mkRun(text, { font: f, size, b })], { align: 'center', line: 300 });
-    const club = mkPara([mkRun(C.CLUB_PREFIX + (S.clubName ? ' ' + S.clubName : ''), { font: f, size: 22, b: true })], { align: 'center', before: 60 });
-    const textCell = [t(C.MINISTRY, 11.5), t(C.DEPT, 13), t(C.CLUBS, 13, true), club];
+    const t = (text, size, b) => mkPara([mkRun(text, { font: f, size: hz(size), b })], { align: 'center', line: 300 });
+    const club = mkPara([mkRun(C.CLUB_PREFIX + (S.clubName ? ' ' + S.clubName : ''), { font: f, size: hz(22), b: true })], { align: 'center', before: 60 });
+    const textCell = [t(C.MINISTRY, 11.5), t(C.DEPT, 13), t(C.DEPT2, 13), t(C.CLUBS, 13, true), club];
     if (!both) return [mkTable([CONTENT_W], [textCell])];
-    const lw = mm(S.logoSize + 4);
+    const lw = mm(LS + 4);
     const logoCell = run => [mkPara(run ? [run] : [], { align: 'center' })];
     return [mkTable([lw, CONTENT_W - 2 * lw, lw], [logoCell(r), textCell, logoCell(l)])];
   }
@@ -379,7 +380,7 @@
         if (d.dirName.trim()) to.push(mkPara([mkRun(d.dirName.trim(), { font: f, size, b: true })], { align: 'center', line: 300 }));
       }
       if (type === 'thanks') App.toLines(S, variant).forEach((x, i) => to.push(mkPara([mkRun(x, { font: f, size })], { align: 'center', line: 300, before: i === 0 && ty > 0 ? mm(ty) : 0, indent: tx ? (tx > 0 ? { end: mm(2 * tx) } : { start: mm(-2 * tx) }) : undefined })));
-      [d.to0, d.to1, d.to2].forEach((on, i) => { if (on && type !== 'thanks') to.push(mkPara([mkRun(C.RECIPIENTS[i], { font: f, size })], { align: 'center', line: 300 })); });
+      [d.to0, d.to1, d.to3, d.to2].forEach((on, i) => { if (on && type !== 'thanks') to.push(mkPara([mkRun(C.RECIPIENTS[i], { font: f, size })], { align: 'center', line: 300 })); });
       if ((type === 'internal' || type === 'delegation' || type === 'members') && d.toCustom.trim()) d.toCustom.split('\n').filter(x => x.trim()).forEach(x => to.push(mkPara([mkRun(x.trim(), { font: f, size })], { align: 'center', line: 300 })));
       out.push(...to);
       if (to.length) out.push(spacer(sp(3)));

@@ -83,7 +83,8 @@
         <fieldset class="group" data-recipients>
           <legend>الجهات الموجه إليها</legend>
           <label class="check"><input type="checkbox" data-doc-bind="letter.to0"> <span>معالي وزير التربية والتعليم وتنمية الموارد البشرية الأكرم</span></label>
-          <label class="check"><input type="checkbox" data-doc-bind="letter.to1"> <span>عطوفة مدير إدارة النشاطات التربوية الأكرم</span></label>
+          <label class="check"><input type="checkbox" data-doc-bind="letter.to1"> <span>عطوفة مدير ادارة شؤون المعلمين والطلبة الأكرم</span></label>
+          <label class="check"><input type="checkbox" data-doc-bind="letter.to3"> <span>عطوفة مدير مديرية النشاطات المدرسية الأكرم</span></label>
           <label class="check"><input type="checkbox" data-doc-bind="letter.to2"> <span>عطوفة مدير أندية المعلمين والعاملين الأكرم</span></label>
         </fieldset>
 
@@ -285,6 +286,8 @@
 
       <label class="field"><span>حجم الشعار في الترويسة: <b data-out="logoSize"></b> مم</span>
         <input type="range" min="15" max="35" step="1" data-bind="logoSize"></label>
+      <label class="field"><span>حجم الترويسة ككل (الشعارات والنص): <b data-out="headerScale"></b>٪</span>
+        <input type="range" min="60" max="120" step="5" data-bind="headerScale"></label>
     </section>
 
     <!-- ===== ذيل الصفحة ===== -->

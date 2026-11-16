@@ -69,7 +69,7 @@
   function letterDefaults(internal) {
     return {
       number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
-      to0: !internal, to1: !internal, to2: !internal,
+      to0: !internal, to1: !internal, to3: !internal, to2: !internal,
       toDir: !!internal, dirName: '', toCustom: '',
       subject: '', body: '', showHead: true, showManager: true
     };
@@ -86,7 +86,7 @@
   function delegationDefaults() {
     return {
       number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
-      to0: false, to1: false, to2: false, toCustom: '',
+      to0: false, to1: false, to3: false, to2: false, toCustom: '',
       subject: '',
       kind: 'qualifiers', kindName: 'المربع الذهبي لبطولة كرة القدم', eventName: 'دورة ميلاد القائد الثالثة والعشرين', venue: 'مدينة العقبة',
       showIntro: true, introText: '', body: '',
@@ -103,7 +103,7 @@
   function membersDefaults() {
     return {
       number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
-      to0: false, to1: false, to2: false, toCustom: '',
+      to0: false, to1: false, to3: false, to2: false, toCustom: '',
       subject: 'الانتساب الجديد/الاقتطاع الشهري', amount: 'دينار واحد',
       showIntro: true, introText: '', body: '', tableTitle: '', fitOne: false,
       rows: Array.from({ length: 5 }, () => mbRow()),
@@ -143,6 +143,7 @@
       bodySize: 14,
       lineHeight: 1.5,
       logoSize: 24,
+      headerScale: 100,
       onePage: false,
       logoSeeded: false,
       logoV2: false,
@@ -215,6 +216,7 @@
         const who = d.signer || d.signWho || 'manager';
         d.showHead = who === 'head' || who === 'both'; d.showManager = who === 'manager' || who === 'both';
       });
+      ['letter', 'internal', 'delegation', 'members'].forEach(k => { const d = r[k]; if (d && !('to3' in d) && 'to1' in d) d.to3 = d.to1; });
       return r;
     }
     const o = JSON.parse(JSON.stringify(raw));
