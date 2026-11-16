@@ -143,6 +143,7 @@
       bodySize: 14,
       lineHeight: 1.5,
       logoSize: 24,
+      headerScale: 100,
       onePage: false,
       logoSeeded: false,
       logoV2: false,

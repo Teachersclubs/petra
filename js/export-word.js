@@ -207,13 +207,14 @@
 
   async function headerBlock(S) {
     const C = App.CONST, f = S.font;
-    const [r, l] = await Promise.all([logoRun(S.logos.ministry, S.logoSize), logoRun(S.logos.club, S.logoSize)]);
+    const hs = (S.headerScale || 100) / 100, hz = v => Math.round(v * hs * 2) / 2, LS = Math.round(S.logoSize * hs * 10) / 10;
+    const [r, l] = await Promise.all([logoRun(S.logos.ministry, LS), logoRun(S.logos.club, LS)]);
     const both = r || l || (S.logos.ministry.show && S.logos.ministry.data) || (S.logos.club.show && S.logos.club.data);
-    const t = (text, size, b) => mkPara([mkRun(text, { font: f, size, b })], { align: 'center', line: 300 });
-    const club = mkPara([mkRun(C.CLUB_PREFIX + (S.clubName ? ' ' + S.clubName : ''), { font: f, size: 22, b: true })], { align: 'center', before: 60 });
+    const t = (text, size, b) => mkPara([mkRun(text, { font: f, size: hz(size), b })], { align: 'center', line: 300 });
+    const club = mkPara([mkRun(C.CLUB_PREFIX + (S.clubName ? ' ' + S.clubName : ''), { font: f, size: hz(22), b: true })], { align: 'center', before: 60 });
     const textCell = [t(C.MINISTRY, 11.5), t(C.DEPT, 13), t(C.DEPT2, 13), t(C.CLUBS, 13, true), club];
     if (!both) return [mkTable([CONTENT_W], [textCell])];
-    const lw = mm(S.logoSize + 4);
+    const lw = mm(LS + 4);
     const logoCell = run => [mkPara(run ? [run] : [], { align: 'center' })];
     return [mkTable([lw, CONTENT_W - 2 * lw, lw], [logoCell(r), textCell, logoCell(l)])];
   }
