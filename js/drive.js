@@ -22,7 +22,7 @@
   }
 
   /* تحرير في محرر مستندات Google: ينزّل ملف Word ثم يفتح Google Docs ليُرفع ويُحرَّر */
-  const DOCS_URL = 'https://docs.google.com/document/u/0/';
+  const DOCS_URL = 'https://docs.google.com/document/create'; // يفتح محرر مستند جديد مباشرةً
   async function editInDocs(S) {
     if (!(await App.approve('التحرير في Google Docs'))) return;
     const win = window.open('about:blank', '_blank');
@@ -31,7 +31,7 @@
       ok = await App.run('جارٍ تجهيز ملف Word للتحرير في Google Docs…', async () => {
         const f = await App.getFile(S, S.activeDoc, 'docx');
         if (!(await App.saveFile(f.blob, f.name))) throw new Error('أُلغي التنزيل');
-        g.toast('نُزّل الملف — في Google Docs اضغط أيقونة المجلد «فتح منتقي الملفات» ← تحميل ← اختر الملف');
+        g.toast('نُزّل الملف — في محرر Google Docs: ملف ← فتح (Ctrl+O) ← تحميل ← اختر الملف، فيُفتح للتحرير', 9000);
       });
     } finally {
       if (ok) { if (win) win.location.href = DOCS_URL; else window.open(DOCS_URL, '_blank'); }

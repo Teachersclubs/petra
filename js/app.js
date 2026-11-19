@@ -11,9 +11,9 @@
 
   /* ---------- تنبيه ---------- */
   let toastT;
-  window.toast = function (msg) {
+  window.toast = function (msg, ms) {
     const t = $('#toast'); t.textContent = msg; t.classList.add('on');
-    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2800);
+    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms || 2800);
   };
 
   /* ---------- الحفظ والعرض ---------- */
