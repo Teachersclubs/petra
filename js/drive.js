@@ -21,6 +21,27 @@
     }
   }
 
-  function init(getS) { document.getElementById('btnDrive').addEventListener('click', e => go(getS(), e.currentTarget)); }
+  /* تحرير في محرر مستندات Google: ينزّل ملف Word ثم يفتح Google Docs ليُرفع ويُحرَّر */
+  const DOCS_URL = 'https://docs.google.com/document/u/0/';
+  async function editInDocs(S) {
+    if (!(await App.approve('التحرير في Google Docs'))) return;
+    const win = window.open('about:blank', '_blank');
+    let ok = false;
+    try {
+      ok = await App.run('جارٍ تجهيز ملف Word للتحرير في Google Docs…', async () => {
+        const f = await App.getFile(S, S.activeDoc, 'docx');
+        if (!(await App.saveFile(f.blob, f.name))) throw new Error('أُلغي التنزيل');
+        g.toast('نُزّل الملف — في Google Docs اضغط أيقونة المجلد «فتح منتقي الملفات» ← تحميل ← اختر الملف');
+      });
+    } finally {
+      if (ok) { if (win) win.location.href = DOCS_URL; else window.open(DOCS_URL, '_blank'); }
+      else if (win) win.close();
+    }
+  }
+
+  function init(getS) {
+    document.getElementById('btnDrive').addEventListener('click', e => go(getS(), e.currentTarget));
+    document.getElementById('btnGdocs').addEventListener('click', () => editInDocs(getS()));
+  }
   g.App = Object.assign(App, { drive: { init } });
 })(window);
