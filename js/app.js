@@ -127,6 +127,7 @@
 
   function bindNudge() {
     const lim0 = { 'thanks.toY': [-30, 80], 'thanks.toX': [-40, 40], 'cert.logoX': [-120, 120], 'cert.logoY': [-10, 120] };
+    ['club', 'title', 'text'].forEach(k => { lim0['cert.' + k + 'X'] = [-120, 120]; lim0['cert.' + k + 'Y'] = [-60, 120]; });
     const lim = new Proxy(lim0, { get: (t, p) => t[p] || (/\.subY$/.test(p) ? [-30, 80] : [-60, 60]) });
     document.addEventListener('click', e => {
       const b = e.target.closest('[data-nudge]');
@@ -137,7 +138,8 @@
       }
       const rs = e.target.closest('[data-nudge-reset]');
       if (rs) { S.thanks.toX = 0; S.thanks.toY = 0; refreshControls(); changed(); return; }
-      if (e.target.closest('[data-cert-reset]')) { S.cert.logoX = 0; S.cert.logoY = 0; refreshControls(); changed(); return; }
+      const rc = e.target.closest('[data-cert-reset]');
+      if (rc) { const k = rc.dataset.certReset || 'logo'; S.cert[k + 'X'] = 0; S.cert[k + 'Y'] = 0; refreshControls(); changed(); return; }
       const rs2 = e.target.closest('[data-sub-reset]');
       if (rs2) { const d = S[rs2.dataset.subReset]; d.subX = 0; d.subY = 0; refreshControls(); changed(); }
     });
@@ -454,7 +456,7 @@
   /** تحميل الخط المختار (للخطوط المضمّنة) ثم إعادة رسم المعاينة */
   function applyFonts() {
     if (!(document.fonts && document.fonts.load)) return;
-    const names = [S.font, S.footer.font, S.circular.bodyFont].filter(Boolean);
+    const names = [S.font, S.footer.font, S.circular.bodyFont, S.cert.clubFont, S.cert.titleFont, S.cert.textFont].filter(Boolean);
     Promise.all(names.map(n => Promise.all(['400', '700'].map(w => document.fonts.load(w + " 14px '" + n + "'").catch(() => {}))))).then(() => { if (S) renderPreview(); });
   }
 
@@ -824,38 +826,57 @@
   }
 
   /* ---------- شهادة شكر وتقدير ---------- */
+  function certPos(k, label) {
+    return '<div class="pos-row"><b>' + label + '</b><div class="pos-pad">' +
+      '<button type="button" data-nudge="cert.' + k + 'Y" data-d="-1" title="للأعلى" aria-label="للأعلى">▲</button>' +
+      '<button type="button" data-nudge="cert.' + k + 'X" data-d="-1" title="يسار" aria-label="يسار">◀</button>' +
+      '<button type="button" data-nudge="cert.' + k + 'X" data-d="1" title="يمين" aria-label="يمين">▶</button>' +
+      '<button type="button" data-nudge="cert.' + k + 'Y" data-d="1" title="للأسفل" aria-label="للأسفل">▼</button></div>' +
+      '<label>رأسي <input type="number" min="-60" max="120" step="0.5" data-doc-bind="cert.' + k + 'Y"></label>' +
+      '<label>أفقي <input type="number" min="-120" max="120" step="0.5" data-doc-bind="cert.' + k + 'X"></label>' +
+      '<button type="button" class="btn sm ghost" data-cert-reset="' + k + '" title="إعادة ضبط">↺</button></div>';
+  }
+  function certStyle(k, hasSize) {
+    return '<div class="row2"><label class="field"><span>الحجم (نقطة)</span><input type="number" min="8" max="120" step="1" data-doc-bind="cert.' + k + 'Size"></label>' +
+      '<label class="field"><span>اللون</span><input type="color" data-doc-bind="cert.' + k + 'Color"></label></div>' +
+      '<label class="field"><span>نوع الخط</span><select data-fonts="blank" data-doc-bind="cert.' + k + 'Font"></select></label>';
+  }
   function buildCertForm() {
     addForm('cert',
       '<h2 class="panel-title">شهادة شكر وتقدير</h2>' +
-      '<label class="field"><span>اسم النادي <small>(يظهر في سطر النادي تلقائيًا)</small></span><input type="text" data-bind="clubName" placeholder="مثال: البتراء"></label>' +
-      '<fieldset class="group"><legend>العنوان</legend>' +
-      '<label class="field"><span>نوع الشهادة</span><select data-doc-bind="cert.kind"><option value="thanks">شكر وتقدير</option><option value="excel">شهادة تفوق</option><option value="custom">نص آخر (اكتبه أدناه)</option></select></label>' +
-      '<label class="field"><span>نص العنوان الاختياري <small>(يُستخدم عند اختيار «نص آخر»)</small></span><input type="text" data-doc-bind="cert.customTitle" placeholder="مثال: شهادة مشاركة"></label>' +
-      '<label class="field"><span>لون العنوان</span><input type="color" data-doc-bind="cert.titleColor"></label></fieldset>' +
-      '<fieldset class="group"><legend>بيانات الشهادة</legend>' +
-      '<label class="field"><span>سطر النادي <small>(اتركه فارغًا ليُكتب تلقائيًا حسب اسم النادي)</small></span><input type="text" data-doc-bind="cert.clubText" placeholder="نادي معلمي ..."></label>' +
-      '<label class="field"><span>الاسم</span><input type="text" data-doc-bind="cert.name" placeholder="اسم المكرَّم"></label>' +
-      '<label class="field"><span>النص</span><textarea rows="4" data-doc-bind="cert.text"></textarea></label>' +
-      '<label class="check"><input type="checkbox" data-doc-bind="cert.copiesOn"> <span>تكرار الشهادة في صفحات جديدة لأسماء أخرى</span></label>' +
-      '<label class="field" data-show-if="cert.copiesOn"><span>الأسماء الإضافية <small>(اكتب كل اسم في سطر)</small></span>' +
-      '<textarea rows="4" data-doc-bind="cert.copiesText" placeholder="الاسم الأول&#10;الاسم الثاني"></textarea></label></fieldset>' +
-      '<fieldset class="group"><legend>شعار النادي</legend>' +
+      '<label class="field"><span>اسم النادي <small>(يظهر في سطر النادي والجملة التمهيدية تلقائيًا)</small></span><input type="text" data-bind="clubName" placeholder="مثال: البتراء"></label>' +
+      '<fieldset class="group"><legend>١) الشعار</legend>' +
       '<label class="switch block"><input type="checkbox" data-doc-bind="cert.logoShow"><i></i><span>إظهار شعار النادي</span></label>' +
       '<label class="field"><span>حجم الشعار: <b data-out-path="cert.logoSize"></b> مم</span><input type="range" min="15" max="80" step="1" data-doc-bind="cert.logoSize"></label>' +
-      '<div class="pos-row"><b>مكان الشعار</b><div class="pos-pad">' +
-      '<button type="button" data-nudge="cert.logoY" data-d="-1" title="للأعلى" aria-label="للأعلى">▲</button>' +
-      '<button type="button" data-nudge="cert.logoX" data-d="-1" title="يسار" aria-label="يسار">◀</button>' +
-      '<button type="button" data-nudge="cert.logoX" data-d="1" title="يمين" aria-label="يمين">▶</button>' +
-      '<button type="button" data-nudge="cert.logoY" data-d="1" title="للأسفل" aria-label="للأسفل">▼</button></div>' +
-      '<label>رأسي <input type="number" min="-10" max="120" step="0.5" data-doc-bind="cert.logoY"></label>' +
-      '<label>أفقي <input type="number" min="-120" max="120" step="0.5" data-doc-bind="cert.logoX"></label>' +
-      '<button type="button" class="btn sm ghost" data-cert-reset title="إعادة ضبط">↺</button></div>' +
-      '<p class="hint">بالمليمتر (الخطوة من «خطوة التحريك»). الشعار نفسه يُغيَّر من تبويب «الشعارات».</p></fieldset>' +
-      '<fieldset class="group"><legend>الخط والتوقيع</legend>' +
-      '<label class="field"><span>حجم الخط: <b data-out-path="cert.fs"></b>٪</span><input type="range" min="60" max="140" step="5" data-doc-bind="cert.fs"></label>' +
+      certPos('logo', 'مكان الشعار') +
+      '<p class="hint">الشعار نفسه يُغيَّر من تبويب «الشعارات».</p></fieldset>' +
+      '<fieldset class="group"><legend>٢) اسم النادي</legend>' +
+      '<label class="field"><span>السطر <small>(اتركه فارغًا ليُكتب تلقائيًا «نادي معلمي …»)</small></span><input type="text" data-doc-bind="cert.clubText" placeholder="نادي معلمي ..."></label>' +
+      certStyle('club') + certPos('club', 'مكان اسم النادي') + '</fieldset>' +
+      '<fieldset class="group"><legend>٣) العنوان</legend>' +
+      '<label class="field"><span>نوع الشهادة</span><select data-doc-bind="cert.kind"><option value="thanks">شكر وتقدير</option><option value="excel">شهادة تفوق</option><option value="custom">نص آخر (اكتبه أدناه)</option></select></label>' +
+      '<label class="field"><span>نص العنوان الاختياري <small>(عند اختيار «نص آخر»)</small></span><input type="text" data-doc-bind="cert.customTitle" placeholder="مثال: شهادة مشاركة"></label>' +
+      certStyle('title') + certPos('title', 'مكان العنوان') + '</fieldset>' +
+      '<fieldset class="group"><legend>٤) النص</legend>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="cert.leadOn"> <span>إظهار الجملة التمهيدية «يتقدّم نادي … بالشكر والتقدير إلى»</span></label>' +
+      '<label class="field"><span>تعديل الجملة التمهيدية <small>(اتركه فارغًا للجملة التلقائية)</small></span><input type="text" data-doc-bind="cert.leadText" placeholder="يتقدّم نادي معلمي ... بالشكر والتقدير إلى"></label>' +
+      '<div class="row2"><label class="field"><span>الصفة</span><select data-doc-bind="cert.honorific"><option value="">بدون</option><option>المعلم</option><option>المعلمة</option><option>السيد</option><option>السيدة</option><option>الطالبة</option><option>الطالب</option></select></label>' +
+      '<label class="field"><span>الاسم</span><input type="text" data-doc-bind="cert.name" placeholder="اسم المكرَّم"></label></div>' +
+      '<label class="field"><span>النص المراد كتابته</span><textarea rows="4" data-doc-bind="cert.text"></textarea></label>' +
+      certStyle('text') +
+      '<div class="row2"><label class="field"><span>المحاذاة</span><select data-doc-bind="cert.textAlign"><option value="center">وسط</option><option value="right">يمين</option><option value="left">يسار</option><option value="justify">ضبط</option></select></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="cert.textBold"> <span>خط عريض</span></label></div>' +
+      certPos('text', 'مكان النص') +
+      '<label class="check"><input type="checkbox" data-doc-bind="cert.copiesOn"> <span>تكرار الشهادة في صفحات جديدة لأسماء أخرى</span></label>' +
+      '<label class="field" data-show-if="cert.copiesOn"><span>الأسماء الإضافية <small>(اكتب كل اسم في سطر؛ تُستخدم مع الصفة نفسها)</small></span>' +
+      '<textarea rows="4" data-doc-bind="cert.copiesText" placeholder="الاسم الأول&#10;الاسم الثاني"></textarea></label></fieldset>' +
+      '<fieldset class="group"><legend>التوقيع</legend>' +
       '<label class="check"><input type="checkbox" data-doc-bind="cert.showHead"> <span>إظهار رئيس الهيئة الإدارية (واسمه)</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="cert.showManager"> <span>إظهار مدير النادي (واسمه)</span></label>' +
       '<p class="hint">أسماء الرئيس والمدير وتواقيعهم وأختامهم تُعدَّل من تبويب «الإعدادات».</p></fieldset>');
+    $$('.doc-form[data-form="cert"] select[data-fonts]').forEach(sel => {
+      sel.innerHTML = '<option value="">الخط الافتراضي للمستند</option>' + App.FONTS.map(f => '<option value="' + f[0] + '">' + f[1] + '</option>').join('');
+    });
   }
 
   function setupAssign() {

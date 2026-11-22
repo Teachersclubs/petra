@@ -504,7 +504,7 @@
 
   /* شهادة: صفحة أفقية، الإطار والعلامة المائية صورة خلف النص */
   async function certSection(S, variant) {
-    const d = S.cert, f = S.font, fs = d.fs / 100;
+    const d = S.cert, f = S.font;
     const bg = await App.certBgPng(S);
     const header = new docx.Header({ children: [new docx.Paragraph({ children: [new docx.ImageRun({
       type: 'png', data: dataUrlToBytes(bg), transformation: { width: Math.round(297 * PX_PER_MM), height: Math.round(210 * PX_PER_MM) },
@@ -514,19 +514,27 @@
         behindDocument: true, allowOverlap: true, wrap: { type: docx.TextWrappingType.NONE }
       }
     })] })] });
-    const col = (d.titleColor || '#9a7425').replace('#', '');
     const out = [];
-    const L = S.logos.club, ly = +d.logoY || 0, lx = +d.logoX || 0;
-    if (d.logoShow && L && L.data) {
+    const hx = c => (c || '#000000').replace('#', '');
+    const fnt = x => x || f;
+    const ind = x => x ? (x > 0 ? { end: mm(2 * x) } : { start: mm(-2 * x) }) : undefined;
+    const L = S.logos.club, ly = +d.logoY || 0, lx = +d.logoX || 0, hasLogo = d.logoShow && L && L.data;
+    if (hasLogo) {
       const img = await fitImage(L.data, d.logoSize, d.logoSize);
-      out.push(mkPara([img], { align: 'center', before: mm(Math.max(0, 2 + ly)), indent: lx ? (lx > 0 ? { end: mm(2 * lx) } : { start: mm(-2 * lx) }) : undefined }));
+      out.push(mkPara([img], { align: 'center', before: mm(Math.max(0, 2 + ly)), indent: ind(lx) }));
     } else out.push(mkPara([], { before: mm(8) }));
-    const top = Math.max(1, 58 - 12 - 2 - (d.logoShow && L && L.data ? d.logoSize : 0) - (d.logoShow ? ly : 0));
-    const ttl = App.certTitle(d);
-    out.push(mkPara([mkRun(ttl || ' ', { font: f, size: 46 * fs, b: true, color: col })], { align: 'center', before: mm(top), after: mm(2) }));
-    out.push(mkPara([mkRun(App.certClub(S), { font: f, size: 26 * fs, b: true })], { align: 'center', after: mm(3) }));
-    out.push(mkPara([mkRun(variant || d.name || ' ', { font: f, size: 36 * fs, b: true })], { align: 'center', after: mm(3) }));
-    if (d.text.trim()) out.push(mkPara(d.text.trim().split('\n').map((x, i) => mkRun(x, { font: f, size: 18 * fs, br: i > 0 })), { align: 'center', line: 400, after: mm(6) }));
+    const top = Math.max(1, 56 - 12 - 2 - (hasLogo ? d.logoSize + ly : 0) + (+d.clubY || 0));
+    out.push(mkPara([mkRun(App.certClub(S), { font: fnt(d.clubFont), size: d.clubSize, b: true, color: hx(d.clubColor) })], { align: 'center', before: mm(top), after: mm(Math.max(0, 3 + (+d.titleY || 0) - (+d.clubY || 0))), indent: ind(+d.clubX || 0) }));
+    out.push(mkPara([mkRun(App.certTitle(d) || ' ', { font: fnt(d.titleFont), size: d.titleSize, b: true, color: hx(d.titleColor) })], { align: 'center', after: mm(Math.max(0, 3 + (+d.textY || 0) - (+d.titleY || 0))), indent: ind(+d.titleX || 0) }));
+    const tf = fnt(d.textFont), ts = d.textSize, tc = hx(d.textColor), ta = d.textAlign;
+    const nm = variant || d.name;
+    if (d.leadOn) {
+      out.push(mkPara([
+        mkRun(App.certLead(S) + (d.honorific ? ' ' + d.honorific : '') + ' ', { font: tf, size: ts, b: d.textBold, color: tc }),
+        mkRun(nm || ' ', { font: tf, size: ts * 1.12, b: true, color: tc })
+      ], { align: ta, line: 400, after: mm(1), indent: ind(+d.textX || 0) }));
+    }
+    if (d.text.trim()) out.push(mkPara(d.text.trim().split('\n').map((x, i) => mkRun(x, { font: tf, size: ts, b: d.textBold, color: tc, br: i > 0 })), { align: ta, line: 400, after: mm(6), indent: ind(+d.textX || 0) }));
     out.push(await signatureBlock(S, 'cert'));
     return {
       properties: { page: { size: { width: 11906, height: 16838, orientation: docx.PageOrientation.LANDSCAPE }, margin: { top: mm(12), bottom: mm(6), left: mm(60), right: mm(60), footer: 0, header: 0 } }, bidi: true },
