@@ -20,6 +20,11 @@
     return n ? 'نادي معلمي ' + n : 'نادي المعلمين';
   }
 
+  const fontCss = n => n ? "font-family:'" + n + "',Tahoma,Arial,sans-serif;" : '';
+  const off = (x, y) => (+x || +y) ? 'left:' + (+x || 0) + 'mm;top:' + (+y || 0) + 'mm;' : '';
+  /** الجملة التمهيدية: «يتقدّم نادي ... بالشكر والتقدير» */
+  function leadText(S) { const d = S.cert; return (d.leadText || '').trim() || 'يتقدّم ' + clubLine(S) + ' بالشكر والتقدير إلى'; }
+
   /** نص الشهادة؛ variant = اسم في نسخة مكرّرة */
   function certHTML(S, variant) {
     const d = S.cert, ph = t => '<span class="ph">' + t + '</span>';
@@ -29,12 +34,14 @@
     const wm = S.wmShow !== false ? '<img class="ct-wm" alt="" src="' + g.WM_LOGO + '" style="opacity:' + (Math.min(100, Math.max(2, +S.wmOpacity || 8)) / 100) + '">' : '';
     const lg = d.logoShow && logo && logo.data
       ? '<img class="ct-logo" alt="" src="' + logo.data + '" style="width:' + d.logoSize + 'mm;left:calc(50% + ' + d.logoX + 'mm);top:' + (14 + (+d.logoY || 0)) + 'mm">' : '';
-    return '<div class="cert" style="--cfs:' + (d.fs / 100) + ';--ct-col:' + esc(d.titleColor) + '">' + wm + lg +
-      '<div class="ct-body">' +
-      '<div class="ct-title">' + (ttl ? esc(ttl) : ph('العنوان')) + '</div>' +
-      '<div class="ct-club">' + esc(clubLine(S)) + '</div>' +
-      '<div class="ct-name">' + (name ? esc(name) : ph('اسم المكرَّم')) + '</div>' +
-      '<div class="ct-text">' + (d.text.trim() ? esc(d.text.trim()).replace(/\n/g, '<br>') : ph('نص الشهادة')) + '</div></div>' +
+    const lead = d.leadOn
+      ? '<div class="ct-lead">' + esc(leadText(S)) + (d.honorific ? ' ' + esc(d.honorific) : '') + ' <b class="ct-nm">' + (name ? esc(name) : ph('اسم المكرَّم')) + '</b></div>' : '';
+    const main = d.text.trim() ? '<div class="ct-main">' + esc(d.text.trim()).replace(/\n/g, '<br>') + '</div>' : (d.leadOn ? '' : '<div class="ct-main">' + ph('نص الشهادة') + '</div>');
+    const tx = 'font-size:' + d.textSize + 'pt;color:' + esc(d.textColor) + ';text-align:' + d.textAlign + ';' + (d.textBold ? 'font-weight:700;' : '') + fontCss(d.textFont) + off(d.textX, d.textY);
+    return '<div class="cert">' + wm + lg + '<div class="ct-body">' +
+      '<div class="ct-club" style="font-size:' + d.clubSize + 'pt;color:' + esc(d.clubColor) + ';' + fontCss(d.clubFont) + off(d.clubX, d.clubY) + '">' + esc(clubLine(S)) + '</div>' +
+      '<div class="ct-title" style="font-size:' + d.titleSize + 'pt;color:' + esc(d.titleColor) + ';' + fontCss(d.titleFont) + off(d.titleX, d.titleY) + '">' + (ttl ? esc(ttl) : ph('العنوان')) + '</div>' +
+      '<div class="ct-text" style="' + tx + '">' + lead + main + '</div></div>' +
       '<div class="ct-sign">' + App.signHTML(S, 'cert') + '</div></div>';
   }
 
@@ -58,5 +65,5 @@
     });
   }
 
-  g.App = Object.assign(App, { certHTML, certBgUrl: SVG_URL, certBgPng: bgPng, certTitle: title, certClub: clubLine });
+  g.App = Object.assign(App, { certHTML, certBgUrl: SVG_URL, certBgPng: bgPng, certTitle: title, certClub: clubLine, certLead: leadText });
 })(window);

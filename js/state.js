@@ -101,12 +101,17 @@
     };
   }
 
+  const CERT_TEXT_OLD = 'نتقدم لكم بخالص الشكر والتقدير على جهودكم المتميزة وعطائكم المستمر، متمنين لكم دوام التوفيق والنجاح.';
   function certDefaults() {
     return {
       kind: 'thanks', customTitle: '', clubText: '', name: '',
-      text: 'نتقدم لكم بخالص الشكر والتقدير على جهودكم المتميزة وعطائكم المستمر، متمنين لكم دوام التوفيق والنجاح.',
+      leadOn: true, leadText: '', honorific: 'المعلم',
+      text: 'تقديراً للجهود المبذولة والعطاء المتميز، متمنين دوام التوفيق والنجاح.',
       copiesOn: false, copiesText: '',
-      logoShow: true, logoSize: 38, logoX: 0, logoY: 0, fs: 100, titleColor: '#9a7425',
+      logoShow: true, logoSize: 38, logoX: 0, logoY: 0,
+      clubX: 0, clubY: 0, clubSize: 26, clubFont: '', clubColor: '#1f2233',
+      titleX: 0, titleY: 0, titleSize: 46, titleFont: '', titleColor: '#9a7425',
+      textX: 0, textY: 0, textSize: 18, textFont: '', textColor: '#1f2233', textBold: false, textAlign: 'center',
       showHead: true, showManager: true
     };
   }
@@ -295,6 +300,8 @@
       dl[ck] = ids.length ? ids : DG_STD[k].slice();
     });
     d.members.rows = (Array.isArray(d.members.rows) ? d.members.rows : []).filter(r => r && typeof r === 'object').map(r => { const o = mbRow(); Object.keys(o).forEach(f => { if (typeof r[f] === 'string') o[f] = r[f]; }); return o; });
+    if (d.cert.text === CERT_TEXT_OLD) d.cert.text = certDefaults().text;
+    ['clubFont', 'titleFont', 'textFont'].forEach(k => { if (d.cert[k] && !known(d.cert[k])) d.cert[k] = ''; });
     if (d.members.amount === 'دينارا واحدا') d.members.amount = 'دينار واحد';
     if (d.delegation.kindName === 'كرة القدم للمربع الذهبي لدورة ميلاد القائد 23') d.delegation.kindName = 'المربع الذهبي لبطولة كرة القدم';
     if (!d.members.hijri && !d.members.hijriManual) d.members.hijri = formatHijri(d.members.date);
