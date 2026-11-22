@@ -101,6 +101,15 @@
     };
   }
 
+  function certDefaults() {
+    return {
+      kind: 'thanks', customTitle: '', clubText: '', name: '',
+      text: 'نتقدم لكم بخالص الشكر والتقدير على جهودكم المتميزة وعطائكم المستمر، متمنين لكم دوام التوفيق والنجاح.',
+      copiesOn: false, copiesText: '',
+      logoShow: true, logoSize: 38, logoX: 0, logoY: 0, fs: 100, titleColor: '#9a7425',
+      showHead: true, showManager: true
+    };
+  }
   function membersDefaults() {
     return {
       subX: 0, subY: 0,
@@ -146,6 +155,7 @@
       lineHeight: 1.5,
       logoSize: 24,
       headerScale: 100,
+      wmShow: true, wmOpacity: 8, wmSize: 60,
       onePage: false,
       logoSeeded: false,
       logoV2: false,
@@ -184,6 +194,7 @@
       },
       delegation: delegationDefaults(),
       members: membersDefaults(),
+      cert: certDefaults(),
       circular: {
         subX: 0, subY: 0,
         number: '', subject: '', body: '',
@@ -214,7 +225,7 @@
       const r = JSON.parse(JSON.stringify(raw));
       if (!r.fontV3) { r.font = 'Tajawal'; if (r.footer) r.footer.font = 'Tajawal'; r.fontV3 = 1; }
       if (r.people && !r.people.modeV2) { r.people.mode = 'below'; r.people.modeV2 = 1; }
-      ['letter', 'internal', 'thanks', 'circular', 'assign', 'claim', 'delegation', 'members'].forEach(k => {
+      ['letter', 'internal', 'thanks', 'circular', 'assign', 'claim', 'delegation', 'members', 'cert'].forEach(k => {
         const d = r[k]; if (!d || d.showHead !== undefined) return;
         const who = d.signer || d.signWho || 'manager';
         d.showHead = who === 'head' || who === 'both'; d.showManager = who === 'manager' || who === 'both';
