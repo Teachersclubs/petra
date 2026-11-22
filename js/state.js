@@ -68,6 +68,7 @@
 
   function letterDefaults(internal) {
     return {
+      subX: 0, subY: 0,
       number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
       to0: !internal, to1: !internal, to3: !internal, to2: !internal,
       toDir: !!internal, dirName: '', toCustom: '',
@@ -85,7 +86,7 @@
   function dgPlayer(role) { return { name: '', ministryNo: '', memberNo: '', nationalNo: '', joinDate: '', role: role || '', game: '', x: {} }; }
   function delegationDefaults() {
     return {
-      number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
+      subX: 0, subY: 0, number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
       to0: false, to1: false, to3: false, to2: false, toCustom: '',
       subject: '',
       kind: 'qualifiers', kindName: 'المربع الذهبي لبطولة كرة القدم', eventName: 'دورة ميلاد القائد الثالثة والعشرين', venue: 'مدينة العقبة',
@@ -102,6 +103,7 @@
 
   function membersDefaults() {
     return {
+      subX: 0, subY: 0,
       number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
       to0: false, to1: false, to3: false, to2: false, toCustom: '',
       subject: 'الانتساب الجديد/الاقتطاع الشهري', amount: 'دينار واحد',
@@ -183,6 +185,7 @@
       delegation: delegationDefaults(),
       members: membersDefaults(),
       circular: {
+        subX: 0, subY: 0,
         number: '', subject: '', body: '',
         date: todayISO(), showDate: true, showHijri: true, hijri: '', hijriManual: false,
         showNumUnder: false, showTitleNum: true,

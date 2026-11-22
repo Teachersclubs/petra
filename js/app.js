@@ -119,7 +119,8 @@
   }
 
   function bindNudge() {
-    const lim = { 'thanks.toY': [-5, 80], 'thanks.toX': [-40, 40] };
+    const lim0 = { 'thanks.toY': [-30, 80], 'thanks.toX': [-40, 40] };
+    const lim = new Proxy(lim0, { get: (t, p) => t[p] || (/\.subY$/.test(p) ? [-30, 80] : [-60, 60]) });
     document.addEventListener('click', e => {
       const b = e.target.closest('[data-nudge]');
       if (b) {
@@ -128,7 +129,9 @@
         App.setPath(S, p, v); refreshControls(); changed(); return;
       }
       const rs = e.target.closest('[data-nudge-reset]');
-      if (rs) { S.thanks.toX = 0; S.thanks.toY = 0; refreshControls(); changed(); }
+      if (rs) { S.thanks.toX = 0; S.thanks.toY = 0; refreshControls(); changed(); return; }
+      const rs2 = e.target.closest('[data-sub-reset]');
+      if (rs2) { const d = S[rs2.dataset.subReset]; d.subX = 0; d.subY = 0; refreshControls(); changed(); }
     });
   }
   function bindAll() {
@@ -481,7 +484,7 @@
       '<button type="button" data-nudge="thanks.toX" data-d="-1" title="يسار" aria-label="يسار">◀</button>' +
       '<button type="button" data-nudge="thanks.toX" data-d="1" title="يمين" aria-label="يمين">▶</button>' +
       '<button type="button" data-nudge="thanks.toY" data-d="1" title="للأسفل" aria-label="إنزال الصندوق">▼</button></div>' +
-      '<label>رأسي <input type="number" min="-5" max="80" step="0.5" data-doc-bind="thanks.toY"></label>' +
+      '<label>رأسي <input type="number" min="-30" max="80" step="0.5" data-doc-bind="thanks.toY"></label>' +
       '<label>أفقي <input type="number" min="-40" max="40" step="0.5" data-doc-bind="thanks.toX"></label>' +
       '<button type="button" class="btn sm ghost" data-nudge-reset="thanks" title="إعادة ضبط">↺</button></div>' +
       '<p class="hint">الحركة بالمليمتر؛ إنزال الصندوق يزيح ما تحته، وتُطبَّق على المعاينة وWord وPDF والطباعة.</p>';
@@ -794,6 +797,24 @@
     mbSync();
   }
 
+  /* مربع تحريك كلمة «الموضوع» في التابات التي تطبعه */
+  function buildSubjectPos() {
+    ['letter', 'internal', 'thanks', 'circular', 'delegation', 'members'].forEach(t => {
+      const inp = document.querySelector('[data-doc-bind="' + t + '.subject"]'); if (!inp) return;
+      const box = document.createElement('fieldset'); box.className = 'group';
+      box.innerHTML = '<legend>موضع كلمة «الموضوع»</legend><div class="pos-row"><b>تحريك السطر</b><div class="pos-pad">' +
+        '<button type="button" data-nudge="' + t + '.subY" data-d="-1" title="للأعلى" aria-label="للأعلى">▲</button>' +
+        '<button type="button" data-nudge="' + t + '.subX" data-d="-1" title="يسار" aria-label="يسار">◀</button>' +
+        '<button type="button" data-nudge="' + t + '.subX" data-d="1" title="يمين" aria-label="يمين">▶</button>' +
+        '<button type="button" data-nudge="' + t + '.subY" data-d="1" title="للأسفل" aria-label="للأسفل">▼</button></div>' +
+        '<label>رأسي <input type="number" min="-30" max="80" step="0.5" data-doc-bind="' + t + '.subY"></label>' +
+        '<label>أفقي <input type="number" min="-60" max="60" step="0.5" data-doc-bind="' + t + '.subX"></label>' +
+        '<button type="button" class="btn sm ghost" data-sub-reset="' + t + '" title="إعادة ضبط">↺</button></div>' +
+        '<p class="hint">بالمليمتر (الخطوة من «خطوة التحريك»)؛ ▲ للأعلى ▼ للأسفل ◀ يسار ▶ يمين. تُطبَّق على المعاينة وWord وPDF والطباعة.</p>';
+      inp.closest('.field').after(box);
+    });
+  }
+
   function setupAssign() {
     $('#btnInsDate').addEventListener('mousedown', e => e.preventDefault());
     $('#btnInsDate').addEventListener('click', () => {
@@ -1070,7 +1091,7 @@
   /* ---------- البدء ---------- */
   function init() {
     const bl = document.getElementById('brandLogo'); if (bl && window.DEFAULT_CLUB_LOGO) bl.src = window.DEFAULT_CLUB_LOGO;
-    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); buildDelegationForm(); buildMembersForm(); setupAssign();
+    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); buildDelegationForm(); buildMembersForm(); buildSubjectPos(); setupAssign();
     bindAll(); setupRte(); setupLogos(); setupPeople(); setupFonts(); setupPositions(); setupDrag(); syncPos(); fillAR(); setupActions(); setupZoom(); setupTheme(); applyTheme();
     App.attach.init(() => S.activeDoc, changed); App.initSend(() => S); App.drive.init(() => S);
     $$('.doc-tab').forEach(b => b.addEventListener('click', () => setDoc(b.dataset.doc)));
