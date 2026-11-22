@@ -104,7 +104,7 @@
   const CERT_TEXT_OLD = 'نتقدم لكم بخالص الشكر والتقدير على جهودكم المتميزة وعطائكم المستمر، متمنين لكم دوام التوفيق والنجاح.';
   function certDefaults() {
     return {
-      kind: 'thanks', customTitle: '', clubText: '', name: '',
+      tpl: 'classic', kind: 'thanks', customTitle: '', clubText: '', name: '',
       leadOn: true, leadText: '', honorific: 'المعلم',
       text: 'تقديراً للجهود المبذولة والعطاء المتميز، متمنين دوام التوفيق والنجاح.',
       copiesOn: false, copiesText: '',

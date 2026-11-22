@@ -515,3 +515,9 @@ dialog#apprDlg .btn.primary { padding: 9px 22px; }
   .land-print .ph { visibility: hidden; }
   .land-print .sheet.land { box-shadow: none; }
 }
+
+/* قوالب الشهادة */
+.tpl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
+.tpl { display: flex; flex-direction: column; gap: 4px; padding: 4px; border: 2px solid var(--line, #d9dce3); border-radius: 8px; background: transparent; cursor: pointer; font: inherit; font-size: 11.5px; color: inherit; }
+.tpl img { width: 100%; aspect-ratio: 297 / 210; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0,0,0,.12); display: block; }
+.tpl.on { border-color: #b45309; background: rgba(180,83,9,.08); font-weight: 700; }
