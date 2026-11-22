@@ -24,6 +24,8 @@
     raf = requestAnimationFrame(renderPreview);
   }
 
+  window.addEventListener('wm-ready', () => { try { renderPreview(); } catch (e) { /* لا شيء */ } });
+
   function renderPreview() {
     const sheet = $('#sheet');
     const r = App.renderDoc(S, S.activeDoc);

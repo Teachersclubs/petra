@@ -146,6 +146,7 @@
       lineHeight: 1.5,
       logoSize: 24,
       headerScale: 100,
+      wmShow: true, wmOpacity: 8, wmSize: 60,
       onePage: false,
       logoSeeded: false,
       logoV2: false,

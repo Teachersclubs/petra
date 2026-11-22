@@ -10,6 +10,7 @@
     w.setAttribute('style', r.style);
     w.dir = 'rtl';
     if (forPrint) {
+      if (/--wm-img/.test(r.style)) w.className = 'wm-wrap';
       w.innerHTML =
         '<table class="pt"><thead><tr><td><div class="pt-gap"></div></td></tr></thead><tbody><tr><td><div class="sheet-main">' + r.main + '</div></td></tr></tbody>' +
         '<tfoot><tr><td><div class="sheet-foot">' + r.foot + '</div></td></tr></tfoot></table>';
@@ -119,7 +120,8 @@
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
       // الهواتف تضخّم الخطوط تلقائيًا (تكبير النص في النظام)، فتتباعد الكلمات في PDF؛ نعطّل ذلك داخل نسخة الالتقاط
       const noBoost = d => { [d.documentElement, d.body].forEach(el => { if (el) { el.style.webkitTextSizeAdjust = 'none'; el.style.textSizeAdjust = 'none'; } }); };
-      const opts = { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, onclone: async d => {
+      const wmImg = await App.wmTileImage(S);
+      const opts = { scale: 2, backgroundColor: wmImg ? null : '#ffffff', useCORS: true, logging: false, onclone: async d => {
         noBoost(d);
         // نسخة الالتقاط وثيقة جديدة: ننتظر تحميل الخطوط فيها قبل القياس حتى لا يُقاس النص بخط بديل أعرض
         try {
@@ -167,6 +169,7 @@
         pc.width = PAGE_W * k; pc.height = PAGE_H * k;
         const cx = pc.getContext('2d');
         cx.fillStyle = '#fff'; cx.fillRect(0, 0, pc.width, pc.height);
+        if (wmImg) cx.drawImage(wmImg, 0, 0, pc.width, pc.height);
         if (sh > 0) cx.drawImage(mainC, 0, Math.round(y * k), mainC.width, Math.round(sh * k), 0, Math.round(offTop * k), mainC.width, Math.round(sh * k));
         if (footC) cx.drawImage(footC, 0, Math.round((PAGE_H - footH) * k));
         if (!(page === 0 && takeFirst())) pdf.addPage([PAGE_W, PAGE_H], 'p');

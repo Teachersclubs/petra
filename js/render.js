@@ -658,7 +658,7 @@
     const E = effective(S, type);
     curVariant = variants(S, type)[vi || 0] || null;
     try {
-      return { style: styleOf(S, type, E), main: mainHTML(S, type, E), foot: footerHTML(S, E), eff: E };
+      return { style: styleOf(S, type, E) + (App.wmVar ? App.wmVar(S) : ''), main: mainHTML(S, type, E), foot: footerHTML(S, E), eff: E };
     } finally { curVariant = null; }
   }
 

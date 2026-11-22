@@ -506,6 +506,19 @@
     const S = App.withEffective(S0, type);
     const vars = App.variants(S, type);
     const bodySections = [];
+    const wm = App.wmLogo(S);
+    let wmHeader = null;
+    if (wm) {
+      const [wpx, hpx] = await imgSize(wm.url), k = (wm.wMm * PX_PER_MM) / wpx;
+      wmHeader = () => new docx.Header({ children: [new docx.Paragraph({ children: [new docx.ImageRun({
+        type: 'png', data: dataUrlToBytes(wm.url), transformation: { width: Math.round(wpx * k), height: Math.round(hpx * k) },
+        floating: {
+          horizontalPosition: { relative: docx.HorizontalPositionRelativeFrom.PAGE, align: docx.HorizontalPositionAlign.CENTER },
+          verticalPosition: { relative: docx.VerticalPositionRelativeFrom.PAGE, align: docx.VerticalPositionAlign.CENTER },
+          behindDocument: true, allowOverlap: true, wrap: { type: docx.TextWrappingType.NONE }
+        }
+      })] })] });
+    }
     for (let i = 0; i < vars.length; i++) {
       const children = await buildMain(S, type, vars[i]);
       const footer = await buildFooter(S);
@@ -517,6 +530,7 @@
           },
           bidi: true
         },
+        headers: wmHeader ? { default: wmHeader() } : undefined,
         footers: footer ? { default: footer } : undefined,
         children
       });

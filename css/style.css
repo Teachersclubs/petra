@@ -170,7 +170,8 @@ fieldset.group legend { padding: 0 6px; font-weight: 700; font-size: 13px; color
   width: 210mm; min-height: 297mm; background: #fff; color: #000;
   box-shadow: 0 2px 14px rgba(0,0,0,.18); display: flex; flex-direction: column;
   direction: rtl; position: relative;
-  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(297mm - 1px), rgba(224,120,40,.55) calc(297mm - 1px), rgba(224,120,40,.55) 297mm);
+  background-image: var(--wm-img, none), repeating-linear-gradient(to bottom, transparent 0, transparent calc(297mm - 1px), rgba(224,120,40,.55) calc(297mm - 1px), rgba(224,120,40,.55) 297mm);
+  background-size: 100% 297mm, auto; background-repeat: repeat-y, repeat;
 }
 .sheet-main { flex: 1; padding: calc(10mm * var(--sp, 1)) 17mm 4mm; }
 .sheet.measure { min-height: 0; background-image: none; box-shadow: none; }
@@ -255,6 +256,7 @@ fieldset.group legend { padding: 0 6px; font-weight: 700; font-size: 13px; color
   .pt .sheet-foot { padding: 0 17mm 9mm; }
   .pt .ph { color: transparent; }
   .pt .ph { visibility: hidden; }
+  .wm-wrap { background-image: var(--wm-img, none); background-size: 100% 297mm; background-repeat: repeat-y; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 
