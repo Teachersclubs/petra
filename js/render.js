@@ -660,7 +660,7 @@
     const E = effective(S, type);
     curVariant = variants(S, type)[vi || 0] || null;
     try {
-      if (type === 'cert') return { style: styleOf(S, type, E) + ';--cert-bg:url(' + App.certBgUrl + ')', main: App.certHTML(S, curVariant), foot: '', eff: E, land: true };
+      if (type === 'cert') return { style: styleOf(S, type, E) + ';--cert-bg:url(' + App.certBgUrlFor(S) + ')', main: App.certHTML(S, curVariant), foot: '', eff: E, land: true };
       return { style: styleOf(S, type, E) + (App.wmVar ? App.wmVar(S) : ''), main: mainHTML(S, type, E), foot: footerHTML(S, E), eff: E };
     } finally { curVariant = null; }
   }

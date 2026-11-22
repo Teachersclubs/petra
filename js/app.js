@@ -82,6 +82,7 @@
     $$('[data-bind]').forEach(el => { if (el !== skip) writeEl(el, App.getPath(S, el.dataset.bind)); });
     $$('[data-doc-bind]').forEach(el => { if (el !== skip) writeEl(el, App.getPath(S, el.dataset.docBind)); });
     $$('[data-out]').forEach(o => { o.textContent = S[o.dataset.out]; });
+    { const ts = $('#certTplSel'); if (ts) ts.value = S.cert.tpl; $$('[data-cert-tpl]').forEach(b => b.classList.toggle('on', b.dataset.certTpl === S.cert.tpl)); }
     $$('[data-show-if]').forEach(el => { el.hidden = !App.getPath(S, el.dataset.showIf); });
     $$('[data-out-path]').forEach(o => { o.textContent = App.getPath(S, o.dataset.outPath); });
     $$('.people-card').forEach(card => {
@@ -138,11 +139,18 @@
       }
       const rs = e.target.closest('[data-nudge-reset]');
       if (rs) { S.thanks.toX = 0; S.thanks.toY = 0; refreshControls(); changed(); return; }
+      const ct = e.target.closest('[data-cert-tpl]');
+      if (ct) { applyCertTpl(ct.dataset.certTpl); return; }
       const rc = e.target.closest('[data-cert-reset]');
       if (rc) { const k = rc.dataset.certReset || 'logo'; S.cert[k + 'X'] = 0; S.cert[k + 'Y'] = 0; refreshControls(); changed(); return; }
       const rs2 = e.target.closest('[data-sub-reset]');
       if (rs2) { const d = S[rs2.dataset.subReset]; d.subX = 0; d.subY = 0; refreshControls(); changed(); }
     });
+  }
+  function applyCertTpl(id) {
+    const t = App.CERT_TPLS.find(x => x.id === id); if (!t) return;
+    S.cert.tpl = id; S.cert.clubColor = t.c.club; S.cert.titleColor = t.c.title; S.cert.textColor = t.c.text;
+    refreshControls(); changed();
   }
   function bindAll() {
     bindNudge();
@@ -153,6 +161,7 @@
     });
     document.addEventListener('change', e => {
       const el = e.target;
+      if (el.id === 'certTplSel') { applyCertTpl(el.value); return; }
       if (el.type === 'checkbox' || el.tagName === 'SELECT') {
         if (el.dataset.bind) onInput(el, el.dataset.bind);
         else if (el.dataset.docBind) onInput(el, el.dataset.docBind);
@@ -845,6 +854,9 @@
     addForm('cert',
       '<h2 class="panel-title">شهادة شكر وتقدير</h2>' +
       '<label class="field"><span>اسم النادي <small>(يظهر في سطر النادي والجملة التمهيدية تلقائيًا)</small></span><input type="text" data-bind="clubName" placeholder="مثال: البتراء"></label>' +
+      '<fieldset class="group"><legend>قالب التصميم</legend>' +
+      '<label class="field"><span>اختر قالبًا <small>(يضبط الإطار وألوان النصوص، ويمكنك تعديل أي لون بعده)</small></span><select id="certTplSel">' + App.CERT_TPLS.map(t => '<option value="' + t.id + '">' + t.name + '</option>').join('') + '</select></label>' +
+      '<div class="tpl-grid" id="certTplGrid">' + App.CERT_TPLS.map(t => '<button type="button" class="tpl" data-cert-tpl="' + t.id + '" title="' + t.name + '"><img alt="" src="' + t.url + '"><span>' + t.name + '</span></button>').join('') + '</div></fieldset>' +
       '<fieldset class="group"><legend>١) الشعار</legend>' +
       '<label class="switch block"><input type="checkbox" data-doc-bind="cert.logoShow"><i></i><span>إظهار شعار النادي</span></label>' +
       '<label class="field"><span>حجم الشعار: <b data-out-path="cert.logoSize"></b> مم</span><input type="range" min="15" max="80" step="1" data-doc-bind="cert.logoSize"></label>' +
