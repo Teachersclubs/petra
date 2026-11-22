@@ -308,6 +308,12 @@
     const n = (S.clubName || '').replace(/^\s*(ال)?نادي\s+/, '').trim();
     return 'السادة أعضاء الهيئة العامة' + (n ? ' لنادي ' + n : ' للنادي');
   }
+  /** موضع كلمة «الموضوع» (مم): subY رأسي (+ للأسفل)، subX أفقي (+ لليمين) */
+  function subStyle(d) {
+    const y = +d.subY || 0, x = +d.subX || 0;
+    if (!y && !x) return '';
+    return ' style="' + (y > 0 ? 'padding-top:' + y + 'mm;' : y < 0 ? 'margin-top:' + y + 'mm;' : '') + (x ? 'position:relative;left:' + x + 'mm;' : '') + '"';
+  }
   function recipStyle(S, type) {
     if (type !== 'thanks') return '';
     const y = +S.thanks.toY || 0, x = +S.thanks.toX || 0;
@@ -339,7 +345,7 @@
     return headerHTML(S, E) +
       '<div class="date-row">' + numCell + dateCells + '</div>' +
       (list.length ? '<div class="recipients"' + recipStyle(S, type) + '>' + list.join('') + '</div>' : '') +
-      '<div class="subject"><u>الموضوع:</u> ' + (d.subject ? '( ' + esc(d.subject) + ' )' : ph('(&nbsp;&nbsp;&nbsp;&nbsp;)')) + '</div>' +
+      '<div class="subject"' + subStyle(d) + '><u>الموضوع:</u> ' + (d.subject ? '( ' + esc(d.subject) + ' )' : ph('(&nbsp;&nbsp;&nbsp;&nbsp;)')) + '</div>' +
       '<div class="body">' + (body || ph('نص الكتاب…')) + '</div>' +
       '<div class="closing">' + CLOSING + '</div>' +
       signHTML(S, type);
@@ -364,7 +370,7 @@
     return headerHTML(S, E) + line + dateBlock +
       '<div class="c-title" style="font-size:' + d.titleSize + 'pt;text-align:' + d.titleAlign + '">' + esc(circTitle(S)) + '</div>' +
       (d.showTitleNum ? '<div class="c-num" style="text-align:' + d.titleAlign + '">تعميم رقم ' + (d.number ? esc(d.number) : '') + '</div>' : '<div style="height:4mm"></div>') +
-      '<div class="subject"><u>الموضوع:</u> ' + (d.subject ? esc(d.subject) : '') + '</div>' +
+      '<div class="subject"' + subStyle(d) + '><u>الموضوع:</u> ' + (d.subject ? esc(d.subject) : '') + '</div>' +
       '<div class="body" style="text-align:' + d.bodyAlign + '">' + (body || ph('نص التعميم…')) + '</div>' +
       '<div class="closing">' + CLOSING + '</div>' +
       signHTML(S, 'circular');
@@ -532,7 +538,7 @@
     const intro = d.showIntro ? (d.introText.trim() ? esc(d.introText.trim()).replace(/\n/g, '<br>') : esc(dgIntro(S))) : '';
     return headerHTML(S, E) + dateRowHTML(d) +
       (list.length ? '<div class="recipients">' + list.join('') + '</div>' : '') +
-      '<div class="subject"><u>الموضوع:</u> ' + (d.subject ? '( ' + esc(d.subject) + ' )' : ph('(&nbsp;&nbsp;&nbsp;&nbsp;)')) + '</div>' +
+      '<div class="subject"' + subStyle(d) + '><u>الموضوع:</u> ' + (d.subject ? '( ' + esc(d.subject) + ' )' : ph('(&nbsp;&nbsp;&nbsp;&nbsp;)')) + '</div>' +
       (intro ? '<div class="body dg-intro">' + intro + '</div>' : '') +
       (body ? '<div class="body dg-body">' + body + '</div>' : '') +
       (d.showAdmins ? dgTableHTML(S, 'admins', d.titleAdmin) : '') +
@@ -559,7 +565,7 @@
     const intro = d.showIntro ? (d.introText.trim() ? esc(d.introText.trim()).replace(/\n/g, '<br>') : esc(mbIntro(S))) : '';
     return headerHTML(S, E) + dateRowHTML(d) +
       (list.length ? '<div class="recipients">' + list.join('') + '</div>' : '') +
-      '<div class="subject"><u>الموضوع:</u> ' + (d.subject ? '( ' + esc(d.subject) + ' )' : ph('(&nbsp;&nbsp;&nbsp;&nbsp;)')) + '</div>' +
+      '<div class="subject"' + subStyle(d) + '><u>الموضوع:</u> ' + (d.subject ? '( ' + esc(d.subject) + ' )' : ph('(&nbsp;&nbsp;&nbsp;&nbsp;)')) + '</div>' +
       (intro ? '<div class="body dg-intro">' + intro + '</div>' : '') +
       (body ? '<div class="body dg-body">' + body + '</div>' : '') +
       dgTableHTML(memView(S), 'admins', d.tableTitle.trim() ? d.tableTitle : null) +
@@ -660,5 +666,5 @@
     return list.map(p => '<div class="att-page"><div class="att-cap">' + esc(p.cap) + '</div><img src="' + p.url + '" alt=""></div>');
   }
 
-  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, dgFit, durationParts, durationText, dgIntro, mbIntro, memView, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, DEPT2, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
+  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, dgFit, durationParts, durationText, subStyle, dgIntro, mbIntro, memView, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, DEPT2, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
 })(window);

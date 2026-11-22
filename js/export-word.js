@@ -383,11 +383,12 @@
       [d.to0, d.to1, d.to3, d.to2].forEach((on, i) => { if (on && type !== 'thanks') to.push(mkPara([mkRun(C.RECIPIENTS[i], { font: f, size })], { align: 'center', line: 300 })); });
       if ((type === 'internal' || type === 'delegation' || type === 'members') && d.toCustom.trim()) d.toCustom.split('\n').filter(x => x.trim()).forEach(x => to.push(mkPara([mkRun(x.trim(), { font: f, size })], { align: 'center', line: 300 })));
       out.push(...to);
-      if (to.length) out.push(spacer(sp(3)));
+      const sy = +d.subY || 0, sx = +d.subX || 0;
+      if (to.length) out.push(spacer(Math.max(0, sp(3) + (sy < 0 ? mm(sy) : 0))));
       out.push(mkPara([
         mkRun('الموضوع:', { font: f, size, b: true, u: true }),
         mkRun(d.subject ? '  ( ' + d.subject + ' )' : '  (        )', { font: f, size, b: true })
-      ], { align: 'right', after: sp(3), keepNext: true }));
+      ], { align: 'right', before: sy > 0 ? mm(sy) : 0, indent: sx ? { start: -mm(sx) } : undefined, after: sp(3), keepNext: true }));
     } else {
       if (d.lineShow) {
         const dash = { solid: docx.BorderStyle.SINGLE, dashed: docx.BorderStyle.DASHED, dotted: docx.BorderStyle.DOTTED, double: docx.BorderStyle.DOUBLE }[d.lineStyle] || docx.BorderStyle.SINGLE;
@@ -409,11 +410,11 @@
       out.push(spacer(sp(3)));
       out.push(mkPara([mkRun(App.circTitle(S), { font: f, size: d.titleSize, b: true })], { align: d.titleAlign }));
       if (d.showTitleNum) out.push(mkPara([mkRun('تعميم رقم ' + (d.number || ''), { font: f, size: 14, b: true })], { align: d.titleAlign, after: sp(6) }));
-      else out.push(spacer(sp(4)));
+      else out.push(spacer(Math.max(0, sp(4) + ((+d.subY || 0) < 0 ? mm(+d.subY) : 0))));
       out.push(mkPara([
         mkRun('الموضوع:', { font: f, size, b: true, u: true }),
         mkRun(d.subject ? ' ' + d.subject : '', { font: f, size, b: true })
-      ], { align: 'right', after: sp(3), keepNext: true }));
+      ], { align: 'right', before: (+d.subY || 0) > 0 ? mm(+d.subY) : 0, indent: (+d.subX || 0) ? { start: -mm(+d.subX) } : undefined, after: sp(3), keepNext: true }));
     }
 
     if (type === 'members') {
