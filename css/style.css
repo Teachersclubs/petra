@@ -50,6 +50,7 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+html { overflow: hidden; }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
   font-family: var(--font-ui); font-size: 14px; line-height: 1.55;
@@ -125,7 +126,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand-2); o
 fieldset.group { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px 3px; margin: 4px 0 10px; background: var(--surface-2); }
 fieldset.group legend { padding: 0 6px; font-weight: 700; font-size: 13px; color: var(--brand); }
 
-.switch { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
+.switch { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; position: relative; }
 .switch.block { margin-bottom: 8px; }
 .switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .switch i { width: 36px; height: 20px; border-radius: 20px; background: #b8c2cc; position: relative; flex: none; transition: background .15s; }
