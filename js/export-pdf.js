@@ -10,6 +10,7 @@
     w.setAttribute('style', r.style);
     w.dir = 'rtl';
     if (forPrint) {
+      if (r.land) { w.className = 'land-print'; w.innerHTML = '<div class="sheet land"><div class="sheet-main">' + r.main + '</div></div>'; return { wrap: w, r }; }
       if (/--wm-img/.test(r.style)) w.className = 'wm-wrap';
       w.innerHTML =
         '<table class="pt"><thead><tr><td><div class="pt-gap"></div></td></tr></thead><tbody><tr><td><div class="sheet-main">' + r.main + '</div></td></tr></tbody>' +
@@ -38,7 +39,35 @@
   }
 
   /* --- PDF: التقاط صفحة الرأس/المحتوى والذيل ثم تقطيعهما إلى صفحات A4 --- */
+  async function buildCertPdf(S, type) {
+    const CW = 1123, CH = 794;
+    const pdf = new g.jspdf.jsPDF({ orientation: 'l', unit: 'px', format: [CW, CH], compress: true, hotfixes: ['px_scaling'] });
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const vars = App.variants(S, type);
+    for (let vi = 0; vi < vars.length; vi++) {
+      const { r } = sheetWrapper(S, type, false, vi);
+      const stage = document.createElement('div');
+      stage.className = 'sheet land';
+      stage.style.cssText = 'position:fixed;left:-20000px;top:0;box-shadow:none;-webkit-text-size-adjust:none;text-size-adjust:none';
+      stage.setAttribute('style', stage.getAttribute('style') + ';' + r.style);
+      stage.innerHTML = '<div class="sheet-main">' + r.main + '</div>';
+      document.body.appendChild(stage);
+      stage.querySelectorAll('.ph').forEach(e => { e.style.visibility = 'hidden'; });
+      try {
+        const c = await html2canvas(stage, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, width: CW, height: CH, windowWidth: CW, onclone: async d => {
+          try { await Promise.all(['400', '700', '800'].map(w => d.fonts.load(w + " 16px '" + S.font + "'", 'ابجد 123'))); await d.fonts.ready; } catch (e) { /* نكمل */ }
+        } });
+        if (vi > 0) pdf.addPage([CW, CH], 'l');
+        pdf.addImage(c.toDataURL('image/jpeg', 0.94), 'JPEG', 0, 0, CW, CH, undefined, 'FAST');
+        if (App.setBusyMsg) App.setBusyMsg('جارٍ تجهيز PDF… صفحة ' + (vi + 1));
+        await new Promise(res => setTimeout(res, 0));
+      } finally { stage.remove(); }
+    }
+    return finishPdf(pdf, S, type);
+  }
+
   async function buildPdf(S, type) {
+    if (type === 'cert') return buildCertPdf(S, type);
     const pdf = new g.jspdf.jsPDF({ orientation: 'p', unit: 'px', format: [PAGE_W, PAGE_H], compress: true, hotfixes: ['px_scaling'] });
     let first = true;
     const vars = App.variants(S, type);

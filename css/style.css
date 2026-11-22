@@ -392,6 +392,7 @@ dialog.dlg h3 { margin: 0 0 10px; }
 .doc-tab[data-doc="claim"] { --tc: #b45309; }
 .doc-tab[data-doc="delegation"] { --tc: #be185d; }
 .doc-tab[data-doc="members"] { --tc: #0f766e; }
+.doc-tab[data-doc="cert"] { --tc: #b45309; }
 :root[data-theme="dark"] .doc-tab[data-doc="letter"] { --tc: #6cb4f5; }
 :root[data-theme="dark"] .doc-tab[data-doc="internal"] { --tc: #4fd1c5; }
 :root[data-theme="dark"] .doc-tab[data-doc="thanks"] { --tc: #fb923c; }
@@ -400,6 +401,7 @@ dialog.dlg h3 { margin: 0 0 10px; }
 :root[data-theme="dark"] .doc-tab[data-doc="claim"] { --tc: #fbbf24; }
 :root[data-theme="dark"] .doc-tab[data-doc="delegation"] { --tc: #f472b6; }
 :root[data-theme="dark"] .doc-tab[data-doc="members"] { --tc: #2dd4bf; }
+:root[data-theme="dark"] .doc-tab[data-doc="cert"] { --tc: #fbbf24; }
 .doc-tab { background: color-mix(in srgb, var(--tc) 8%, transparent); border-bottom-color: color-mix(in srgb, var(--tc) 25%, transparent); }
 .doc-tab:not(.active):hover { background: color-mix(in srgb, var(--tc) 16%, var(--surface)); color: var(--tc); }
 .doc-tab.active { background: var(--tc); color: #fff; border-bottom-color: var(--tc); box-shadow: 0 -2px 10px color-mix(in srgb, var(--tc) 35%, transparent); }
@@ -493,3 +495,22 @@ dialog#apprDlg .btn.primary { padding: 9px 22px; }
 .topbar::before { content: ""; position: absolute; inset: 0; z-index: -1; background: url('../img/header-bg.jpg') center 24% / cover no-repeat; opacity: .36; pointer-events: none; }
 .topbar::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 35%, transparent), color-mix(in srgb, var(--surface) 70%, transparent)); pointer-events: none; }
 :root[data-theme="dark"] .topbar::before { opacity: .22; }
+
+/* ===== شهادة شكر وتقدير (ورقة أفقية) ===== */
+.sheet.land { width: 297mm; min-height: 210mm; height: 210mm; overflow: hidden; background-image: var(--cert-bg); background-size: 100% 100%; background-repeat: no-repeat; }
+.sheet.land .sheet-main { padding: 0; flex: none; width: 297mm; height: 210mm; }
+.cert { position: relative; width: 297mm; height: 210mm; text-align: center; color: #1f2233; overflow: hidden; }
+.ct-wm { position: absolute; left: 50%; top: 54%; height: 130mm; transform: translate(-50%, -50%); }
+.ct-logo { position: absolute; transform: translateX(-50%); height: auto; }
+.ct-body { position: absolute; left: 32mm; right: 32mm; top: 58mm; display: flex; flex-direction: column; align-items: center; gap: 3mm; }
+.ct-title { font-size: calc(46pt * var(--cfs, 1)); font-weight: 800; line-height: 1.25; color: var(--ct-col, #9a7425); }
+.ct-club { font-size: calc(26pt * var(--cfs, 1)); font-weight: 700; line-height: 1.3; }
+.ct-name { font-size: calc(36pt * var(--cfs, 1)); font-weight: 800; line-height: 1.3; }
+.ct-text { font-size: calc(18pt * var(--cfs, 1)); line-height: 1.9; max-width: 215mm; margin-top: 2mm; }
+.ct-sign { position: absolute; left: 42mm; right: 42mm; bottom: 12mm; }
+@media print {
+  @page land { size: A4 landscape; margin: 0; }
+  .land-print { page: land; width: 297mm; height: 210mm; overflow: hidden; }
+  .land-print .ph { visibility: hidden; }
+  .land-print .sheet.land { box-shadow: none; }
+}

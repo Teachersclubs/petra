@@ -31,10 +31,11 @@
     const r = App.renderDoc(S, S.activeDoc);
     App.lastEff = r.eff;
     sheet.setAttribute('style', r.style);
+    sheet.classList.toggle('land', !!r.land);
     sheet.innerHTML = '<div class="sheet-main">' + r.main + '</div><div class="sheet-foot">' + r.foot + '</div>';
     $('#copySheets').innerHTML = App.variants(S, S.activeDoc).slice(1).map((v, i) => {
       const c = App.renderDoc(S, S.activeDoc, i + 1);
-      return '<div class="sheet copy" style="' + c.style.replace(/"/g, '&quot;') + '"><div class="sheet-main">' + c.main + '</div><div class="sheet-foot">' + c.foot + '</div></div>';
+      return '<div class="sheet copy' + (c.land ? ' land' : '') + '" style="' + c.style.replace(/"/g, '&quot;') + '"><div class="sheet-main">' + c.main + '</div><div class="sheet-foot">' + c.foot + '</div></div>';
     }).join('');
     $('#attSheets').innerHTML = App.attachPagesHTML(App.attach.flat(S.activeDoc)).map(h => '<div class="sheet att">' + h + '</div>').join('');
     markSel();
@@ -45,9 +46,13 @@
     const sheet = $('#sheet'), holder = $('#sheetHolder');
     if (fitMode) {
       const avail = $('#previewScroll').clientWidth - 32;
-      zoom = Math.max(0.3, Math.min(1, avail / 794));
+      zoom = Math.max(0.3, Math.min(1, avail / (S.activeDoc === 'cert' ? 1123 : 794)));
     }
-    if (measure) {
+    if (measure && S.activeDoc === 'cert') {
+      holder.style.zoom = 1; sheet.style.minHeight = '';
+      $('#pageInfo') && ($('#pageInfo').textContent = '');
+      $('.preview-bar > span').innerHTML = 'معاينة مباشرة · A4 أفقي';
+    } else if (measure) {
       holder.style.zoom = 1; sheet.style.minHeight = '';
       const h = sheet.offsetHeight;
       const pages = Math.max(1, Math.ceil((h - 2) / PAGE_H));
@@ -121,7 +126,7 @@
   }
 
   function bindNudge() {
-    const lim0 = { 'thanks.toY': [-30, 80], 'thanks.toX': [-40, 40] };
+    const lim0 = { 'thanks.toY': [-30, 80], 'thanks.toX': [-40, 40], 'cert.logoX': [-120, 120], 'cert.logoY': [-10, 120] };
     const lim = new Proxy(lim0, { get: (t, p) => t[p] || (/\.subY$/.test(p) ? [-30, 80] : [-60, 60]) });
     document.addEventListener('click', e => {
       const b = e.target.closest('[data-nudge]');
@@ -132,6 +137,7 @@
       }
       const rs = e.target.closest('[data-nudge-reset]');
       if (rs) { S.thanks.toX = 0; S.thanks.toY = 0; refreshControls(); changed(); return; }
+      if (e.target.closest('[data-cert-reset]')) { S.cert.logoX = 0; S.cert.logoY = 0; refreshControls(); changed(); return; }
       const rs2 = e.target.closest('[data-sub-reset]');
       if (rs2) { const d = S[rs2.dataset.subReset]; d.subX = 0; d.subY = 0; refreshControls(); changed(); }
     });
@@ -817,6 +823,41 @@
     });
   }
 
+  /* ---------- شهادة شكر وتقدير ---------- */
+  function buildCertForm() {
+    addForm('cert',
+      '<h2 class="panel-title">شهادة شكر وتقدير</h2>' +
+      '<label class="field"><span>اسم النادي <small>(يظهر في سطر النادي تلقائيًا)</small></span><input type="text" data-bind="clubName" placeholder="مثال: البتراء"></label>' +
+      '<fieldset class="group"><legend>العنوان</legend>' +
+      '<label class="field"><span>نوع الشهادة</span><select data-doc-bind="cert.kind"><option value="thanks">شكر وتقدير</option><option value="excel">شهادة تفوق</option><option value="custom">نص آخر (اكتبه أدناه)</option></select></label>' +
+      '<label class="field"><span>نص العنوان الاختياري <small>(يُستخدم عند اختيار «نص آخر»)</small></span><input type="text" data-doc-bind="cert.customTitle" placeholder="مثال: شهادة مشاركة"></label>' +
+      '<label class="field"><span>لون العنوان</span><input type="color" data-doc-bind="cert.titleColor"></label></fieldset>' +
+      '<fieldset class="group"><legend>بيانات الشهادة</legend>' +
+      '<label class="field"><span>سطر النادي <small>(اتركه فارغًا ليُكتب تلقائيًا حسب اسم النادي)</small></span><input type="text" data-doc-bind="cert.clubText" placeholder="نادي معلمي ..."></label>' +
+      '<label class="field"><span>الاسم</span><input type="text" data-doc-bind="cert.name" placeholder="اسم المكرَّم"></label>' +
+      '<label class="field"><span>النص</span><textarea rows="4" data-doc-bind="cert.text"></textarea></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="cert.copiesOn"> <span>تكرار الشهادة في صفحات جديدة لأسماء أخرى</span></label>' +
+      '<label class="field" data-show-if="cert.copiesOn"><span>الأسماء الإضافية <small>(اكتب كل اسم في سطر)</small></span>' +
+      '<textarea rows="4" data-doc-bind="cert.copiesText" placeholder="الاسم الأول&#10;الاسم الثاني"></textarea></label></fieldset>' +
+      '<fieldset class="group"><legend>شعار النادي</legend>' +
+      '<label class="switch block"><input type="checkbox" data-doc-bind="cert.logoShow"><i></i><span>إظهار شعار النادي</span></label>' +
+      '<label class="field"><span>حجم الشعار: <b data-out-path="cert.logoSize"></b> مم</span><input type="range" min="15" max="80" step="1" data-doc-bind="cert.logoSize"></label>' +
+      '<div class="pos-row"><b>مكان الشعار</b><div class="pos-pad">' +
+      '<button type="button" data-nudge="cert.logoY" data-d="-1" title="للأعلى" aria-label="للأعلى">▲</button>' +
+      '<button type="button" data-nudge="cert.logoX" data-d="-1" title="يسار" aria-label="يسار">◀</button>' +
+      '<button type="button" data-nudge="cert.logoX" data-d="1" title="يمين" aria-label="يمين">▶</button>' +
+      '<button type="button" data-nudge="cert.logoY" data-d="1" title="للأسفل" aria-label="للأسفل">▼</button></div>' +
+      '<label>رأسي <input type="number" min="-10" max="120" step="0.5" data-doc-bind="cert.logoY"></label>' +
+      '<label>أفقي <input type="number" min="-120" max="120" step="0.5" data-doc-bind="cert.logoX"></label>' +
+      '<button type="button" class="btn sm ghost" data-cert-reset title="إعادة ضبط">↺</button></div>' +
+      '<p class="hint">بالمليمتر (الخطوة من «خطوة التحريك»). الشعار نفسه يُغيَّر من تبويب «الشعارات».</p></fieldset>' +
+      '<fieldset class="group"><legend>الخط والتوقيع</legend>' +
+      '<label class="field"><span>حجم الخط: <b data-out-path="cert.fs"></b>٪</span><input type="range" min="60" max="140" step="5" data-doc-bind="cert.fs"></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="cert.showHead"> <span>إظهار رئيس الهيئة الإدارية (واسمه)</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="cert.showManager"> <span>إظهار مدير النادي (واسمه)</span></label>' +
+      '<p class="hint">أسماء الرئيس والمدير وتواقيعهم وأختامهم تُعدَّل من تبويب «الإعدادات».</p></fieldset>');
+  }
+
   function setupAssign() {
     $('#btnInsDate').addEventListener('mousedown', e => e.preventDefault());
     $('#btnInsDate').addEventListener('click', () => {
@@ -1093,7 +1134,7 @@
   /* ---------- البدء ---------- */
   function init() {
     const bl = document.getElementById('brandLogo'); if (bl && window.DEFAULT_CLUB_LOGO) bl.src = window.DEFAULT_CLUB_LOGO;
-    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); buildDelegationForm(); buildMembersForm(); buildSubjectPos(); setupAssign();
+    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); buildDelegationForm(); buildMembersForm(); buildCertForm(); buildSubjectPos(); setupAssign();
     bindAll(); setupRte(); setupLogos(); setupPeople(); setupFonts(); setupPositions(); setupDrag(); syncPos(); fillAR(); setupActions(); setupZoom(); setupTheme(); applyTheme();
     App.attach.init(() => S.activeDoc, changed); App.initSend(() => S); App.drive.init(() => S);
     $$('.doc-tab').forEach(b => b.addEventListener('click', () => setDoc(b.dataset.doc)));

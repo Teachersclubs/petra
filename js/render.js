@@ -257,6 +257,7 @@
   function variants(S, type) {
     const out = [null];
     if (type === 'thanks' && S.thanks.copiesOn) S.thanks.copiesText.split('\n').map(x => x.trim()).filter(Boolean).forEach(x => out.push(x));
+    if (type === 'cert' && S.cert.copiesOn) S.cert.copiesText.split('\n').map(x => x.trim()).filter(Boolean).forEach(x => out.push(x));
     return out;
   }
   function toLines(S, variant) {
@@ -594,6 +595,7 @@
     return el;
   }
   function effective(S, type) {
+    if (type === 'cert') return { bodySize: S.bodySize, lineHeight: S.lineHeight, sp: 1, logoSize: S.logoSize, footSize: S.footer.size, bodyFont: S.font, fits: true, scale: 1 };
     const key = sigKey(S, type);
     if (cache.key === key) return cache.val;
     const d = S[type], circ = type === 'circular';
@@ -658,6 +660,7 @@
     const E = effective(S, type);
     curVariant = variants(S, type)[vi || 0] || null;
     try {
+      if (type === 'cert') return { style: styleOf(S, type, E) + ';--cert-bg:url(' + App.certBgUrl + ')', main: App.certHTML(S, curVariant), foot: '', eff: E, land: true };
       return { style: styleOf(S, type, E) + (App.wmVar ? App.wmVar(S) : ''), main: mainHTML(S, type, E), foot: footerHTML(S, E), eff: E };
     } finally { curVariant = null; }
   }
@@ -666,5 +669,5 @@
     return list.map(p => '<div class="att-page"><div class="att-cap">' + esc(p.cap) + '</div><img src="' + p.url + '" alt=""></div>');
   }
 
-  g.App = Object.assign(App, { SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, dgFit, durationParts, durationText, subStyle, dgIntro, mbIntro, memView, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, DEPT2, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
+  g.App = Object.assign(App, { signHTML, SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, dgFit, durationParts, durationText, subStyle, dgIntro, mbIntro, memView, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, DEPT2, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
 })(window);

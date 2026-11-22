@@ -502,6 +502,39 @@
     return new docx.Footer({ children: paras });
   }
 
+  /* شهادة: صفحة أفقية، الإطار والعلامة المائية صورة خلف النص */
+  async function certSection(S, variant) {
+    const d = S.cert, f = S.font, fs = d.fs / 100;
+    const bg = await App.certBgPng(S);
+    const header = new docx.Header({ children: [new docx.Paragraph({ children: [new docx.ImageRun({
+      type: 'png', data: dataUrlToBytes(bg), transformation: { width: Math.round(297 * PX_PER_MM), height: Math.round(210 * PX_PER_MM) },
+      floating: {
+        horizontalPosition: { relative: docx.HorizontalPositionRelativeFrom.PAGE, offset: 0 },
+        verticalPosition: { relative: docx.VerticalPositionRelativeFrom.PAGE, offset: 0 },
+        behindDocument: true, allowOverlap: true, wrap: { type: docx.TextWrappingType.NONE }
+      }
+    })] })] });
+    const col = (d.titleColor || '#9a7425').replace('#', '');
+    const out = [];
+    const L = S.logos.club, ly = +d.logoY || 0, lx = +d.logoX || 0;
+    if (d.logoShow && L && L.data) {
+      const img = await fitImage(L.data, d.logoSize, d.logoSize);
+      out.push(mkPara([img], { align: 'center', before: mm(Math.max(0, 2 + ly)), indent: lx ? (lx > 0 ? { end: mm(2 * lx) } : { start: mm(-2 * lx) }) : undefined }));
+    } else out.push(mkPara([], { before: mm(8) }));
+    const top = Math.max(1, 58 - 12 - 2 - (d.logoShow && L && L.data ? d.logoSize : 0) - (d.logoShow ? ly : 0));
+    const ttl = App.certTitle(d);
+    out.push(mkPara([mkRun(ttl || ' ', { font: f, size: 46 * fs, b: true, color: col })], { align: 'center', before: mm(top), after: mm(2) }));
+    out.push(mkPara([mkRun(App.certClub(S), { font: f, size: 26 * fs, b: true })], { align: 'center', after: mm(3) }));
+    out.push(mkPara([mkRun(variant || d.name || ' ', { font: f, size: 36 * fs, b: true })], { align: 'center', after: mm(3) }));
+    if (d.text.trim()) out.push(mkPara(d.text.trim().split('\n').map((x, i) => mkRun(x, { font: f, size: 18 * fs, br: i > 0 })), { align: 'center', line: 400, after: mm(6) }));
+    out.push(await signatureBlock(S, 'cert'));
+    return {
+      properties: { page: { size: { width: 11906, height: 16838, orientation: docx.PageOrientation.LANDSCAPE }, margin: { top: mm(12), bottom: mm(6), left: mm(60), right: mm(60), footer: 0, header: 0 } }, bidi: true },
+      headers: { default: header }, footers: { default: new docx.Footer({ children: [new docx.Paragraph({ children: [] })] }) },
+      children: out
+    };
+  }
+
   async function buildDocx(S0, type) {
     const S = App.withEffective(S0, type);
     const vars = App.variants(S, type);
@@ -520,6 +553,7 @@
       })] })] });
     }
     for (let i = 0; i < vars.length; i++) {
+      if (type === 'cert') { bodySections.push(await certSection(S, vars[i])); continue; }
       const children = await buildMain(S, type, vars[i]);
       const footer = await buildFooter(S);
       bodySections.push({
@@ -556,8 +590,8 @@
     return docx.Packer.toBlob(doc);
   }
 
-  const DOC_TITLES = { letter: 'كتاب للوزارة', internal: 'كتاب داخلي', thanks: 'كتاب شكر', circular: 'تعميم هيئة عامة', assign: 'قرار تكليف', claim: 'مطالبة مالية', delegation: 'الوفد المشارك', members: 'تقرير المنتسبين الجدد' };
-  const LATIN = { letter: 'ministry-letter', internal: 'internal-letter', thanks: 'thanks-letter', circular: 'general-circular', assign: 'assignment-decision', claim: 'financial-claim', delegation: 'participating-delegation', members: 'new-members-report' };
+  const DOC_TITLES = { cert: 'شهادة شكر وتقدير', letter: 'كتاب للوزارة', internal: 'كتاب داخلي', thanks: 'كتاب شكر', circular: 'تعميم هيئة عامة', assign: 'قرار تكليف', claim: 'مطالبة مالية', delegation: 'الوفد المشارك', members: 'تقرير المنتسبين الجدد' };
+  const LATIN = { cert: 'thanks-certificate', letter: 'ministry-letter', internal: 'internal-letter', thanks: 'thanks-letter', circular: 'general-circular', assign: 'assignment-decision', claim: 'financial-claim', delegation: 'participating-delegation', members: 'new-members-report' };
   /** اسم الملف = موضوع الكتاب: عربي ومسافات مسموحان، وتُزال المحارف الممنوعة والتحكّمية فقط */
   function cleanName(t) {
     let n = String(t || '').normalize('NFC')
@@ -570,7 +604,7 @@
   }
   function fileName(S, type) {
     const d = S[type];
-    const n = cleanName(d.subject);
+    const n = type === 'cert' ? cleanName((d.kind === 'excel' ? 'شهادة تفوق' : 'شهادة شكر وتقدير') + (d.name ? ' - ' + d.name : '')) : cleanName(d.subject);
     if (n) return n;
     const extra = type === 'assign' ? d.assignee : type === 'claim' ? d.owner : '';
     const fb = cleanName(DOC_TITLES[type] + (extra ? ' - ' + extra : '') + (d.number ? ' ' + d.number : ''));
