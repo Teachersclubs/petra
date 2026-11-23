@@ -10,6 +10,7 @@
   /** نص العنصر النهائي (بدون HTML) */
   function t2Text(S, id, variant) {
     const d = S.cert, v = k => d['q_' + id + '_' + k];
+    if (id === 'date') return (d.q_date_t || '').trim() || App.certDateText(d);
     if (id === 'lead') return (v('t') || '').trim() || 'يتقدم ' + App.certClub(S) + ' بخالص الشكر والتقدير إلى';
     if (id === 'name') {
       const nm = (variant || d.name || '').trim(), h = d.q_honor || '';

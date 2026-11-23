@@ -26,6 +26,12 @@
   }
 
   /** التاريخ الهجري (أم القرى) مثال: 30 جمادى الأولى 1448 */
+  /** سطر التاريخ على الشهادة: «التاريخ: 23 نوفمبر 2026م الموافق 12 جمادى الآخرة 1448هـ» */
+  function certDateText(d) {
+    const g = parseISO(d.date); if (!g) return '';
+    const h = (d.hijri || '').trim() || formatHijri(d.date);
+    return 'التاريخ: ' + g.getDate() + ' ' + MONTHS[g.getMonth()] + ' ' + g.getFullYear() + 'م' + (h ? ' الموافق ' + h + 'هـ' : '');
+  }
   function formatHijri(iso) {
     const d = parseISO(iso);
     if (!d) return '';
@@ -126,6 +132,7 @@
     { id: 'body', k: 'txt', label: 'نص الشهادة', cx: 143.1, y: 106.3, w: 237.8, s: 15.5, f: '29LT Azer Bold', c: '#3a3a3a', b: true, t: T2_TXT_DEF.body },
     { id: 'thanks', k: 'txt', label: 'عبارة الختام', cx: 149.6, y: 145.2, w: 171.6, s: 20.8, f: '29LT Azer Bold', c: '#3a3a3a', b: true, t: 'مع خالص الشكر والامتنان' },
     { id: 'seal', k: 'img', label: 'الميدالية الذهبية', cx: 153.0, y: 160.2, w: 22.7, ar: 1, wmin: 8, wmax: 60 },
+    { id: 'date', k: 'txt', label: 'التاريخ (ميلادي وهجري)', cx: 73.5, y: 187, w: 100, s: 11, f: 'FS Albert Arabic', c: '#3a3a3a', b: false, t: '' },
     { id: 'sign', k: 'sign', label: 'التوقيعات (رئيس الهيئة والمدير)', cx: 148.5, y: 158, w: 213 }
   ];
   function t2Defaults() {
@@ -148,7 +155,9 @@
       clubX: 0, clubY: 0, clubSize: 26, clubFont: '', clubColor: '#1f2233',
       titleX: 0, titleY: 0, titleSize: 46, titleFont: '', titleColor: '#9a7425',
       textX: 0, textY: 0, textSize: 18, textFont: '', textColor: '#1f2233', textBold: false, textAlign: 'center',
-      showHead: true, showManager: true
+      showHead: true, showManager: true,
+      dateOn: true, date: todayISO(), dateManual: false, hijri: '', hijriManual: false,
+      dateX: -76, dateY: 0, dateSize: 11, dateFont: '', dateColor: '#3a3a3a', dateBold: false
     });
   }
   function membersDefaults() {
@@ -342,6 +351,7 @@
     ['clubFont', 'titleFont', 'textFont'].forEach(k => { if (d.cert[k] && !known(d.cert[k])) d.cert[k] = ''; });
     if (d.members.amount === 'دينارا واحدا') d.members.amount = 'دينار واحد';
     if (d.delegation.kindName === 'كرة القدم للمربع الذهبي لدورة ميلاد القائد 23') d.delegation.kindName = 'المربع الذهبي لبطولة كرة القدم';
+    if (!d.cert.hijri && !d.cert.hijriManual) d.cert.hijri = formatHijri(d.cert.date);
     if (!d.members.hijri && !d.members.hijriManual) d.members.hijri = formatHijri(d.members.date);
     if (!d.delegation.hijri && !d.delegation.hijriManual) d.delegation.hijri = formatHijri(d.delegation.date);
     if (!d.circular.hijri && !d.circular.hijriManual) d.circular.hijri = formatHijri(d.circular.date);
@@ -408,6 +418,6 @@
   g.App = Object.assign(g.App || {}, {
     KEY, FONTS, T2_SPEC, T2_TXT_DEF, defaults, build, loadAsync, save, flush, wipe, getPath, setPath, migrate,
     isPersisted: () => App_persisted,
-    todayISO, formatGregorian, formatHijri, DG_ROLES, DG_STD, dgAdmin, dgPlayer, mbRow, parseMembers, ASSIGN_TOKEN, ASSIGN_BODY, CLAIM_BODY
+    todayISO, certDateText, formatGregorian, formatHijri, DG_ROLES, DG_STD, dgAdmin, dgPlayer, mbRow, parseMembers, ASSIGN_TOKEN, ASSIGN_BODY, CLAIM_BODY
   });
 })(window);

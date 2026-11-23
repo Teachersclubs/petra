@@ -114,7 +114,7 @@
     App.setPath(S, path, v);
     if (path === 'assign.assignDate') S.assign.assignDateText = '';
     if (path === 'claim.claimDate') S.claim.claimDateText = '';
-    const m = /^(letter|internal|thanks|circular|assign|claim|delegation|members)\.(date|hijri|showHijri)$/.exec(path);
+    const m = /^(letter|internal|thanks|circular|assign|claim|delegation|members|cert)\.(date|hijri|showHijri)$/.exec(path);
     if (m) {
       const d = S[m[1]];
       if (m[2] === 'date') { d.dateManual = true; if (!d.hijriManual) d.hijri = App.formatHijri(v); }
@@ -130,7 +130,7 @@
   function bindNudge() {
     const lim0 = { 'thanks.toY': [-30, 80], 'thanks.toX': [-40, 40], 'cert.logoX': [-120, 120], 'cert.logoY': [-10, 120] };
     ['club', 'title', 'text'].forEach(k => { lim0['cert.' + k + 'X'] = [-120, 120]; lim0['cert.' + k + 'Y'] = [-60, 120]; });
-    const lim = new Proxy(lim0, { get: (t, p) => t[p] || (/^cert\.q_.*_[xy]$/.test(p) ? [-150, 150] : /\.subY$/.test(p) ? [-30, 80] : [-60, 60]) });
+    const lim = new Proxy(lim0, { get: (t, p) => t[p] || (/^cert\.q_.*_[xy]$/.test(p) || /^cert\.date[XY]$/.test(p) ? [-150, 150] : /\.subY$/.test(p) ? [-30, 80] : [-60, 60]) });
     document.addEventListener('click', e => {
       const b = e.target.closest('[data-nudge]');
       if (b) {
@@ -143,7 +143,7 @@
       const ct = e.target.closest('[data-cert-tpl]');
       if (ct) { applyCertTpl(ct.dataset.certTpl); return; }
       const rc = e.target.closest('[data-cert-reset]');
-      if (rc) { const k = rc.dataset.certReset || 'logo'; S.cert[k + 'X'] = 0; S.cert[k + 'Y'] = 0; refreshControls(); changed(); return; }
+      if (rc) { const k = rc.dataset.certReset || 'logo'; S.cert[k + 'X'] = k === 'date' ? -76 : 0; S.cert[k + 'Y'] = 0; refreshControls(); changed(); return; }
       const rt = e.target.closest('[data-t2-reset]');
       if (rt) { S.cert['q_' + rt.dataset.t2Reset + '_x'] = 0; S.cert['q_' + rt.dataset.t2Reset + '_y'] = 0; refreshControls(); changed(); return; }
       const rs2 = e.target.closest('[data-sub-reset]');
@@ -899,6 +899,7 @@
       let f = '';
       if (e.k === 'txt') {
         if (e.id === 'name') f += '<p class="hint">يُكتب الاسم والصفة من خانة «المكرَّم» أعلاه.</p>';
+        else if (e.id === 'date') f += '<label class="field"><span>النص <small>(اتركه فارغًا للتاريخ التلقائي، وتُعدَّل التواريخ من خانة «المكرَّم»)</small></span><input type="text" data-doc-bind="' + k + 't"></label>';
         else if (e.id === 'lead') f += '<label class="field"><span>النص <small>(اتركه فارغًا للجملة التلقائية «يتقدم نادي … بخالص الشكر والتقدير إلى»)</small></span><input type="text" data-doc-bind="' + k + 't"></label>';
         else f += '<label class="field"><span>النص</span><textarea rows="' + (e.id === 'body' ? 5 : 2) + '" data-doc-bind="' + k + 't"></textarea></label>';
         f += '<div class="row2"><label class="field"><span>الحجم (نقطة)</span><input type="number" min="6" max="120" step="0.5" data-doc-bind="' + k + 's"></label>' +
@@ -921,7 +922,9 @@
     return '<fieldset class="group"><legend>المكرَّم</legend>' +
       '<div class="row2"><label class="field"><span>الصفة</span><select data-doc-bind="cert.q_honor"><option value="">بدون</option><option>المعلم</option><option>المعلمة</option><option>السيد</option><option>السيدة</option><option>الطالب</option><option>الطالبة</option></select></label>' +
       '<label class="field"><span>الاسم</span><input type="text" data-doc-bind="cert.name" placeholder="اسم المكرَّم"></label></div>' +
-      '<label class="check"><input type="checkbox" data-doc-bind="cert.q_suffix"> <span>إضافة «المحترم/المحترمة،» بعد الاسم</span></label></fieldset>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="cert.q_suffix"> <span>إضافة «المحترم/المحترمة،» بعد الاسم</span></label>' +
+      '<div class="row2"><label class="field"><span>التاريخ (الموافق)</span><input type="date" data-doc-bind="cert.date"></label>' +
+      '<label class="field"><span>الهجري <small>(فارغ = تلقائي)</small></span><input type="text" data-doc-bind="cert.hijri"></label></div></fieldset>' +
       '<fieldset class="group"><legend>عناصر القالب</legend><p class="hint">لكل عنصر إظهار/إخفاء وحجم وخط ولون ومكان. ويمكنك أيضًا سحب أي عنصر بالفأرة مباشرة على المعاينة.</p>' + els + '</fieldset>';
   }
   function buildCertForm() {
@@ -954,7 +957,12 @@
       '<div class="row2"><label class="field"><span>المحاذاة</span><select data-doc-bind="cert.textAlign"><option value="center">وسط</option><option value="right">يمين</option><option value="left">يسار</option><option value="justify">ضبط</option></select></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="cert.textBold"> <span>خط عريض</span></label></div>' +
       certPos('text', 'مكان النص') +
-      '</fieldset></div>' +
+      '</fieldset>' +
+      '<fieldset class="group"><legend>٥) التاريخ (ميلادي وهجري تلقائي)</legend>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="cert.dateOn"> <span>إظهار التاريخ أسفل توقيع مدير النادي</span></label>' +
+      '<label class="field"><span>التاريخ (الموافق)</span><input type="date" data-doc-bind="cert.date"></label>' +
+      '<label class="field"><span>الهجري <small>(اتركه فارغًا ليُحسب تلقائيًا)</small></span><input type="text" data-doc-bind="cert.hijri"></label>' +
+      certStyle('date') + '<label class="check"><input type="checkbox" data-doc-bind="cert.dateBold"> <span>خط عريض</span></label>' + certPos('date', 'مكان التاريخ') + '</fieldset></div>' +
       '<div data-cert-only="t2">' + certT2Form() + '</div>' +
       '<fieldset class="group"><legend>تكرار الشهادة</legend>' +
       '<label class="check"><input type="checkbox" data-doc-bind="cert.copiesOn"> <span>تكرار الشهادة في صفحات جديدة لأسماء أخرى</span></label>' +

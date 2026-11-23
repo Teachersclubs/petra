@@ -541,11 +541,23 @@
       out.push(mkPara([], { before: mm(Math.max(0, 160 - cur)) }));
       out.push(await signatureBlock(S, 'cert'));
     }
+    if (on('date')) { const e = sp('date'), dx = App.t2Box(S, e); const dp = certDatePara(S, dx[0] + dx[2] / 2 - 148.5, { font: d.q_date_f || e.f, size: +d.q_date_s || e.s, bold: d.q_date_b, color: d.q_date_c, text: App.t2Text(S, 'date') }); if (dp) out.push(dp); }
     return {
       properties: { page: { size: { width: 11906, height: 16838, orientation: docx.PageOrientation.LANDSCAPE }, margin: { top: 0, bottom: 0, left: mm(MARG), right: mm(MARG), footer: 0, header: 0 } }, bidi: true },
       headers: { default: header }, footers: { default: new docx.Footer({ children: [new docx.Paragraph({ children: [] })] }) },
       children: out
     };
+  }
+
+  function certDatePara(S, x, o) {
+    const d = S.cert;
+    const txt = o.text || App.certDateText(d); if (!txt) return null;
+    const run = mkRun(txt, { font: o.font, size: o.size, b: o.bold, color: (o.color || '#000000').replace('#', '') });
+    const p = mkPara([run], { align: 'center', before: mm(2) });
+    if (Math.abs(x) < 10) return p;
+    // تاريخ على اليسار/اليمين: خلية في جدول من عمودين مثل كتلة التوقيع
+    const W = o.width || 177, e = mkPara([], {});
+    return mkTable(x < 0 ? [mm(W * 0.3), mm(W * 0.7)] : [mm(W * 0.7), mm(W * 0.3)], x < 0 ? [[e], [p]] : [[p], [e]], { valign: docx.VerticalAlign.TOP, nomargin: true });
   }
 
   async function certSection(S, variant) {
@@ -582,6 +594,7 @@
     }
     if (d.text.trim()) out.push(mkPara(d.text.trim().split('\n').map((x, i) => mkRun(x, { font: tf, size: ts, b: d.textBold, color: tc, br: i > 0 })), { align: ta, line: 400, after: mm(6), indent: ind(+d.textX || 0) }));
     out.push(await signatureBlock(S, 'cert'));
+    if (S.cert.dateOn) { const dp = certDatePara(S, +S.cert.dateX || 0, { font: S.cert.dateFont || S.font, size: +S.cert.dateSize || 11, bold: S.cert.dateBold, color: S.cert.dateColor }); if (dp) out.push(dp); }
     return {
       properties: { page: { size: { width: 11906, height: 16838, orientation: docx.PageOrientation.LANDSCAPE }, margin: { top: mm(12), bottom: mm(6), left: mm(60), right: mm(60), footer: 0, header: 0 } }, bidi: true },
       headers: { default: header }, footers: { default: new docx.Footer({ children: [new docx.Paragraph({ children: [] })] }) },

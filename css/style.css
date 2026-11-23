@@ -541,3 +541,5 @@ dialog#apprDlg .btn.primary { padding: 9px 22px; }
 .t2-el > div { padding: 4px 10px 10px; }
 
 .cert.t2 .t2e.sg { text-align: initial; line-height: normal; }
+
+.ct-date { position: absolute; transform: translateX(-50%); white-space: nowrap; text-align: center; line-height: 1.3; }
