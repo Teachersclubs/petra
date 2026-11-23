@@ -82,6 +82,7 @@
     $$('[data-bind]').forEach(el => { if (el !== skip) writeEl(el, App.getPath(S, el.dataset.bind)); });
     $$('[data-doc-bind]').forEach(el => { if (el !== skip) writeEl(el, App.getPath(S, el.dataset.docBind)); });
     $$('[data-out]').forEach(o => { o.textContent = S[o.dataset.out]; });
+    $$('[data-cert-only]').forEach(el => { el.hidden = (S.cert.tpl === 'canva') !== (el.dataset.certOnly === 't2'); });
     { const ts = $('#certTplSel'); if (ts) ts.value = S.cert.tpl; $$('[data-cert-tpl]').forEach(b => b.classList.toggle('on', b.dataset.certTpl === S.cert.tpl)); }
     $$('[data-show-if]').forEach(el => { el.hidden = !App.getPath(S, el.dataset.showIf); });
     $$('[data-out-path]').forEach(o => { o.textContent = App.getPath(S, o.dataset.outPath); });
@@ -129,7 +130,7 @@
   function bindNudge() {
     const lim0 = { 'thanks.toY': [-30, 80], 'thanks.toX': [-40, 40], 'cert.logoX': [-120, 120], 'cert.logoY': [-10, 120] };
     ['club', 'title', 'text'].forEach(k => { lim0['cert.' + k + 'X'] = [-120, 120]; lim0['cert.' + k + 'Y'] = [-60, 120]; });
-    const lim = new Proxy(lim0, { get: (t, p) => t[p] || (/\.subY$/.test(p) ? [-30, 80] : [-60, 60]) });
+    const lim = new Proxy(lim0, { get: (t, p) => t[p] || (/^cert\.q_.*_[xy]$/.test(p) ? [-150, 150] : /\.subY$/.test(p) ? [-30, 80] : [-60, 60]) });
     document.addEventListener('click', e => {
       const b = e.target.closest('[data-nudge]');
       if (b) {
@@ -143,6 +144,8 @@
       if (ct) { applyCertTpl(ct.dataset.certTpl); return; }
       const rc = e.target.closest('[data-cert-reset]');
       if (rc) { const k = rc.dataset.certReset || 'logo'; S.cert[k + 'X'] = 0; S.cert[k + 'Y'] = 0; refreshControls(); changed(); return; }
+      const rt = e.target.closest('[data-t2-reset]');
+      if (rt) { S.cert['q_' + rt.dataset.t2Reset + '_x'] = 0; S.cert['q_' + rt.dataset.t2Reset + '_y'] = 0; refreshControls(); changed(); return; }
       const rs2 = e.target.closest('[data-sub-reset]');
       if (rs2) { const d = S[rs2.dataset.subReset]; d.subX = 0; d.subY = 0; refreshControls(); changed(); }
     });
@@ -152,7 +155,35 @@
     S.cert.tpl = id; S.cert.clubColor = t.c.club; S.cert.titleColor = t.c.title; S.cert.textColor = t.c.text;
     refreshControls(); changed();
   }
+
+  /* سحب عناصر القالب الذهبي بالفأرة على المعاينة */
+  function setupT2Drag() {
+    let st = null;
+    document.addEventListener('pointerdown', e => {
+      const el = e.target.closest && e.target.closest('.cert.t2 .t2e[data-el]');
+      if (!el || e.button || !S) return;
+      const sheet = el.closest('.cert'), rect = sheet.getBoundingClientRect(), id = el.dataset.el;
+      st = { id, el, x: e.clientX, y: e.clientY, k: 297 / rect.width, ox: +S.cert['q_' + id + '_x'] || 0, oy: +S.cert['q_' + id + '_y'] || 0, l0: parseFloat(el.style.left), t0: parseFloat(el.style.top), dx: 0, dy: 0 };
+      try { el.setPointerCapture(e.pointerId); } catch (x) { /* لا شيء */ }
+      e.preventDefault();
+    });
+    document.addEventListener('pointermove', e => {
+      if (!st) return;
+      st.dx = (e.clientX - st.x) * st.k; st.dy = (e.clientY - st.y) * st.k;
+      st.el.style.left = (st.l0 + st.dx) + 'mm'; st.el.style.top = (st.t0 + st.dy) + 'mm';
+    });
+    const end = () => {
+      if (!st) return;
+      const q = v => Math.round(v * 2) / 2, id = st.id;
+      if (Math.abs(st.dx) + Math.abs(st.dy) > 0.2) {
+        S.cert['q_' + id + '_x'] = q(st.ox + st.dx); S.cert['q_' + id + '_y'] = q(st.oy + st.dy);
+        st = null; refreshControls(); changed();
+      } else st = null;
+    };
+    document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);
+  }
   function bindAll() {
+    setupT2Drag();
     bindNudge();
     document.addEventListener('input', e => {
       const el = e.target;
@@ -465,7 +496,7 @@
   /** تحميل الخط المختار (للخطوط المضمّنة) ثم إعادة رسم المعاينة */
   function applyFonts() {
     if (!(document.fonts && document.fonts.load)) return;
-    const names = [S.font, S.footer.font, S.circular.bodyFont, S.cert.clubFont, S.cert.titleFont, S.cert.textFont].filter(Boolean);
+    const names = [S.font, S.footer.font, S.circular.bodyFont, S.cert.clubFont, S.cert.titleFont, S.cert.textFont].concat(App.T2_SPEC.filter(e => e.k === 'txt').map(e => S.cert['q_' + e.id + '_f'])).concat(['Afeesh', '29LT Azer Bold', 'FS Albert Arabic', 'FS Albert Arabic Bold', 'MediaPro Medium'].filter(() => S.cert.tpl === 'canva')).filter(Boolean);
     Promise.all(names.map(n => Promise.all(['400', '700'].map(w => document.fonts.load(w + " 14px '" + n + "'").catch(() => {}))))).then(() => { if (S) renderPreview(); });
   }
 
@@ -850,6 +881,47 @@
       '<label class="field"><span>اللون</span><input type="color" data-doc-bind="cert.' + k + 'Color"></label></div>' +
       '<label class="field"><span>نوع الخط</span><select data-fonts="blank" data-doc-bind="cert.' + k + 'Font"></select></label>';
   }
+  /* قالب الشهادة الذهبي: نموذج عناصره */
+  function t2Pos(id) {
+    const k = 'cert.q_' + id + '_';
+    return '<div class="pos-row"><b>المكان</b><div class="pos-pad">' +
+      '<button type="button" data-nudge="' + k + 'y" data-d="-1" title="للأعلى" aria-label="للأعلى">▲</button>' +
+      '<button type="button" data-nudge="' + k + 'x" data-d="-1" title="يسار" aria-label="يسار">◀</button>' +
+      '<button type="button" data-nudge="' + k + 'x" data-d="1" title="يمين" aria-label="يمين">▶</button>' +
+      '<button type="button" data-nudge="' + k + 'y" data-d="1" title="للأسفل" aria-label="للأسفل">▼</button></div>' +
+      '<label>رأسي <input type="number" min="-150" max="150" step="0.5" data-doc-bind="' + k + 'y"></label>' +
+      '<label>أفقي <input type="number" min="-150" max="150" step="0.5" data-doc-bind="' + k + 'x"></label>' +
+      '<button type="button" class="btn sm ghost" data-t2-reset="' + id + '" title="إعادة ضبط">↺</button></div>';
+  }
+  function certT2Form() {
+    const els = App.T2_SPEC.map(e => {
+      const k = 'cert.q_' + e.id + '_';
+      let f = '';
+      if (e.k === 'txt') {
+        if (e.id === 'name') f += '<p class="hint">يُكتب الاسم والصفة من خانة «المكرَّم» أعلاه.</p>';
+        else if (e.id === 'lead') f += '<label class="field"><span>النص <small>(اتركه فارغًا للجملة التلقائية «يتقدم نادي … بخالص الشكر والتقدير إلى»)</small></span><input type="text" data-doc-bind="' + k + 't"></label>';
+        else f += '<label class="field"><span>النص</span><textarea rows="' + (e.id === 'body' ? 5 : 2) + '" data-doc-bind="' + k + 't"></textarea></label>';
+        f += '<div class="row2"><label class="field"><span>الحجم (نقطة)</span><input type="number" min="6" max="120" step="0.5" data-doc-bind="' + k + 's"></label>' +
+          '<label class="field"><span>العرض (مم)</span><input type="number" min="10" max="300" step="1" data-doc-bind="' + k + 'w"></label></div>' +
+          '<div class="row2"><label class="field"><span>اللون</span><input type="color" data-doc-bind="' + k + 'c"></label>' +
+          '<label class="check"><input type="checkbox" data-doc-bind="' + k + 'b"> <span>خط عريض</span></label></div>' +
+          '<label class="field"><span>نوع الخط</span><select data-fonts2 data-doc-bind="' + k + 'f"></select></label>';
+      } else if (e.k === 'img') {
+        f += '<label class="field"><span>الحجم (العرض بالمم): <b data-out-path="' + k + 'w"></b></span><input type="range" min="' + e.wmin + '" max="' + e.wmax + '" step="0.5" data-doc-bind="' + k + 'w"></label>';
+        if (e.id === 'logo') f += '<p class="hint">الشعار نفسه يُغيَّر من تبويب «الشعارات».</p>';
+      } else {
+        f += '<div class="row2"><label class="field"><span>الطول (مم)</span><input type="number" min="5" max="280" step="1" data-doc-bind="' + k + 'w"></label>' +
+          '<label class="field"><span>اللون</span><input type="color" data-doc-bind="' + k + 'c"></label></div>';
+      }
+      return '<details class="t2-el"><summary>' + e.label + '</summary><div>' +
+        '<label class="check"><input type="checkbox" data-doc-bind="' + k + 'on"> <span>إظهار</span></label>' + f + t2Pos(e.id) + '</div></details>';
+    }).join('');
+    return '<fieldset class="group"><legend>المكرَّم</legend>' +
+      '<div class="row2"><label class="field"><span>الصفة</span><select data-doc-bind="cert.q_honor"><option value="">بدون</option><option>المعلم</option><option>المعلمة</option><option>السيد</option><option>السيدة</option><option>الطالب</option><option>الطالبة</option></select></label>' +
+      '<label class="field"><span>الاسم</span><input type="text" data-doc-bind="cert.name" placeholder="اسم المكرَّم"></label></div>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="cert.q_suffix"> <span>إضافة «المحترم/المحترمة،» بعد الاسم</span></label></fieldset>' +
+      '<fieldset class="group"><legend>عناصر القالب</legend><p class="hint">لكل عنصر إظهار/إخفاء وحجم وخط ولون ومكان. ويمكنك أيضًا سحب أي عنصر بالفأرة مباشرة على المعاينة.</p>' + els + '</fieldset>';
+  }
   function buildCertForm() {
     addForm('cert',
       '<h2 class="panel-title">شهادة شكر وتقدير</h2>' +
@@ -857,6 +929,7 @@
       '<fieldset class="group"><legend>قالب التصميم</legend>' +
       '<label class="field"><span>اختر قالبًا <small>(يضبط الإطار وألوان النصوص، ويمكنك تعديل أي لون بعده)</small></span><select id="certTplSel">' + App.CERT_TPLS.map(t => '<option value="' + t.id + '">' + t.name + '</option>').join('') + '</select></label>' +
       '<div class="tpl-grid" id="certTplGrid">' + App.CERT_TPLS.map(t => '<button type="button" class="tpl" data-cert-tpl="' + t.id + '" title="' + t.name + '"><img alt="" src="' + t.url + '"><span>' + t.name + '</span></button>').join('') + '</div></fieldset>' +
+      '<div data-cert-only="classic">' +
       '<fieldset class="group"><legend>١) الشعار</legend>' +
       '<label class="switch block"><input type="checkbox" data-doc-bind="cert.logoShow"><i></i><span>إظهار شعار النادي</span></label>' +
       '<label class="field"><span>حجم الشعار: <b data-out-path="cert.logoSize"></b> مم</span><input type="range" min="15" max="80" step="1" data-doc-bind="cert.logoSize"></label>' +
@@ -879,14 +952,20 @@
       '<div class="row2"><label class="field"><span>المحاذاة</span><select data-doc-bind="cert.textAlign"><option value="center">وسط</option><option value="right">يمين</option><option value="left">يسار</option><option value="justify">ضبط</option></select></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="cert.textBold"> <span>خط عريض</span></label></div>' +
       certPos('text', 'مكان النص') +
+      '</fieldset></div>' +
+      '<div data-cert-only="t2">' + certT2Form() + '</div>' +
+      '<fieldset class="group"><legend>تكرار الشهادة</legend>' +
       '<label class="check"><input type="checkbox" data-doc-bind="cert.copiesOn"> <span>تكرار الشهادة في صفحات جديدة لأسماء أخرى</span></label>' +
       '<label class="field" data-show-if="cert.copiesOn"><span>الأسماء الإضافية <small>(اكتب كل اسم في سطر؛ تُستخدم مع الصفة نفسها)</small></span>' +
       '<textarea rows="4" data-doc-bind="cert.copiesText" placeholder="الاسم الأول&#10;الاسم الثاني"></textarea></label></fieldset>' +
-      '<fieldset class="group"><legend>التوقيع</legend>' +
+      '<div data-cert-only="classic"><fieldset class="group"><legend>التوقيع</legend>' +
       '<label class="check"><input type="checkbox" data-doc-bind="cert.showHead"> <span>إظهار رئيس الهيئة الإدارية (واسمه)</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="cert.showManager"> <span>إظهار مدير النادي (واسمه)</span></label>' +
-      '<p class="hint">أسماء الرئيس والمدير وتواقيعهم وأختامهم تُعدَّل من تبويب «الإعدادات».</p></fieldset>');
-    $$('.doc-form[data-form="cert"] select[data-fonts]').forEach(sel => {
+      '<p class="hint">أسماء الرئيس والمدير وتواقيعهم وأختامهم تُعدَّل من تبويب «الإعدادات».</p></fieldset></div>');
+    $$('.doc-form[data-form="cert"] select[data-fonts2]').forEach(sel => {
+      sel.innerHTML = '<option value="">خط القالب</option>' + App.FONTS.map(f => '<option value="' + f[0] + '">' + f[1] + '</option>').join('');
+    });
+    $$('.doc-form[data-form="cert"] select[data-fonts]:not([data-fonts2])').forEach(sel => {
       sel.innerHTML = '<option value="">الخط الافتراضي للمستند</option>' + App.FONTS.map(f => '<option value="' + f[0] + '">' + f[1] + '</option>').join('');
     });
   }

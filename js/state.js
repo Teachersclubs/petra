@@ -47,6 +47,11 @@
     ['Arial', 'Arial'],
     ['Times New Roman', 'Times New Roman'],
     ['Calibri', 'Calibri'],
+    ['Afeesh', 'أفيش — Afeesh (قالب الشهادة)'],
+    ['29LT Azer Bold', '29LT أزر — Azer Bold (قالب الشهادة)'],
+    ['FS Albert Arabic', 'FS ألبرت — FS Albert Arabic (قالب الشهادة)'],
+    ['FS Albert Arabic Bold', 'FS ألبرت عريض — FS Albert Arabic Bold'],
+    ['MediaPro Medium', 'ميديا برو — MediaPro Medium (قالب الشهادة)'],
     ['Thmanyah Sans', 'ثمانية سانس — Thmanyah Sans (من الإنترنت)'],
     ['Thmanyah Serif Text', 'ثمانية سيريف نص — Thmanyah Serif Text (من الإنترنت)'],
     ['Thmanyah Serif Display', 'ثمانية سيريف عناوين — Thmanyah Serif Display (من الإنترنت)'],
@@ -106,8 +111,41 @@
   }
 
   const CERT_TEXT_OLD = 'نتقدم لكم بخالص الشكر والتقدير على جهودكم المتميزة وعطائكم المستمر، متمنين لكم دوام التوفيق والنجاح.';
+
+  /* ---- قالب الشهادة الذهبي (من ملف PowerPoint): عناصره بالمليمتر على ورقة 297×210 ---- */
+  const T2_TXT_DEF = {
+    body: 'يتقدم نادي معلمي البترا إليكم بخالص الشكر وعظيم التقدير، تثميناً لجهودكم المخلصة ومبادرتكم المتميزة في إعداد وتنفيذ هذه المبادرة، وما بذلتموه من وقت وجهد واهتمام في سبيل إنجاحها وتحقيق أهدافها.\nوإننا إذ نقدر لكم هذا العطاء، فإننا نعتز بمثل هذه المبادرات التي تجسد روح المسؤولية والانتماء، وتعكس حرصكم على خدمة الأسرة التربوية وتعزيز أواصر التعاون والتواصل بين أعضائها.',
+    slTitle: 'مديرة نادي معلمي البترا'
+  };
+  const T2_SPEC = [
+    { id: 'logo', k: 'img', label: 'شعار النادي', cx: 79.4, y: 19.7, w: 34.3, ar: 1, wmin: 10, wmax: 90 },
+    { id: 'emblem', k: 'img', label: 'شعار الوزارة', cx: 240.4, y: 19.7, w: 34.9, ar: 0.987, wmin: 10, wmax: 90 },
+    { id: 'title', k: 'txt', label: 'عنوان الشهادة', cx: 159.6, y: 23.8, w: 107.6, s: 48.25, f: 'Afeesh', c: '#3a3a3a', b: false, t: 'شهادة شكر وتقدير' },
+    { id: 'lead', k: 'txt', label: 'الجملة التمهيدية', cx: 148.5, y: 60.3, w: 270, s: 26.7, f: 'Afeesh', c: '#3a3a3a', b: false, t: '' },
+    { id: 'name', k: 'txt', label: 'اسم المكرَّم', cx: 141.7, y: 85.2, w: 287, s: 29.2, f: 'MediaPro Medium', c: '#b7963b', b: true, t: '' },
+    { id: 'divider', k: 'img', label: 'الفاصل الزخرفي', cx: 148.5, y: 100.2, w: 138.3, ar: 0.0218, wmin: 20, wmax: 260 },
+    { id: 'body', k: 'txt', label: 'نص الشهادة', cx: 143.1, y: 106.3, w: 237.8, s: 15.5, f: '29LT Azer Bold', c: '#3a3a3a', b: true, t: T2_TXT_DEF.body },
+    { id: 'thanks', k: 'txt', label: 'عبارة الختام', cx: 149.6, y: 145.2, w: 171.6, s: 20.8, f: '29LT Azer Bold', c: '#3a3a3a', b: true, t: 'مع خالص الشكر والامتنان' },
+    { id: 'seal', k: 'img', label: 'الميدالية الذهبية', cx: 153.0, y: 160.2, w: 22.7, ar: 1, wmin: 8, wmax: 60 },
+    { id: 'lnr', k: 'line', label: 'خط توقيع (يمين)', cx: 222.8, y: 169.5, w: 78.4, c: '#b7963b' },
+    { id: 'srName', k: 'txt', label: 'اسم الموقّع (يمين)', cx: 222.8, y: 159.1, w: 72.7, s: 18, f: 'FS Albert Arabic Bold', c: '#3a3a3a', b: true, t: 'د.تهاني السلامين' },
+    { id: 'srTitle', k: 'txt', label: 'صفة الموقّع (يمين)', cx: 222.8, y: 171.8, w: 76, s: 15, f: 'FS Albert Arabic', c: '#3a3a3a', b: false, t: 'رئيس الهيئة الادارية' },
+    { id: 'lnl', k: 'line', label: 'خط توقيع (يسار)', cx: 73.0, y: 169.5, w: 78.4, c: '#b7963b' },
+    { id: 'slName', k: 'txt', label: 'اسم الموقّع (يسار)', cx: 69.5, y: 157.6, w: 72.7, s: 18, f: 'FS Albert Arabic Bold', c: '#3a3a3a', b: true, t: 'د.اسماء السلامين' },
+    { id: 'slTitle', k: 'txt', label: 'صفة الموقّع (يسار)', cx: 73.0, y: 171.8, w: 73.0, s: 15, f: 'FS Albert Arabic', c: '#3a3a3a', b: false, t: T2_TXT_DEF.slTitle },
+    { id: 'stamp', k: 'img', label: 'الختم', cx: 38.1, y: 172.7, w: 34.1, ar: 0.6, wmin: 10, wmax: 80 }
+  ];
+  function t2Defaults() {
+    const o = { q_honor: 'السيدة', q_suffix: true };
+    T2_SPEC.forEach(e => {
+      o['q_' + e.id + '_on'] = true; o['q_' + e.id + '_x'] = 0; o['q_' + e.id + '_y'] = 0; o['q_' + e.id + '_w'] = e.w;
+      if (e.k === 'txt') { o['q_' + e.id + '_s'] = e.s; o['q_' + e.id + '_f'] = e.f; o['q_' + e.id + '_c'] = e.c; o['q_' + e.id + '_b'] = e.b; o['q_' + e.id + '_t'] = e.t; }
+      if (e.k === 'line') o['q_' + e.id + '_c'] = e.c;
+    });
+    return o;
+  }
   function certDefaults() {
-    return {
+    return Object.assign(t2Defaults(), {
       tpl: 'classic', kind: 'thanks', customTitle: '', clubText: '', name: '',
       leadOn: true, leadText: '', honorific: 'المعلم',
       text: 'تقديراً للجهود المبذولة والعطاء المتميز، متمنين دوام التوفيق والنجاح.',
@@ -117,7 +155,7 @@
       titleX: 0, titleY: 0, titleSize: 46, titleFont: '', titleColor: '#9a7425',
       textX: 0, textY: 0, textSize: 18, textFont: '', textColor: '#1f2233', textBold: false, textAlign: 'center',
       showHead: true, showManager: true
-    };
+    });
   }
   function membersDefaults() {
     return {
@@ -372,7 +410,7 @@
   }
 
   g.App = Object.assign(g.App || {}, {
-    KEY, FONTS, defaults, build, loadAsync, save, flush, wipe, getPath, setPath, migrate,
+    KEY, FONTS, T2_SPEC, T2_TXT_DEF, defaults, build, loadAsync, save, flush, wipe, getPath, setPath, migrate,
     isPersisted: () => App_persisted,
     todayISO, formatGregorian, formatHijri, DG_ROLES, DG_STD, dgAdmin, dgPlayer, mbRow, parseMembers, ASSIGN_TOKEN, ASSIGN_BODY, CLAIM_BODY
   });

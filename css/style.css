@@ -521,3 +521,21 @@ dialog#apprDlg .btn.primary { padding: 9px 22px; }
 .tpl { display: flex; flex-direction: column; gap: 4px; padding: 4px; border: 2px solid var(--line, #d9dce3); border-radius: 8px; background: transparent; cursor: pointer; font: inherit; font-size: 11.5px; color: inherit; }
 .tpl img { width: 100%; aspect-ratio: 297 / 210; border-radius: 4px; box-shadow: 0 0 0 1px rgba(0,0,0,.12); display: block; }
 .tpl.on { border-color: #b45309; background: rgba(180,83,9,.08); font-weight: 700; }
+
+/* خطوط قالب الشهادة الذهبي (مستخرجة من ملف القالب) */
+@font-face { font-family: 'Afeesh'; font-weight: 400 700; font-display: swap; src: url('../fonts/afeesh.woff2') format('woff2'); }
+@font-face { font-family: '29LT Azer Bold'; font-weight: 400 700; font-display: swap; src: url('../fonts/azer-bold.woff2') format('woff2'); }
+@font-face { font-family: 'FS Albert Arabic'; font-weight: 400 700; font-display: swap; src: url('../fonts/fs-albert-arabic.woff2') format('woff2'); }
+@font-face { font-family: 'FS Albert Arabic Bold'; font-weight: 400 700; font-display: swap; src: url('../fonts/fs-albert-arabic-bold.woff2') format('woff2'); }
+@font-face { font-family: 'MediaPro Medium'; font-weight: 400 700; font-display: swap; src: url('../fonts/mediapro.woff2') format('woff2'); }
+/* قالب الشهادة الذهبي: عناصر بمواضع مطلقة */
+.cert.t2 .t2e { position: absolute; line-height: 1.4; text-align: center; margin: 0; }
+.cert.t2 .t2e.i { display: block; height: auto; }
+.cert.t2 .t2e.ln { height: 0; border-top: .3mm solid; }
+.cert.t2 .t2e.tx { white-space: pre-wrap; }
+.cert.t2 .t2e[data-el] { cursor: move; }
+.cert.t2 .t2e[data-el]:hover { outline: 1px dashed rgba(180,83,9,.55); outline-offset: 1px; }
+@media print { .cert.t2 .t2e[data-el]:hover { outline: none; } }
+.t2-el { border: 1px solid var(--line, #d9dce3); border-radius: 8px; margin: 6px 0; }
+.t2-el > summary { cursor: pointer; padding: 7px 10px; font-weight: 700; font-size: 13px; }
+.t2-el > div { padding: 4px 10px 10px; }

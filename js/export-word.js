@@ -503,7 +503,50 @@
   }
 
   /* شهادة: صفحة أفقية، الإطار والعلامة المائية صورة خلف النص */
+  /** قالب الشهادة الذهبي في Word: الخلفية والصور والخطوط في صورة الترويسة، والنصوص فقرات بمسافات تطابق مواضعها */
+  async function certSectionT2(S, variant) {
+    const d = S.cert, bg = await App.certBgPng(S);
+    const header = new docx.Header({ children: [new docx.Paragraph({ children: [new docx.ImageRun({
+      type: 'png', data: dataUrlToBytes(bg), transformation: { width: Math.round(297 * PX_PER_MM), height: Math.round(210 * PX_PER_MM) },
+      floating: {
+        horizontalPosition: { relative: docx.HorizontalPositionRelativeFrom.PAGE, offset: 0 },
+        verticalPosition: { relative: docx.VerticalPositionRelativeFrom.PAGE, offset: 0 },
+        behindDocument: true, allowOverlap: true, wrap: { type: docx.TextWrappingType.NONE }
+      }
+    })] })] });
+    const MARG = 20, CW = 297 - 2 * MARG, PT = 0.3528;
+    const sp = id => App.T2_SPEC.find(e => e.id === id);
+    const hx = c => (c || '#000000').replace('#', '');
+    const on = id => !!d['q_' + id + '_on'];
+    const lines = (txt, w, sz) => String(txt).split('\n').reduce((n, l) => n + Math.max(1, Math.ceil(l.length * sz * PT * 0.5 / w)), 0);
+    const hOf = (id, txt, w) => lines(txt, w, +d['q_' + id + '_s']) * (+d['q_' + id + '_s']) * 1.4 * PT;
+    const bold = id => d['q_' + id + '_b'] && !/bold/i.test(d['q_' + id + '_f'] || sp(id).f);
+    let cur = 0; // الارتفاع الحالي (مم) من أعلى الصفحة
+    const out = [];
+    const para = (id, txt) => {
+      const e = sp(id), [l, t, w0] = App.t2Box(S, e), sz = +d['q_' + id + '_s'] || e.s, w = (id === 'body') ? w0 : Math.min(CW + 20, w0 + (id === 'title' ? 14 : 40)), dx = l + w0 / 2 - 148.5;
+      const gap = Math.max(0, t - cur), h = hOf(id, txt, w);
+      cur = Math.max(cur, t) + h;
+      const side = Math.round((CW - w) / 2 * 2 * TW_PER_MM / 2);
+      const ind = { start: mm((CW - w) / 2 - dx), end: mm((CW - w) / 2 + dx) };
+      const runs = String(txt).split('\n').map((x, i) => mkRun(x, { font: d['q_' + id + '_f'] || e.f, size: sz, b: bold(id), color: hx(d['q_' + id + '_c']), br: i > 0 }));
+      return mkPara(runs, { align: 'center', before: mm(gap), line: Math.round(sz * 1.4 * 20), exact: true, indent: ind });
+    };
+    ['title', 'lead', 'name', 'body', 'thanks'].forEach(id => {
+      if (!on(id)) return;
+      const txt = App.t2Text(S, id, variant);
+      if (txt) out.push(para(id, txt));
+    });
+    // اسما الموقّعين وصفتاهما مرسومة في صورة الخلفية (مواضعها ثابتة كالتصميم)
+    return {
+      properties: { page: { size: { width: 11906, height: 16838, orientation: docx.PageOrientation.LANDSCAPE }, margin: { top: 0, bottom: 0, left: mm(MARG), right: mm(MARG), footer: 0, header: 0 } }, bidi: true },
+      headers: { default: header }, footers: { default: new docx.Footer({ children: [new docx.Paragraph({ children: [] })] }) },
+      children: out
+    };
+  }
+
   async function certSection(S, variant) {
+    if (S.cert.tpl === 'canva') return certSectionT2(S, variant);
     const d = S.cert, f = S.font;
     const bg = await App.certBgPng(S);
     const header = new docx.Header({ children: [new docx.Paragraph({ children: [new docx.ImageRun({
