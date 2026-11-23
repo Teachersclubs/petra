@@ -117,7 +117,7 @@
     const m = /^(letter|internal|thanks|circular|assign|claim|delegation|members)\.(date|hijri|showHijri)$/.exec(path);
     if (m) {
       const d = S[m[1]];
-      if (m[2] === 'date') { if (!d.hijriManual) d.hijri = App.formatHijri(v); }
+      if (m[2] === 'date') { d.dateManual = true; if (!d.hijriManual) d.hijri = App.formatHijri(v); }
       else if (m[2] === 'hijri') { d.hijriManual = v.trim() !== ''; if (!d.hijriManual) d.hijri = App.formatHijri(d.date); }
       else if (v && !d.hijri) d.hijri = App.formatHijri(d.date);
     }
@@ -1246,9 +1246,36 @@
   }
 
   /* ---------- البدء ---------- */
+  /* التاريخ التلقائي: ما لم يُعدَّل التاريخ يدوياً يتبع تاريخ اليوم (عند الفتح وعند العودة للصفحة وعبر منتصف الليل) */
+  function syncToday() {
+    if (!S) return false;
+    const t = App.todayISO(); let ch = false;
+    Object.keys(S).forEach(k => {
+      const d = S[k];
+      if (d && typeof d === 'object' && 'dateManual' in d && !d.dateManual && d.date !== t) {
+        d.date = t; if (!d.hijriManual && 'hijri' in d) d.hijri = App.formatHijri(t); ch = true;
+      }
+    });
+    return ch;
+  }
+  function tickToday() { if (syncToday()) { refreshControls(); changed(); } }
+  function setupAutoDate() {
+    tickToday();
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) tickToday(); });
+    window.addEventListener('focus', tickToday);
+    setInterval(tickToday, 30000);
+    // زر «اليوم» بجانب كل حقل تاريخ لإعادته للوضع التلقائي
+    $$('input[type="date"][data-doc-bind$=".date"]').forEach(inp => {
+      if (inp.parentElement.querySelector('.btn-today')) return;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm ghost btn-today'; b.textContent = 'اليوم (تلقائي)';
+      b.title = 'إعادة التاريخ إلى تاريخ اليوم وتحديثه تلقائياً كل يوم';
+      b.addEventListener('click', () => { const doc = inp.dataset.docBind.split('.')[0]; if (S[doc]) { S[doc].dateManual = false; tickToday(); } });
+      inp.parentElement.appendChild(b);
+    });
+  }
   function init() {
     const bl = document.getElementById('brandLogo'); if (bl && window.DEFAULT_CLUB_LOGO) bl.src = window.DEFAULT_CLUB_LOGO;
-    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); buildDelegationForm(); buildMembersForm(); buildCertForm(); buildSubjectPos(); setupAssign();
+    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); buildDelegationForm(); buildMembersForm(); buildCertForm(); buildSubjectPos(); setupAssign(); setupAutoDate();
     bindAll(); setupRte(); setupLogos(); setupPeople(); setupFonts(); setupPositions(); setupDrag(); syncPos(); fillAR(); setupActions(); setupZoom(); setupTheme(); applyTheme();
     App.attach.init(() => S.activeDoc, changed); App.initSend(() => S); App.drive.init(() => S);
     $$('.doc-tab').forEach(b => b.addEventListener('click', () => setDoc(b.dataset.doc)));

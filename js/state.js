@@ -78,7 +78,7 @@
   function letterDefaults(internal) {
     return {
       subX: 0, subY: 0,
-      number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
+      number: '', date: todayISO(), dateManual: false, showHijri: true, hijri: '', hijriManual: false,
       to0: !internal, to1: !internal, to3: !internal, to2: !internal,
       toDir: !!internal, dirName: '', toCustom: '',
       subject: '', body: '', showHead: true, showManager: true
@@ -95,7 +95,7 @@
   function dgPlayer(role) { return { name: '', ministryNo: '', memberNo: '', nationalNo: '', joinDate: '', role: role || '', game: '', x: {} }; }
   function delegationDefaults() {
     return {
-      subX: 0, subY: 0, number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
+      subX: 0, subY: 0, number: '', date: todayISO(), dateManual: false, showHijri: true, hijri: '', hijriManual: false,
       to0: false, to1: false, to3: false, to2: false, toCustom: '',
       subject: '',
       kind: 'qualifiers', kindName: 'المربع الذهبي لبطولة كرة القدم', eventName: 'دورة ميلاد القائد الثالثة والعشرين', venue: 'مدينة العقبة',
@@ -154,7 +154,7 @@
   function membersDefaults() {
     return {
       subX: 0, subY: 0,
-      number: '', date: todayISO(), showHijri: true, hijri: '', hijriManual: false,
+      number: '', date: todayISO(), dateManual: false, showHijri: true, hijri: '', hijriManual: false,
       to0: false, to1: false, to3: false, to2: false, toCustom: '',
       subject: 'الانتساب الجديد/الاقتطاع الشهري', amount: 'دينار واحد',
       showIntro: true, introText: '', body: '', tableTitle: '', fitOne: false,
@@ -228,7 +228,7 @@
         showClosing: false, showFinance: true, financeText: ''
       }),
       claim: {
-        number: '', date: todayISO(), showHijri: false, hijri: '', hijriManual: false, showDateRow: false,
+        number: '', date: todayISO(), dateManual: false, showHijri: false, hijri: '', hijriManual: false, showDateRow: false,
         title: 'مطالبة مالية', subject: '', body: CLAIM_BODY, showClosing: true, closing: 'وتفضلوا بقبول فائق الاحترام',
         owner: '', lblOwner: 'صاحب الاستحقاق:', lblSign: 'التوقيع:', lblDate: 'التاريخ:',
         showClaimDate: true, claimDate: '', claimDateText: '', showHead: false, showManager: false
@@ -239,7 +239,7 @@
       circular: {
         subX: 0, subY: 0,
         number: '', subject: '', body: '',
-        date: todayISO(), showDate: true, showHijri: true, hijri: '', hijriManual: false,
+        date: todayISO(), dateManual: false, showDate: true, showHijri: true, hijri: '', hijriManual: false,
         showNumUnder: false, showTitleNum: true,
         lineShow: true, lineWidth: 1.5, lineStyle: 'solid', lineColor: '#000000', lineBefore: 3, lineAfter: 3, linePct: 100,
         titleSize: 17, titleAlign: 'center', titleCustom: '',
