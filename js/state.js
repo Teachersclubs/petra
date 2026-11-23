@@ -47,6 +47,7 @@
     ['Arial', 'Arial'],
     ['Times New Roman', 'Times New Roman'],
     ['Calibri', 'Calibri'],
+    ['Al Jazeera', 'الجزيرة — Al Jazeera (من الإنترنت)'],
     ['Cairo', 'Cairo (القاهرة — مضمَّن)'],
     ['Tajawal', 'Tajawal (تجوّل — مضمَّن)'],
     ['Almarai', 'Almarai (المراعي — مضمَّن)'],
