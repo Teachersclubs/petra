@@ -87,7 +87,8 @@
       '<div class="ct-club" style="font-size:' + d.clubSize + 'pt;color:' + esc(d.clubColor) + ';' + fontCss(d.clubFont) + off(d.clubX, d.clubY) + '">' + esc(clubLine(S)) + '</div>' +
       '<div class="ct-title" style="font-size:' + d.titleSize + 'pt;color:' + esc(d.titleColor) + ';' + fontCss(d.titleFont) + off(d.titleX, d.titleY) + '">' + (ttl ? esc(ttl) : ph('العنوان')) + '</div>' +
       '<div class="ct-text" style="' + tx + '">' + lead + main + '</div></div>' +
-      '<div class="ct-sign">' + App.signHTML(S, 'cert') + '</div></div>';
+      '<div class="ct-sign"' + (d.dateOn ? ' style="bottom:25mm"' : '') + '>' + App.signHTML(S, 'cert') + '</div>' +
+      (d.dateOn ? '<div class="ct-date" style="left:calc(50% + ' + (+d.dateX || 0) + 'mm);bottom:calc(16.5mm - ' + (+d.dateY || 0) + 'mm);font-size:' + d.dateSize + 'pt;color:' + esc(d.dateColor) + ';' + (d.dateBold ? 'font-weight:700;' : '') + fontCss(d.dateFont) + '">' + esc(App.certDateText(d)) + '</div>' : '') + '</div>';
   }
 
   /** خلفية الصفحة (إطار + علامة مائية) كصورة PNG لملف Word */
