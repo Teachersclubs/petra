@@ -50,7 +50,8 @@
     { id: 'geo', name: 'زخارف هندسية', c: { club: '#0f766e', title: '#9a7425', text: '#1f2937' }, svg: svg(
       R(0, 0, W, H, 'fill="#fdfaf3"') + frame(5, '#0f766e', .8) + frame(15, '#c9a24a', .6) + diamonds('#0f766e', '#c9a24a')) }
   ];
-  const urlOf = t => 'data:image/svg+xml;base64,' + btoa(t.svg);
+  TPLS.push({ id: 'canva', name: 'ذهبي فاخر — من ملف القالب (تحكم كامل)', c: { club: '#3a3a3a', title: '#3a3a3a', text: '#3a3a3a' }, t2: true, svg: '' });
+  const urlOf = t => t.t2 ? (g.CERT_CANVA ? g.CERT_CANVA.bg : '') : 'data:image/svg+xml;base64,' + btoa(t.svg);
   TPLS.forEach(t => { t.url = urlOf(t); });
   const tplOf = S => TPLS.find(t => t.id === (S.cert && S.cert.tpl)) || TPLS[0];
   const SVG_URL = TPLS[0].url;
@@ -70,6 +71,7 @@
 
   /** نص الشهادة؛ variant = اسم في نسخة مكرّرة */
   function certHTML(S, variant) {
+    if (S.cert.tpl === 'canva') return App.t2HTML(S, variant);
     const d = S.cert, ph = t => '<span class="ph">' + t + '</span>';
     const name = variant || d.name;
     const logo = S.logos && S.logos.club;
@@ -96,7 +98,7 @@
       i.onload = () => {
         const cv = document.createElement('canvas'); cv.width = 1754; cv.height = 1240;
         const cx = cv.getContext('2d'); cx.drawImage(i, 0, 0, cv.width, cv.height);
-        const done = () => res(cv.toDataURL('image/png'));
+        const done = () => (S.cert.tpl === 'canva' ? App.t2Overlay(cx, cv, S).catch(() => {}) : Promise.resolve()).then(() => res(cv.toDataURL('image/png')));
         if (S.wmShow === false) return done();
         const w = new Image(); w.onload = () => {
           const h = cv.height * 0.62, ww = h * w.width / w.height;
