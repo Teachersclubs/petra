@@ -539,3 +539,5 @@ dialog#apprDlg .btn.primary { padding: 9px 22px; }
 .t2-el { border: 1px solid var(--line, #d9dce3); border-radius: 8px; margin: 6px 0; }
 .t2-el > summary { cursor: pointer; padding: 7px 10px; font-weight: 700; font-size: 13px; }
 .t2-el > div { padding: 4px 10px 10px; }
+
+.cert.t2 .t2e.sg { text-align: initial; line-height: normal; }
