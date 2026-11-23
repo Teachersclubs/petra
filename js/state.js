@@ -115,7 +115,6 @@
   /* ---- قالب الشهادة الذهبي (من ملف PowerPoint): عناصره بالمليمتر على ورقة 297×210 ---- */
   const T2_TXT_DEF = {
     body: 'يتقدم نادي معلمي البترا إليكم بخالص الشكر وعظيم التقدير، تثميناً لجهودكم المخلصة ومبادرتكم المتميزة في إعداد وتنفيذ هذه المبادرة، وما بذلتموه من وقت وجهد واهتمام في سبيل إنجاحها وتحقيق أهدافها.\nوإننا إذ نقدر لكم هذا العطاء، فإننا نعتز بمثل هذه المبادرات التي تجسد روح المسؤولية والانتماء، وتعكس حرصكم على خدمة الأسرة التربوية وتعزيز أواصر التعاون والتواصل بين أعضائها.',
-    slTitle: 'مديرة نادي معلمي البترا'
   };
   const T2_SPEC = [
     { id: 'logo', k: 'img', label: 'شعار النادي', cx: 79.4, y: 19.7, w: 34.3, ar: 1, wmin: 10, wmax: 90 },
@@ -127,13 +126,7 @@
     { id: 'body', k: 'txt', label: 'نص الشهادة', cx: 143.1, y: 106.3, w: 237.8, s: 15.5, f: '29LT Azer Bold', c: '#3a3a3a', b: true, t: T2_TXT_DEF.body },
     { id: 'thanks', k: 'txt', label: 'عبارة الختام', cx: 149.6, y: 145.2, w: 171.6, s: 20.8, f: '29LT Azer Bold', c: '#3a3a3a', b: true, t: 'مع خالص الشكر والامتنان' },
     { id: 'seal', k: 'img', label: 'الميدالية الذهبية', cx: 153.0, y: 160.2, w: 22.7, ar: 1, wmin: 8, wmax: 60 },
-    { id: 'lnr', k: 'line', label: 'خط توقيع (يمين)', cx: 222.8, y: 169.5, w: 78.4, c: '#b7963b' },
-    { id: 'srName', k: 'txt', label: 'اسم الموقّع (يمين)', cx: 222.8, y: 159.1, w: 72.7, s: 18, f: 'FS Albert Arabic Bold', c: '#3a3a3a', b: true, t: 'د.تهاني السلامين' },
-    { id: 'srTitle', k: 'txt', label: 'صفة الموقّع (يمين)', cx: 222.8, y: 171.8, w: 76, s: 15, f: 'FS Albert Arabic', c: '#3a3a3a', b: false, t: 'رئيس الهيئة الادارية' },
-    { id: 'lnl', k: 'line', label: 'خط توقيع (يسار)', cx: 73.0, y: 169.5, w: 78.4, c: '#b7963b' },
-    { id: 'slName', k: 'txt', label: 'اسم الموقّع (يسار)', cx: 69.5, y: 157.6, w: 72.7, s: 18, f: 'FS Albert Arabic Bold', c: '#3a3a3a', b: true, t: 'د.اسماء السلامين' },
-    { id: 'slTitle', k: 'txt', label: 'صفة الموقّع (يسار)', cx: 73.0, y: 171.8, w: 73.0, s: 15, f: 'FS Albert Arabic', c: '#3a3a3a', b: false, t: T2_TXT_DEF.slTitle },
-    { id: 'stamp', k: 'img', label: 'الختم', cx: 38.1, y: 172.7, w: 34.1, ar: 0.6, wmin: 10, wmax: 80 }
+    { id: 'sign', k: 'sign', label: 'التوقيعات (رئيس الهيئة والمدير)', cx: 148.5, y: 158, w: 213 }
   ];
   function t2Defaults() {
     const o = { q_honor: 'السيدة', q_suffix: true };
@@ -142,6 +135,7 @@
       if (e.k === 'txt') { o['q_' + e.id + '_s'] = e.s; o['q_' + e.id + '_f'] = e.f; o['q_' + e.id + '_c'] = e.c; o['q_' + e.id + '_b'] = e.b; o['q_' + e.id + '_t'] = e.t; }
       if (e.k === 'line') o['q_' + e.id + '_c'] = e.c;
     });
+    o.q_ver = 2;
     return o;
   }
   function certDefaults() {
@@ -342,6 +336,8 @@
       dl[ck] = ids.length ? ids : DG_STD[k].slice();
     });
     d.members.rows = (Array.isArray(d.members.rows) ? d.members.rows : []).filter(r => r && typeof r === 'object').map(r => { const o = mbRow(); Object.keys(o).forEach(f => { if (typeof r[f] === 'string') o[f] = r[f]; }); return o; });
+    // القالب الذهبي: التوقيعات من إعدادات الموقع بدل أسماء الملف، والختم الافتراضي محذوف (مرة واحدة)
+    if (!(raw && raw.cert && raw.cert.q_ver)) { d.cert.q_ver = 2; }
     if (d.cert.text === CERT_TEXT_OLD) d.cert.text = certDefaults().text;
     ['clubFont', 'titleFont', 'textFont'].forEach(k => { if (d.cert[k] && !known(d.cert[k])) d.cert[k] = ''; });
     if (d.members.amount === 'دينارا واحدا') d.members.amount = 'دينار واحد';

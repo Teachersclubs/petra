@@ -18,7 +18,6 @@
     }
     const t = v('t') || '';
     if (id === 'body' && t === App.T2_TXT_DEF.body) return t.replace('نادي معلمي البترا', App.certClub(S));
-    if (id === 'slTitle' && t === App.T2_TXT_DEF.slTitle) return t.replace('نادي معلمي البترا', App.certClub(S));
     return t;
   }
 
@@ -45,6 +44,7 @@
         const src = imgSrc(S, e.id); if (!src) return '';
         return '<img class="t2e i" data-el="' + e.id + '" alt="" src="' + src + '" style="' + pos + '">';
       }
+      if (e.k === 'sign') return '<div class="t2e sg" data-el="sign" style="' + pos + '">' + App.signHTML(S, 'cert') + '</div>';
       if (e.k === 'line') return '<div class="t2e ln" data-el="' + e.id + '" style="' + pos + 'border-color:' + esc(d['q_' + e.id + '_c']) + '"></div>';
       let txt = t2Text(S, e.id, variant);
       let html = txt ? esc(txt).replace(/\n/g, '<br>') : (e.id === 'name' ? ph('اسم المكرَّم') : '');
@@ -59,8 +59,7 @@
     const d = S.cert, k = cv.width / 297;
     const load = src => new Promise(res => { if (!src) return res(null); const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
     cx.globalAlpha = 1;
-    const baked = ['srName', 'srTitle', 'slName', 'slTitle'];
-    await Promise.all(baked.map(id => { const e = spec().find(x => x.id === id); const f = d['q_' + id + '_f'] || e.f; return document.fonts && document.fonts.load((d['q_' + id + '_b'] ? '700 ' : '400 ') + "20px '" + f + "'", 'ابج').catch(() => {}); }));
+    const baked = [];
     for (const e of spec()) {
       if (!d['q_' + e.id + '_on']) continue;
       const [l, t, w] = box(S, e);

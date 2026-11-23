@@ -550,7 +550,7 @@
       '<label class="check"><input type="checkbox" data-doc-bind="internal.to0"> <span>معالي وزير التربية والتعليم وتنمية الموارد البشرية الأكرم</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="internal.to1"> <span>عطوفة مدير ادارة شؤون المعلمين والطلبة الأكرم</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="internal.to3"> <span>عطوفة مدير مديرية النشاطات المدرسية الأكرم</span></label>' +
-      '<label class="check"><input type="checkbox" data-doc-bind="internal.to2"> <span>عطوفة مدير أندية المعلمين والعاملين الأكرم</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="internal.to2"> <span>عطوفة مدير قسم أندية المعلمين والعاملين الأكرم</span></label>' +
       '<label class="field"><span>جهة أخرى <small>(كل سطر جهة)</small></span><textarea rows="2" data-doc-bind="internal.toCustom"></textarea></label>';
     src.after(c);
   }
@@ -683,7 +683,7 @@
       '<label class="check"><input type="checkbox" data-doc-bind="delegation.to0"> <span>معالي وزير التربية والتعليم وتنمية الموارد البشرية الأكرم</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="delegation.to1"> <span>عطوفة مدير ادارة شؤون المعلمين والطلبة الأكرم</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="delegation.to3"> <span>عطوفة مدير مديرية النشاطات المدرسية الأكرم</span></label>' +
-      '<label class="check"><input type="checkbox" data-doc-bind="delegation.to2"> <span>عطوفة مدير أندية المعلمين والعاملين الأكرم</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.to2"> <span>عطوفة مدير قسم أندية المعلمين والعاملين الأكرم</span></label>' +
       '<label class="field"><span>جهة أخرى <small>(كل سطر جهة)</small></span><textarea rows="2" data-doc-bind="delegation.toCustom"></textarea></label></fieldset>' +
       '<label class="field"><span>الموضوع</span><input type="text" data-doc-bind="delegation.subject" placeholder="مثال: كشف أسماء الوفد المشارك (يُستخدم أيضًا اسمًا للملف)"></label>' +
       '<fieldset class="group"><legend>موضوع المشاركة</legend><div class="dg-seg">' +
@@ -792,7 +792,7 @@
       '<label class="check"><input type="checkbox" data-doc-bind="members.to0"> <span>معالي وزير التربية والتعليم وتنمية الموارد البشرية الأكرم</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="members.to1"> <span>عطوفة مدير ادارة شؤون المعلمين والطلبة الأكرم</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="members.to3"> <span>عطوفة مدير مديرية النشاطات المدرسية الأكرم</span></label>' +
-      '<label class="check"><input type="checkbox" data-doc-bind="members.to2"> <span>عطوفة مدير أندية المعلمين والعاملين الأكرم</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="members.to2"> <span>عطوفة مدير قسم أندية المعلمين والعاملين الأكرم</span></label>' +
       '<label class="field"><span>جهة أخرى <small>(كل سطر جهة)</small></span><textarea rows="2" data-doc-bind="members.toCustom"></textarea></label></fieldset>' +
       '<label class="field"><span>الموضوع</span><input type="text" data-doc-bind="members.subject" placeholder="يُستخدم أيضًا اسمًا للملف"></label>' +
       '<fieldset class="group"><legend>النص</legend>' +
@@ -909,6 +909,8 @@
       } else if (e.k === 'img') {
         f += '<label class="field"><span>الحجم (العرض بالمم): <b data-out-path="' + k + 'w"></b></span><input type="range" min="' + e.wmin + '" max="' + e.wmax + '" step="0.5" data-doc-bind="' + k + 'w"></label>';
         if (e.id === 'logo') f += '<p class="hint">الشعار نفسه يُغيَّر من تبويب «الشعارات».</p>';
+      } else if (e.k === 'sign') {
+        f += '<label class="field"><span>العرض (مم)</span><input type="number" min="60" max="280" step="1" data-doc-bind="' + k + 'w"></label><p class="hint">الأسماء والتواقيع والأختام من تبويب «الإعدادات»، بنفس تصميم باقي الشهادات.</p>';
       } else {
         f += '<div class="row2"><label class="field"><span>الطول (مم)</span><input type="number" min="5" max="280" step="1" data-doc-bind="' + k + 'w"></label>' +
           '<label class="field"><span>اللون</span><input type="color" data-doc-bind="' + k + 'c"></label></div>';
@@ -958,10 +960,10 @@
       '<label class="check"><input type="checkbox" data-doc-bind="cert.copiesOn"> <span>تكرار الشهادة في صفحات جديدة لأسماء أخرى</span></label>' +
       '<label class="field" data-show-if="cert.copiesOn"><span>الأسماء الإضافية <small>(اكتب كل اسم في سطر؛ تُستخدم مع الصفة نفسها)</small></span>' +
       '<textarea rows="4" data-doc-bind="cert.copiesText" placeholder="الاسم الأول&#10;الاسم الثاني"></textarea></label></fieldset>' +
-      '<div data-cert-only="classic"><fieldset class="group"><legend>التوقيع</legend>' +
+      '<fieldset class="group"><legend>التوقيع</legend>' +
       '<label class="check"><input type="checkbox" data-doc-bind="cert.showHead"> <span>إظهار رئيس الهيئة الإدارية (واسمه)</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="cert.showManager"> <span>إظهار مدير النادي (واسمه)</span></label>' +
-      '<p class="hint">أسماء الرئيس والمدير وتواقيعهم وأختامهم تُعدَّل من تبويب «الإعدادات».</p></fieldset></div>');
+      '<p class="hint">أسماء الرئيس والمدير وتواقيعهم وأختامهم تُعدَّل من تبويب «الإعدادات».</p></fieldset>');
     $$('.doc-form[data-form="cert"] select[data-fonts2]').forEach(sel => {
       sel.innerHTML = '<option value="">خط القالب</option>' + App.FONTS.map(f => '<option value="' + f[0] + '">' + f[1] + '</option>').join('');
     });
