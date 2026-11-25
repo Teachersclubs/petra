@@ -550,7 +550,7 @@
       '<label class="check"><input type="checkbox" data-doc-bind="internal.to0"> <span>معالي وزير التربية والتعليم وتنمية الموارد البشرية الأكرم</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="internal.to1"> <span>عطوفة مدير ادارة شؤون المعلمين والطلبة الأكرم</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="internal.to3"> <span>عطوفة مدير مديرية النشاطات المدرسية الأكرم</span></label>' +
-      '<label class="check"><input type="checkbox" data-doc-bind="internal.to2"> <span>عطوفة مدير قسم أندية المعلمين والعاملين الأكرم</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="internal.to2"> <span>عطوفة رئيس قسم أندية المعلمين والعاملين الأكرم</span></label>' +
       '<label class="field"><span>جهة أخرى <small>(كل سطر جهة)</small></span><textarea rows="2" data-doc-bind="internal.toCustom"></textarea></label>';
     src.after(c);
   }
@@ -683,7 +683,7 @@
       '<label class="check"><input type="checkbox" data-doc-bind="delegation.to0"> <span>معالي وزير التربية والتعليم وتنمية الموارد البشرية الأكرم</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="delegation.to1"> <span>عطوفة مدير ادارة شؤون المعلمين والطلبة الأكرم</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="delegation.to3"> <span>عطوفة مدير مديرية النشاطات المدرسية الأكرم</span></label>' +
-      '<label class="check"><input type="checkbox" data-doc-bind="delegation.to2"> <span>عطوفة مدير قسم أندية المعلمين والعاملين الأكرم</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="delegation.to2"> <span>عطوفة رئيس قسم أندية المعلمين والعاملين الأكرم</span></label>' +
       '<label class="field"><span>جهة أخرى <small>(كل سطر جهة)</small></span><textarea rows="2" data-doc-bind="delegation.toCustom"></textarea></label></fieldset>' +
       '<label class="field"><span>الموضوع</span><input type="text" data-doc-bind="delegation.subject" placeholder="مثال: كشف أسماء الوفد المشارك (يُستخدم أيضًا اسمًا للملف)"></label>' +
       '<fieldset class="group"><legend>موضوع المشاركة</legend><div class="dg-seg">' +
@@ -792,7 +792,7 @@
       '<label class="check"><input type="checkbox" data-doc-bind="members.to0"> <span>معالي وزير التربية والتعليم وتنمية الموارد البشرية الأكرم</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="members.to1"> <span>عطوفة مدير ادارة شؤون المعلمين والطلبة الأكرم</span></label>' +
       '<label class="check"><input type="checkbox" data-doc-bind="members.to3"> <span>عطوفة مدير مديرية النشاطات المدرسية الأكرم</span></label>' +
-      '<label class="check"><input type="checkbox" data-doc-bind="members.to2"> <span>عطوفة مدير قسم أندية المعلمين والعاملين الأكرم</span></label>' +
+      '<label class="check"><input type="checkbox" data-doc-bind="members.to2"> <span>عطوفة رئيس قسم أندية المعلمين والعاملين الأكرم</span></label>' +
       '<label class="field"><span>جهة أخرى <small>(كل سطر جهة)</small></span><textarea rows="2" data-doc-bind="members.toCustom"></textarea></label></fieldset>' +
       '<label class="field"><span>الموضوع</span><input type="text" data-doc-bind="members.subject" placeholder="يُستخدم أيضًا اسمًا للملف"></label>' +
       '<fieldset class="group"><legend>النص</legend>' +
