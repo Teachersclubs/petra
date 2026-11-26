@@ -10,6 +10,7 @@
     w.setAttribute('style', r.style);
     w.dir = 'rtl';
     if (forPrint) {
+      if (r.bare) { w.className = 'bare-print'; w.innerHTML = '<div class="sheet bare"><div class="sheet-main">' + r.main + '</div></div>'; return { wrap: w, r }; }
       if (r.land) { w.className = 'land-print'; w.innerHTML = '<div class="sheet land"><div class="sheet-main">' + r.main + '</div></div>'; return { wrap: w, r }; }
       if (/--wm-img/.test(r.style)) w.className = 'wm-wrap';
       w.innerHTML =
@@ -66,7 +67,27 @@
     return finishPdf(pdf, S, type);
   }
 
+  async function buildLeavePdf(S, type) {
+    const pdf = new g.jspdf.jsPDF({ orientation: 'p', unit: 'px', format: [PAGE_W, PAGE_H], compress: true, hotfixes: ['px_scaling'] });
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const { r } = sheetWrapper(S, type, false, 0);
+    const stage = document.createElement('div');
+    stage.className = 'sheet bare';
+    stage.style.cssText = 'position:fixed;left:-20000px;top:0;box-shadow:none;-webkit-text-size-adjust:none;text-size-adjust:none';
+    stage.setAttribute('style', stage.getAttribute('style') + ';' + r.style);
+    stage.dir = 'rtl'; stage.innerHTML = '<div class="sheet-main">' + r.main + '</div>';
+    document.body.appendChild(stage);
+    try {
+      const c = await html2canvas(stage, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, width: PAGE_W, height: PAGE_H, windowWidth: PAGE_W, onclone: async d => {
+        try { await Promise.all(['400', '700'].map(w => d.fonts.load(w + " 16px '" + S.font + "'", 'ابجد 123'))); await d.fonts.ready; } catch (e) { /* نكمل */ }
+      } });
+      pdf.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, PAGE_W, PAGE_H, undefined, 'FAST');
+    } finally { stage.remove(); }
+    return finishPdf(pdf, S, type);
+  }
+
   async function buildPdf(S, type) {
+    if (type === 'leave') return buildLeavePdf(S, type);
     if (type === 'cert') return buildCertPdf(S, type);
     const pdf = new g.jspdf.jsPDF({ orientation: 'p', unit: 'px', format: [PAGE_W, PAGE_H], compress: true, hotfixes: ['px_scaling'] });
     let first = true;

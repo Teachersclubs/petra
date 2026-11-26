@@ -595,3 +595,20 @@ body.mode-edit .preview-scroll { padding: 0; overflow: hidden; display: flex; }
 .ed-sig { display: flex; flex-direction: column; gap: 8px; max-width: 94vw; } .ed-sig canvas { border: 1px dashed #888; background: #fff; border-radius: 8px; width: 100%; max-width: 560px; touch-action: none; }
 #edSigDlg { border: 1px solid rgba(0,0,0,.25); border-radius: 12px; padding: 14px; }
 .ed-hit { display: block; width: 100%; text-align: start; padding: 4px 6px; margin: 2px 0; border: 1px solid rgba(0,0,0,.15); background: transparent; border-radius: 6px; cursor: pointer; font: inherit; font-size: 12.5px; color: inherit; }
+
+/* ===== تبويب إجازة سنوية ===== */
+.doc-tab[data-doc="leave"] { --tc: #0f766e; } :root[data-theme="dark"] .doc-tab[data-doc="leave"] { --tc: #2dd4bf; }
+body.mode-leave #peopleBox, body.mode-leave #posBox { display: none !important; }
+.sheet.bare { width: 210mm; height: 297mm; min-height: 297mm; overflow: hidden; position: relative; background: #fff; }
+.sheet.bare .sheet-main { padding: 0; flex: none; width: 210mm; height: 297mm; }
+.sheet.bare .sheet-foot { display: none; }
+.lv { position: relative; width: 210mm; height: 297mm; color: #000; font-weight: 700; font-size: 13pt; line-height: 1.32; direction: rtl; }
+.lv-frame { position: absolute; inset: 8.47mm; border: 2.25pt solid #044F5F; pointer-events: none; }
+.lv-code { position: absolute; left: 12.7mm; top: 12.7mm; width: 49mm; height: 24mm; box-sizing: border-box; border: .75pt solid #808080; border-left: 2.25pt solid #044F5F; border-bottom: 2.25pt solid #044F5F; font-size: 11pt; font-weight: 400; display: flex; align-items: center; justify-content: center; direction: rtl; padding: 0 2mm; }
+.lv-emb { position: absolute; left: 50%; top: 12.7mm; width: 31mm; height: 39mm; transform: translateX(-50%); object-fit: contain; }
+.lv-title { position: absolute; left: 0; right: 0; top: 55mm; text-align: center; color: #044F5F; font-size: 14pt; font-weight: 700; }
+.lv-t { position: absolute; left: 50%; top: 64mm; transform: translateX(-50%); width: 183.25mm; border-collapse: collapse; table-layout: fixed; direction: rtl; }
+.lv-t td { padding: 0 1.9mm; font-size: 13pt; font-weight: 700; word-break: normal; overflow-wrap: anywhere; }
+.lv-p { text-align: start; } .lv-ln { display: flex; direction: rtl; } .lv-ln > span { display: block; }
+.lv-bx { display: inline-block; width: 3.4mm; height: 3.4mm; border: .9pt solid #000; vertical-align: -.5mm; position: relative; } .lv-bx.on::after { content: ""; position: absolute; inset: .5mm; background: #000; }
+@media print { .bare-print { width: 210mm; height: 297mm; overflow: hidden; page-break-inside: avoid; } .bare-print .sheet.bare { box-shadow: none; margin: 0; } }

@@ -574,7 +574,7 @@
       signHTML(S, 'members');
   }
 
-  function mainHTML(S, type, E) { return type === 'members' ? membersHTML(S, E) : type === 'delegation' ? delegationHTML(S, E) : type === 'circular' ? circularHTML(S, E) : type === 'assign' ? assignHTML(S, E) : type === 'claim' ? claimHTML(S, E) : letterHTML(S, type, E); }
+  function mainHTML(S, type, E) { return type === 'leave' ? App.leave.html(S) : type === 'members' ? membersHTML(S, E) : type === 'delegation' ? delegationHTML(S, E) : type === 'circular' ? circularHTML(S, E) : type === 'assign' ? assignHTML(S, E) : type === 'claim' ? claimHTML(S, E) : letterHTML(S, type, E); }
 
   /* ---------- القياس التلقائي: صفحة واحدة + ضبط الذيل في سطر ---------- */
   let cache = { key: '', val: null };
@@ -595,7 +595,7 @@
     return el;
   }
   function effective(S, type) {
-    if (type === 'cert') return { bodySize: S.bodySize, lineHeight: S.lineHeight, sp: 1, logoSize: S.logoSize, footSize: S.footer.size, bodyFont: S.font, fits: true, scale: 1 };
+    if (type === 'cert' || type === 'leave') return { bodySize: S.bodySize, lineHeight: S.lineHeight, sp: 1, logoSize: S.logoSize, footSize: S.footer.size, bodyFont: S.font, fits: true, scale: 1 };
     const key = sigKey(S, type);
     if (cache.key === key) return cache.val;
     const d = S[type], circ = type === 'circular';
@@ -660,6 +660,7 @@
     const E = effective(S, type);
     curVariant = variants(S, type)[vi || 0] || null;
     try {
+      if (type === 'leave') return { style: styleOf(S, type, E), main: App.leave.html(S), foot: '', eff: E, bare: true };
       if (type === 'cert') return { style: styleOf(S, type, E) + ';--cert-bg:url(' + App.certBgUrlFor(S) + ')', main: App.certHTML(S, curVariant), foot: '', eff: E, land: true };
       return { style: styleOf(S, type, E) + (App.wmVar ? App.wmVar(S) : ''), main: mainHTML(S, type, E), foot: footerHTML(S, E), eff: E };
     } finally { curVariant = null; }
