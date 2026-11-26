@@ -89,7 +89,7 @@
     el.className = 'ed-it ed-' + it.t; el.dataset.id = it.id;
     let css = itemCss(it, z);
     if (it.t === 'text') {
-      css += 'font-size:' + it.fs * z + 'px;color:' + it.col + ';font-family:\'' + it.ff + '\',Tahoma,Arial,sans-serif;font-weight:' + (it.b ? 700 : 400) + ';font-style:' + (it.i ? 'italic' : 'normal') + ';text-decoration:' + (it.u ? 'underline' : 'none') + ';text-align:' + it.al + ';' + (it.bg ? 'background:' + it.bg + ';' : '');
+      css += 'font-size:' + it.fs * z + 'px;color:' + it.col + ';font-family:\'' + it.ff + '\',Tahoma,Arial,sans-serif;font-weight:' + (it.b ? 700 : 400) + ';font-style:' + (it.i ? 'italic' : 'normal') + ';text-decoration:' + (it.u ? 'underline' : 'none') + ';text-align:' + it.al + ';' + (it.bg ? 'background:' + it.bg + ';' : '') + (it.bd ? 'border:' + it.bd * z + 'px solid ' + it.col + ';padding:' + 4 * z + 'px;box-sizing:border-box;' : '');
       el.textContent = it.txt;
     } else if (it.t === 'img') {
       el.innerHTML = '<img alt="" draggable="false" src="' + E.imgs[it.img] + '">';
@@ -128,7 +128,7 @@
       st.innerHTML =
         '<div class="ed-top" id="edTop">' +
         '<div class="ed-tools" id="edToolBtns">' +
-        [['select', 'تحديد/تحريك', '<path d="M5 3l14 8-6 2-3 6z"/>'], ['text', 'نص', '<path d="M5 6V4h14v2M12 4v16M9 20h6"/>'], ['img', 'صورة', '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 9"/>'],
+        [['select', 'تحديد/تحريك', '<path d="M5 3l14 8-6 2-3 6z"/>'], ['edit', 'تعديل نص موجود', '<path d="M4 7h10M4 12h7M4 17h5M15 20l5-5-2-2-5 5v2z"/>'], ['text', 'نص', '<path d="M5 6V4h14v2M12 4v16M9 20h6"/>'], ['img', 'صورة', '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 9"/>'],
           ['rect', 'مستطيل', '<rect x="4" y="6" width="16" height="12" rx="1"/>'], ['ell', 'دائرة', '<ellipse cx="12" cy="12" rx="8" ry="6"/>'], ['line', 'خط', '<path d="M5 19L19 5"/>'], ['pen', 'قلم حر', '<path d="M4 20l4-1 11-11-3-3L5 16z"/>'],
           ['hl', 'تظليل', '<path d="M4 20h16M7 16l8-8 3 3-8 8H7z"/>'], ['white', 'محو/تغطية', '<path d="M4 15l8-9 8 8-6 6H7z"/>']]
           .map(t => '<button type="button" class="ed-tb' + (t[0] === E.tool ? ' on' : '') + '" data-tool="' + t[0] + '" title="' + t[1] + '"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + t[2] + '</svg><span>' + t[1] + '</span></button>').join('') +
@@ -142,10 +142,20 @@
     st.hidden = false;
     if (doc.body.classList.contains('mode-edit')) { $('#sheetHolder').hidden = true; }
   }
+  const BLANK_OPTS = '<option value="a4p">A4 عمودي</option><option value="a4l">A4 أفقي</option><option value="a3p">A3 عمودي</option><option value="a3l">A3 أفقي</option><option value="letter">Letter</option>';
+  const BSIZE = { a4p: [595.28, 841.89], a4l: [841.89, 595.28], a3p: [841.89, 1190.55], a3l: [1190.55, 841.89], letter: [612, 792] };
+  function newBlank(kind, size) {
+    const [w, h] = BSIZE[size] || BSIZE.a4p;
+    E.name = kind === 'pdf' ? 'مستند جديد.pdf' : 'مستند جديد.docx'; E.srcs = []; E.undo = []; E.redo = []; E.sel = null; E.psel.clear(); E.cur = 0; E.fit = true;
+    if (kind === 'pdf') { E.kind = 'pdf'; E.word = null; E.pages = [{ s: -1, p: -1, uw: w, uh: h, r0: 0, rot: 0, items: [] }]; showStage(); renderAll(); syncForm(); }
+    else { E.kind = 'docx'; E.pages = []; E.word = { html: '<p><br></p>' }; show(true); }
+    toast('تم إنشاء مستند فارغ');
+  }
   function showEmpty() {
     const st = stage(); if (!st) return;
-    st.innerHTML = '<div class="ed-empty" id="edDrop"><div class="ed-empty-box"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 17v-6M9 13l3-3 3 3"/></svg><h3>اسحب ملف الكتاب هنا</h3><p>ملف PDF أو Word (.docx) — أو اضغط للاختيار من جهازك</p><button type="button" class="btn primary" id="edPickBig">اختيار ملف</button></div></div>';
+    st.innerHTML = '<div class="ed-empty" id="edDrop"><div class="ed-empty-box"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 17v-6M9 13l3-3 3 3"/></svg><h3>اسحب ملف الكتاب هنا</h3><p>ملف PDF أو Word (.docx) — أو اضغط للاختيار من جهازك</p><button type="button" class="btn primary" id="edPickBig">اختيار ملف</button><div class="ed-or">أو ابدأ بصفحة فارغة</div><div class="ed-blank" data-blank><select class="ed-bsize">' + BLANK_OPTS + '</select><button type="button" class="btn" data-newblank="pdf">+ صفحة فارغة (PDF)</button><button type="button" class="btn" data-newblank="docx">+ مستند Word فارغ</button></div></div></div>';
     $('#edPickBig').addEventListener('click', () => $('#edFile').click());
+    $$('[data-newblank]', st).forEach(b => b.addEventListener('click', () => newBlank(b.dataset.newblank, $('.ed-bsize', b.closest('[data-blank]')).value)));
     st.hidden = false; doc.body.classList.remove('ed-has-file');
   }
 
@@ -268,6 +278,7 @@
     const L = $('#edLayer');
     L.addEventListener('pointerdown', onDown);
     L.addEventListener('dblclick', onDbl);
+    L.addEventListener('pointermove', hoverEdit);
     const view = $('#edView');
     view.addEventListener('wheel', e => { if (e.ctrlKey) { e.preventDefault(); E.fit = false; E.z = Math.max(0.2, Math.min(4, E.z * (e.deltaY < 0 ? 1.1 : 0.9))); renderPage(); } }, { passive: false });
     view.addEventListener('dragover', e => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); });
@@ -284,6 +295,7 @@
     if (e.button) return;
     const L = $('#edLayer'), [px, py] = pt(e), pg = curPage();
     const hd = e.target.closest('.ed-hd');
+    if (E.tool === 'edit' && !hd) { e.preventDefault(); editLineAt(px, py); return; }
     if (E.tool === 'select' || (hd && E.sel)) {
       const it = selItem();
       if (hd && it) {
@@ -354,6 +366,7 @@
     const d = drag; drag = null;
     if (d.k === 'mv' && !d.moved) { E.undo.pop(); }
     if (d.k === 'new' && (d.it.w < 3 || d.it.h < 3)) { const pg = curPage(); pg.items = pg.items.filter(x => x !== d.it); drawLayer(); return; }
+    if (d.k === 'new' && d.it.t === 'white') { d.it.fill = sampleBg(d.it.x - 3, d.it.y + d.it.h / 2, d.it.x + d.it.w + 3, d.it.y + d.it.h / 2); drawLayer(); }
     if (d.k === 'new' || d.k === 'pen' || d.k === 'line') { setToolKeep(); select(d.it.id); }
     renderThumbsLight();
   }
@@ -501,7 +514,7 @@
       const [w, h] = dims(pg);
       const txt = opt.fmt.replace('{n}', i + 1).replace('{N}', E.pages.length);
       const it = newItem('text', Object.assign({}, textDef, { txt, fs: opt.fs, col: opt.col, ff: opt.ff, w: opt.w || 200, al: 'center', op: opt.op || 100, rot: opt.rot || 0 }));
-      it.x = (w - it.w) / 2; it.y = opt.top != null ? opt.top : h - 30 - opt.fs; pg.items.push(it);
+      it.x = (w - it.w) / 2; it.y = opt.top != null ? opt.top : h - 30 - opt.fs; if (opt.pos === 'top') it.y = 24; pg.items.push(it);
     });
     renderAll();
   }
@@ -574,41 +587,106 @@
         page.drawImage(png, { x: ox + ux, y: oy + uy, width: r.w, height: r.h, rotate: PL.degrees(R), opacity: r.op, blendMode: r.hl ? PL.BlendMode.Multiply : undefined });
       }
     }
-    out.setTitle(baseName()); out.setProducer('محرر الكتب الرسمية');
+    const mt = ($('#edMetaT') || {}).value, ma = ($('#edMetaA') || {}).value; out.setTitle(mt || baseName()); if (ma) out.setAuthor(ma); out.setProducer('محرر الكتب الرسمية');
     return new Blob([await out.save()], { type: 'application/pdf' });
   }
 
   /* ================= تفكيك وتحويل ================= */
-  async function textOfPage(pg) {
-    if (pg.s < 0) return [];
-    const p = await E.srcs[pg.s].pdf.getPage(pg.p + 1), tc = await p.getTextContent();
-    // تجميع في أسطر حسب الإحداثي الرأسي
-    const rows = []; tc.items.forEach(t => { if (!t.str || !t.str.trim()) return; const y = Math.round(t.transform[5] / 3); let r = rows.find(r => Math.abs(r.y - y) <= 1); if (!r) { r = { y, items: [] }; rows.push(r); } r.items.push(t); });
-    rows.sort((a, b) => b.y - a.y);
-    return rows.map(r => { const ar = r.items.some(t => /[؀-ۿ]/.test(t.str)); r.items.sort((a, b) => ar ? b.transform[4] - a.transform[4] : a.transform[4] - b.transform[4]); return r.items.map(t => t.str).join(' ').replace(/\s+/g, ' ').trim(); });
+  /* ---------- استخراج النص بدقة (عربي) ---------- */
+  const AR = /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/;
+  const fixAr = s => s.replace(/ا([أإآ])ل/g, 'ال$1').replace(/ـ/g, '').replace(/[‎‏‪-‮]/g, '');
+  const lineCache = new Map();
+  async function pageLines(pg) {
+    const key = pg.s + ':' + pg.p + ':' + rotOf(pg);
+    if (lineCache.has(key)) return lineCache.get(key);
+    const res = { lines: [], items: [], W: dims(pg)[0], H: dims(pg)[1] };
+    if (pg.s >= 0) {
+      const p = await E.srcs[pg.s].pdf.getPage(pg.p + 1), vp = p.getViewport({ scale: 1, rotation: rotOf(pg) }), tc = await p.getTextContent();
+      const boldOf = fn => { try { const f = p.commonObjs.get(fn); return /bold|black|heavy|semibold|demi/i.test((f && f.name) || ''); } catch (e) { return false; } };
+      const bc = {}; res.items = tc.items.filter(t => t.str && t.str.trim() && !(t.transform[1] && Math.abs(t.transform[1]) > Math.abs(t.transform[0]) * 0.8)).map(t => {
+        const [a, b2, , , e, f] = t.transform, size = Math.hypot(a, b2) || t.height || 12;
+        const p1 = vp.convertToViewportPoint(e, f), p2 = vp.convertToViewportPoint(e + t.width, f + size);
+        const str = fixAr(t.str), bold = bc[t.fontName] != null ? bc[t.fontName] : (bc[t.fontName] = boldOf(t.fontName));
+        return { str, x0: Math.min(p1[0], p2[0]), x1: Math.max(p1[0], p2[0]), y0: Math.min(p1[1], p2[1]), y1: Math.max(p1[1], p2[1]), size, bold, ar: AR.test(str) };
+      });
+      const its = res.items.slice().sort((a, b) => (a.y0 + a.y1) - (b.y0 + b.y1)), groups = [];
+      its.forEach(it => { const cy = (it.y0 + it.y1) / 2, g0 = groups[groups.length - 1]; if (g0 && Math.abs(cy - g0.cy) < Math.max(it.size, g0.size) * 0.45) { g0.items.push(it); g0.cy = (g0.cy * (g0.items.length - 1) + cy) / g0.items.length; g0.size = Math.max(g0.size, it.size); } else groups.push({ cy, size: it.size, items: [it] }); });
+      groups.forEach(g0 => {
+        let asc = g0.items.slice().sort((a, b) => a.x0 - b.x0); const rtl = asc.some(i => i.ar) && asc.filter(i => i.ar).length * 2 >= asc.filter(i => /[A-Za-z]/.test(i.str)).length;
+        let seq = asc;
+        if (rtl) { asc = asc.filter(i => !(!i.ar && /^[A-Za-z]$/.test(i.str) && (i.x1 - i.x0) < i.size * 0.3)); }
+        if (rtl) { seq = []; let blk = []; for (let i = asc.length - 1; i >= 0; i--) { const it = asc[i]; if (!it.ar) blk.unshift(it); else { seq.push.apply(seq, blk); blk = []; seq.push(it); } } seq.push.apply(seq, blk); }
+        let text = '';
+        seq.forEach((it, i) => { if (i) { const pv = seq[i - 1], gap = Math.max(pv.x0, it.x0) - Math.min(pv.x1, it.x1); if (gap > it.size * (it.str === '\u0627' && pv.ar ? 0.6 : 0.12)) text += ' '; } text += it.str.replace(/\s+/g, ' ').trim(); });
+        const bs = seq.filter(i => i.bold).length;
+        res.lines.push({ text: text.trim(), seq, rtl, x0: Math.min.apply(null, asc.map(i => i.x0)), x1: Math.max.apply(null, asc.map(i => i.x1)), y0: Math.min.apply(null, asc.map(i => i.y0)), y1: Math.max.apply(null, asc.map(i => i.y1)), size: g0.size, bold: bs * 2 > seq.length });
+      });
+    }
+    lineCache.set(key, res); if (lineCache.size > 60) lineCache.delete(lineCache.keys().next().value);
+    return res;
   }
-  async function toWordDoc(setMsg) {
-    const D = g.docx; const kids = [];
+  async function textOfPage(pg) { return (await pageLines(pg)).lines.map(l => l.text); }
+  function paragraphsOf(L) {
+    const W = L.W, lines = L.lines.slice().sort((a, b) => a.y0 - b.y0), maxW = Math.max.apply(null, lines.map(l => l.x1 - l.x0).concat(1));
+    const paras = []; let cur = null;
+    const center = l => Math.abs((l.x0 + l.x1) / 2 - W / 2) < W * 0.03 && (l.x1 - l.x0) < W * 0.7 && l.x0 > W * 0.12;
+    lines.forEach(l => {
+      const c = center(l);
+      if (cur) {
+        const pv = cur.last, gap = l.y0 - pv.y1, same = Math.abs(l.size - pv.size) < 1.2 && l.bold === pv.bold && c === cur.center && l.rtl === pv.rtl;
+        const edge = l.rtl ? Math.abs(l.x1 - pv.x1) < W * 0.04 : Math.abs(l.x0 - pv.x0) < W * 0.04;
+        if (same && !c && edge && gap < l.size * 0.55 && (pv.x1 - pv.x0) > maxW * 0.8) { cur.lines.push(l); cur.last = l; return; }
+      }
+      cur = { lines: [l], last: l, center: c, before: paras.length ? Math.max(0, Math.round((l.y0 - (paras[paras.length - 1].last.y1)) * 20)) : Math.round(l.y0 * 10), rtl: l.rtl }; paras.push(cur);
+    });
+    return paras;
+  }
+  async function toWordDoc(setMsg, mode) {
+    const D = g.docx, secs = [];
+    const jpgOf = async (pg, px) => { const b = await pageToBlob(pg, 'jpg', px, 0.85); return new Uint8Array(await b.arrayBuffer()); };
+    if (mode === 'visual') {
+      for (let i = 0; i < E.pages.length; i++) {
+        setMsg && setMsg('تحويل الصفحة ' + (i + 1) + ' من ' + E.pages.length + '…');
+        const pg = E.pages[i], [w, h] = dims(pg), data = await jpgOf(pg, 1700);
+        secs.push({ properties: { page: { size: { width: Math.round(w * 20), height: Math.round(h * 20) }, margin: { top: 0, bottom: 0, left: 0, right: 0 } } }, children: [new D.Paragraph({ spacing: { before: 0, after: 0, line: 240 }, children: [new D.ImageRun({ type: 'jpg', data, transformation: { width: Math.round(w * 4 / 3), height: Math.round(h * 4 / 3) - 2 } })] })] });
+      }
+      return D.Packer.toBlob(new D.Document({ sections: secs }));
+    }
+    const kids = [];
     for (let i = 0; i < E.pages.length; i++) {
-      setMsg && setMsg('استخراج نص الصفحة ' + (i + 1) + '…');
-      const lines = await textOfPage(E.pages[i]);
-      if (!lines.length) kids.push(new D.Paragraph({ children: [new D.TextRun({ text: '[صفحة ' + (i + 1) + ': لا يوجد نص قابل للاستخراج — قد تكون صورة ممسوحة ضوئياً]', italics: true, color: '888888' })], bidirectional: true }));
-      lines.forEach(l => { const ar = /[؀-ۿ]/.test(l); kids.push(new D.Paragraph({ bidirectional: ar, alignment: ar ? D.AlignmentType.START : D.AlignmentType.LEFT, children: [new D.TextRun({ text: l, rightToLeft: ar, font: 'Arial', size: 26 })], spacing: { after: 60 } })); });
+      setMsg && setMsg('استخراج نص الصفحة ' + (i + 1) + ' من ' + E.pages.length + '…');
+      const pg = E.pages[i], L = await pageLines(pg), paras = paragraphsOf(L);
+      if (!paras.length) {
+        const data = await jpgOf(pg, 1500), [w, h] = dims(pg), pw = 600;
+        kids.push(new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.ImageRun({ type: 'jpg', data, transformation: { width: pw, height: Math.round(pw * h / w) } })] }));
+      }
+      paras.forEach((pa, pi) => {
+        const runs = []; const rtl = pa.rtl;
+        pa.lines.forEach((ln, li) => {
+          if (li) runs.push(new D.TextRun({ text: ' ' }));
+          const seq = ln.seq; let cur = null;
+          const flush = () => { if (cur) { runs.push(new D.TextRun({ text: cur.t, bold: cur.b, size: cur.sz, font: 'Arial', rightToLeft: cur.ar || undefined })); cur = null; } };
+          const parts = ln.text.split(' '), sz = Math.max(16, Math.round(ln.size * 2));
+          // نبني الأجزاء من النص المرتّب منطقياً بنمط الخط السائد للسطر
+          cur = { t: ln.text, b: ln.bold, sz, ar: AR.test(ln.text) }; void parts; flush();
+        });
+        kids.push(new D.Paragraph({ bidirectional: rtl, alignment: pa.center ? D.AlignmentType.CENTER : D.AlignmentType.START, spacing: { before: Math.min(pi === 0 ? 0 : pa.before, 720), after: 40, line: 276 }, children: runs }));
+      });
       if (i < E.pages.length - 1) kids.push(new D.Paragraph({ children: [new D.PageBreak()] }));
     }
-    const d = new D.Document({ sections: [{ properties: { page: { margin: { top: 1000, bottom: 1000, left: 1000, right: 1000 } } }, children: kids }] });
-    return D.Packer.toBlob(d);
+    const pg0 = E.pages[0], [w0, h0] = dims(pg0);
+    return D.Packer.toBlob(new D.Document({ styles: { default: { document: { run: { font: 'Arial', size: 26 } } } }, sections: [{ properties: { page: { size: { width: Math.round(w0 * 20), height: Math.round(h0 * 20) }, margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 } } }, children: kids }] }));
   }
   async function pagesToImages(idx, type, setMsg) {
     const out = [];
     for (const i of idx) { setMsg && setMsg('تحويل الصفحة ' + (i + 1) + ' إلى صورة…'); out.push({ i, blob: await pageToBlob(E.pages[i], type) }); }
     return out;
   }
-  async function pageToBlob(pg, type) {
-    const [w] = dims(pg), bg = await renderPageCanvas(pg, 2200 / w), c = doc.createElement('canvas'); c.width = bg.width; c.height = bg.height;
+  async function pageToBlob(pg, type, px, q) {
+    const [w] = dims(pg), bg = await renderPageCanvas(pg, (px || 2200) / w), c = doc.createElement('canvas'); c.width = bg.width; c.height = bg.height;
     const x = c.getContext('2d'); x.drawImage(bg, 0, 0); const k = c.width / w;
     for (const it of pg.items) { const r = await rasterItem(it); const im = await loadImg(r.url); x.globalAlpha = r.op; x.drawImage(im, r.x * k, r.y * k, r.w * k, r.h * k); x.globalAlpha = 1; }
-    return new Promise(res => c.toBlob(res, type === 'jpg' ? 'image/jpeg' : 'image/png', 0.92));
+    return new Promise(res => c.toBlob(res, type === 'jpg' ? 'image/jpeg' : 'image/png', q || 0.92));
   }
   async function zipBlobs(files) { const Z = new g.JSZip(); files.forEach(f => Z.file(f.name, f.blob)); return Z.generateAsync({ type: 'blob' }); }
 
@@ -618,6 +696,7 @@
     async splitAll() { await App.run('جارٍ تقسيم الملف…', async m => { const f = []; for (let i = 0; i < E.pages.length; i++) { m('الصفحة ' + (i + 1) + ' من ' + E.pages.length); f.push({ name: baseName() + '-صفحة-' + (i + 1) + '.pdf', blob: await buildPdf([i]) }); } await dl(await zipBlobs(f), baseName() + '-صفحات-منفصلة.zip'); }); },
     async splitEvery() { const n = Math.max(1, parseInt($('#edEvery').value, 10) || 1); await App.run('جارٍ تقسيم الملف…', async m => { const f = []; for (let i = 0, k = 1; i < E.pages.length; i += n, k++) { m('الجزء ' + k); const idx = []; for (let j = i; j < Math.min(E.pages.length, i + n); j++) idx.push(j); f.push({ name: baseName() + '-جزء-' + k + '.pdf', blob: await buildPdf(idx) }); } await dl(await zipBlobs(f), baseName() + '-أجزاء.zip'); }); },
     async toWord() { await App.run('جارٍ تحويل PDF إلى Word…', async m => { await dl(await toWordDoc(m), baseName() + '.docx'); toast('تم التحويل — النص فقط دون التنسيق الأصلي'); }); },
+    async toWordImg() { await App.run('جارٍ تحويل PDF إلى Word…', async m => { await dl(await toWordDoc(m, 'visual'), baseName() + '-مطابق.docx'); toast('تم — كل صفحة صورة مطابقة للأصل'); }); },
     async imgPage() { await App.run('جارٍ التحويل…', async () => { await dl(await pageToBlob(curPage(), 'png'), baseName() + '-صفحة-' + (E.cur + 1) + '.png'); }); },
     async imgAll() { await App.run('جارٍ تحويل الصفحات إلى صور…', async m => { const r = await pagesToImages(targets().length > 1 ? targets() : E.pages.map((_, i) => i), 'png', m); await dl(await zipBlobs(r.map(x => ({ name: baseName() + '-صفحة-' + (x.i + 1) + '.png', blob: x.blob }))), baseName() + '-صور.zip'); }); },
     async text() {
@@ -625,14 +704,103 @@
     },
     async textAll() { await App.run('جارٍ استخراج النص…', async () => { const out = []; for (let i = 0; i < E.pages.length; i++) out.push('— صفحة ' + (i + 1) + ' —\n' + (await textOfPage(E.pages[i])).join('\n')); const ta = $('#edText'); ta.value = out.join('\n\n'); ta.hidden = false; }); },
     copyText() { const ta = $('#edText'); ta.select(); (navigator.clipboard ? navigator.clipboard.writeText(ta.value) : Promise.resolve(doc.execCommand('copy'))).then(() => toast('تم نسخ النص')); },
-    pageNums() { addTextAll({ fmt: $('#edPnFmt').value || '{n}', fs: +$('#edPnSize').value || 11, col: $('#edPnCol').value, ff: $('#edPnFont').value, w: 160 }); },
+    pageNums() { addTextAll({ pos: $('#edPnPos').value, fmt: $('#edPnFmt').value || '{n}', fs: +$('#edPnSize').value || 11, col: $('#edPnCol').value, ff: $('#edPnFont').value, w: 160 }); },
     wm() { const t = $('#edWmTxt').value.trim(); if (!t) { toast('اكتب نص العلامة المائية'); return; } addWatermark(t, +$('#edWmSize').value || 70, $('#edWmCol').value, +$('#edWmOp').value || 15); },
     logo(which) { const s = S(); const u = s && s.logos[which] && s.logos[which].data; if (!u) { toast('لا يوجد شعار محفوظ — أضفه من تبويب «الشعارات»'); return; } addImageItem(u, { w: 80 }); },
     person(who, what) { const s = S(), p = s && s.people[who]; const u = p && p[what === 'sign' ? 'signImg' : 'stampImg']; if (!u) { toast('لم يُضف ' + (what === 'sign' ? 'توقيع' : 'ختم') + ' في الإعدادات'); return; } addImageItem(u, { w: 90 }); },
     async merge(where) { $('#edMergeFile')._where = where; $('#edMergeFile').click(); },
+    sig() { sigPad(); }, stamp(txt, col) { addStamp(txt, col || '#c00000'); }, search() { doSearch(); }, hl() { hlHits(); },
+    async flat() { const px = +$('#edFlatQ').value || 1500; await App.run('جارٍ إنشاء PDF مسطّح…', async m => { await dl(await buildFlatPdf(px, m), baseName() + '-مسطّح.pdf'); toast('تم — الصفحات صور، النص المخفي تحت التغطية أُزيل'); }); },
     imgFile() { $('#edImgFile').click(); },
     imgPageFile() { $('#edImgPageFile').click(); }
   };
+
+
+  /* ================= أدوات احترافية ================= */
+  function px1(x, y) {
+    const bg = $('#edBg'), k = bg.width / dims(curPage())[0];
+    const d = bg.getContext('2d').getImageData(Math.min(bg.width - 1, Math.max(0, Math.round(x * k))), Math.min(bg.height - 1, Math.max(0, Math.round(y * k))), 1, 1).data; return [d[0], d[1], d[2]];
+  }
+  function sampleBg(x, y, x2, y2) {
+    const bg = $('#edBg'); if (!bg) return '#ffffff';
+    try {
+      const pts = [[x, y], [x2 == null ? x : x2, y2 == null ? y : y2], [x, y - 4], [x2 == null ? x : x2, (y2 == null ? y : y2) - 4], [x, y + 4]].map(q => px1(q[0], q[1]));
+      let best = pts[0], bd = 1e9; pts.forEach(a => { const s = pts.reduce((m, c) => m + Math.abs(a[0] - c[0]) + Math.abs(a[1] - c[1]) + Math.abs(a[2] - c[2]), 0); if (s < bd) { bd = s; best = a; } });
+      return '#' + best.map(v => v.toString(16).padStart(2, '0')).join('');
+    } catch (e) { return '#ffffff'; }
+  }
+  const lineHit = (L, px, py) => L.lines.find(l => px >= l.x0 - 2 && px <= l.x1 + 2 && py >= l.y0 - 2 && py <= l.y1 + l.size * 0.3);
+  async function editLineAt(px, py) {
+    const pg = curPage(), L = await pageLines(pg), ln = lineHit(L, px, py);
+    if (!ln) { toast('اضغط على سطر نصي موجود في الصفحة (الصفحات الممسوحة ضوئياً لا تحوي نصاً قابلاً للتحديد)'); return; }
+    pushUndo();
+    const w = (ln.x1 - ln.x0) * 1.12 + 8;
+    const cover = newItem('white', { x: ln.x0 - 2, y: ln.y0 - 1, w: ln.x1 - ln.x0 + 4, h: ln.y1 - ln.y0 + ln.size * 0.32, fill: sampleBg(ln.x0 - 5, (ln.y0 + ln.y1) / 2, ln.x1 + 5, (ln.y0 + ln.y1) / 2), sw: 0 });
+    const it = newItem('text', Object.assign({}, textDef, { txt: ln.text, fs: Math.round(ln.size * 10) / 10, b: ln.bold, w, al: ln.rtl ? 'right' : 'left', ff: 'Tajawal', y: ln.y0 - ln.size * 0.16 }));
+    it.x = ln.rtl ? ln.x1 + 3 - w : ln.x0 - 1;
+    pg.items.push(cover, it); setTool('select'); drawLayer(); select(it.id);
+    startInline($('#edLayer [data-id="' + it.id + '"]'), it, false);
+  }
+  let hoverTok = 0;
+  async function hoverEdit(e) {
+    if (E.tool !== 'edit' || drag) return;
+    const tok = ++hoverTok, L = await pageLines(curPage()); if (tok !== hoverTok) return;
+    const [px, py] = pt(e), ln = lineHit(L, px, py), lay = $('#edLayer'); let h = $('#edHover');
+    if (!ln) { h && h.remove(); return; }
+    if (!h) { h = doc.createElement('div'); h.id = 'edHover'; h.className = 'ed-hover'; lay.appendChild(h); }
+    h.style.cssText = 'left:' + (ln.x0 - 2) * E.z + 'px;top:' + (ln.y0 - 1) * E.z + 'px;width:' + (ln.x1 - ln.x0 + 4) * E.z + 'px;height:' + (ln.y1 - ln.y0 + ln.size * 0.3) * E.z + 'px';
+  }
+  function sigPad() {
+    let d = $('#edSigDlg');
+    if (!d) {
+      d = doc.createElement('dialog'); d.id = 'edSigDlg';
+      d.innerHTML = '<form method="dialog" class="ed-sig"><h4>ارسم توقيعك بالماوس أو الإصبع</h4><canvas id="edSigC" width="560" height="220"></canvas><div class="ed-btnrow"><label>اللون <input type="color" id="edSigCol" value="#0a2a6b"></label><label>السماكة <input type="range" id="edSigW" min="1" max="8" value="3"></label><button type="button" class="btn sm" id="edSigClr">مسح</button><button type="button" class="btn sm primary" id="edSigOk">إضافة للصفحة</button><button class="btn sm">إغلاق</button></div></form>';
+      doc.body.appendChild(d);
+      const c = $('#edSigC'), x = c.getContext('2d'); let on = false, bb = null;
+      d._clear = () => { x.clearRect(0, 0, c.width, c.height); bb = null; };
+      const P = e => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height]; };
+      c.addEventListener('pointerdown', e => { on = true; c.setPointerCapture(e.pointerId); const [a, b] = P(e); x.strokeStyle = $('#edSigCol').value; x.lineWidth = +$('#edSigW').value; x.lineCap = x.lineJoin = 'round'; x.beginPath(); x.moveTo(a, b); x.lineTo(a + 0.1, b + 0.1); x.stroke(); });
+      c.addEventListener('pointermove', e => { if (!on) return; const [a, b] = P(e); x.lineTo(a, b); x.stroke(); bb = bb ? [Math.min(bb[0], a), Math.min(bb[1], b), Math.max(bb[2], a), Math.max(bb[3], b)] : [a, b, a, b]; });
+      c.addEventListener('pointerup', () => { on = false; });
+      $('#edSigClr').addEventListener('click', d._clear);
+      $('#edSigOk').addEventListener('click', () => {
+        if (!bb) { toast('ارسم التوقيع أولاً'); return; }
+        const pad = 8, sx = Math.max(0, bb[0] - pad), sy = Math.max(0, bb[1] - pad), sw = Math.min(c.width - sx, bb[2] - bb[0] + 2 * pad), sh = Math.min(c.height - sy, bb[3] - bb[1] + 2 * pad);
+        const o = doc.createElement('canvas'); o.width = sw; o.height = sh; o.getContext('2d').drawImage(c, sx, sy, sw, sh, 0, 0, sw, sh);
+        d.close(); addImageItem(o.toDataURL('image/png'), { w: Math.max(40, sw * 0.4) });
+      });
+    }
+    d._clear(); d.showModal();
+  }
+  function addStamp(txt, col) {
+    const pg = curPage(); if (!pg) return; const [w, h] = dims(pg), fs = 30, ww = Math.max(90, txt.length * fs * 0.62 + 24);
+    pushUndo(); const it = newItem('text', Object.assign({}, textDef, { txt, fs, col, b: true, bd: 2.5, al: 'center', w: ww, rot: -10, x: (w - ww) / 2, y: h * 0.3 }));
+    pg.items.push(it); drawLayer(); select(it.id);
+  }
+  async function buildFlatPdf(px, setMsg) {
+    const PL = g.PDFLib, out = await PL.PDFDocument.create();
+    for (let i = 0; i < E.pages.length; i++) {
+      setMsg && setMsg('تسطيح الصفحة ' + (i + 1) + ' من ' + E.pages.length + '…');
+      const pg = E.pages[i], [w, h] = dims(pg), jb = await pageToBlob(pg, 'jpg', px, px > 1800 ? 0.9 : px > 1200 ? 0.8 : 0.65), im = await out.embedJpg(new Uint8Array(await jb.arrayBuffer()));
+      const pp = out.addPage([w, h]); pp.drawImage(im, { x: 0, y: 0, width: w, height: h });
+    }
+    out.setTitle(($('#edMetaT') || {}).value || baseName()); out.setProducer('محرر الكتب الرسمية');
+    return new Blob([await out.save()], { type: 'application/pdf' });
+  }
+  let hits = [];
+  async function doSearch() {
+    const q = fixAr($('#edSearch').value.trim()).toLowerCase(), box = $('#edResults'); hits = [];
+    if (!q) { toast('اكتب كلمة للبحث'); return; }
+    await App.run('جارٍ البحث في الصفحات…', async () => {
+      for (let i = 0; i < E.pages.length; i++) { const L = await pageLines(E.pages[i]); L.lines.forEach(ln => { if (ln.text.toLowerCase().includes(q)) { const its = ln.seq.filter(s => s.str.toLowerCase().includes(q)); hits.push({ i, text: ln.text, boxes: (its.length ? its : [ln]).map(s => ({ x0: s.x0, x1: s.x1, y0: s.y0, y1: s.y1, size: s.size || ln.size })) }); } }); }
+    });
+    box.innerHTML = hits.length ? '<div class="hint">' + hits.length + ' نتيجة — اضغط للانتقال</div>' + hits.slice(0, 80).map((h, k) => '<button type="button" class="ed-hit" data-hit="' + k + '">ص ' + (h.i + 1) + ': ' + esc(h.text.slice(0, 60)) + '</button>').join('') : '<div class="hint">لا توجد نتائج (الصفحات الممسوحة لا تحوي نصاً قابلاً للبحث)</div>';
+  }
+  function hlHits() {
+    if (!hits.length) { toast('ابحث أولاً'); return; } pushUndo();
+    hits.forEach(h => h.boxes.forEach(b => E.pages[h.i].items.push(newItem('hl', { x: b.x0 - 1, y: b.y0 - 1, w: b.x1 - b.x0 + 2, h: b.y1 - b.y0 + (b.size || 10) * 0.3, fill: '#ffe600', sw: 0 }))));
+    renderAll(); toast('تم تظليل ' + hits.length + ' نتيجة');
+  }
 
   /* ================= النموذج الجانبي ================= */
   function buildForm() {
@@ -643,6 +811,7 @@
       '<input type="file" id="edImgFile" accept="image/*" multiple hidden><input type="file" id="edImgPageFile" accept="image/*" multiple hidden><input type="file" id="edMergeFile" accept="application/pdf,.pdf" hidden>' +
       '<fieldset class="group"><legend>١) الملف</legend>' +
       '<div class="ed-drop" id="edSideDrop"><b>اسحب ملف PDF أو Word هنا</b><span>أو</span><button type="button" class="btn primary" id="edPick">اختيار ملف من الجهاز</button></div>' +
+      '<div class="ed-blank" data-blank><select class="ed-bsize">' + BLANK_OPTS + '</select><button type="button" class="btn sm" data-newblank="pdf">+ صفحة فارغة (PDF)</button><button type="button" class="btn sm" data-newblank="docx">+ مستند Word فارغ</button></div>' +
       '<p class="hint" id="edInfo">لم يُفتح ملف بعد. يُدعم: PDF و Word (.docx).</p>' +
       '<div class="ed-btnrow"><button type="button" class="btn sm" id="edScanBtn">الماسح الضوئي</button><button type="button" class="btn sm" id="edCamBtn">تصوير بالكاميرا</button><button type="button" class="btn sm danger" id="edClose" hidden>إغلاق الملف</button></div>' +
       '<div class="ed-att" data-edit-only="pdf"><span>الصور الملتقطة/الممسوحة تُضاف:</span><label class="check"><input type="radio" name="edAttMode" value="page" checked> <span>صفحة جديدة</span></label><label class="check"><input type="radio" name="edAttMode" value="item"> <span>صورة على الصفحة الحالية</span></label></div>' +
@@ -658,16 +827,23 @@
       '<fieldset class="group" data-edit-only="pdf"><legend>٤) إضافات سريعة من الموقع</legend>' +
       '<div class="ed-btnrow"><button type="button" class="btn sm" data-tl="logo" data-arg="club">شعار النادي</button><button type="button" class="btn sm" data-tl="logo" data-arg="ministry">شعار الوزارة</button>' +
       '<button type="button" class="btn sm" data-tl="person" data-arg="head|sign">توقيع الرئيس</button><button type="button" class="btn sm" data-tl="person" data-arg="head|stamp">ختم الرئيس</button><button type="button" class="btn sm" data-tl="person" data-arg="manager|sign">توقيع المدير</button><button type="button" class="btn sm" data-tl="person" data-arg="manager|stamp">ختم المدير</button></div>' +
-      '<details class="t2-el"><summary>ترقيم الصفحات</summary><div><div class="row2"><label class="field"><span>الصيغة</span><input id="edPnFmt" type="text" value="صفحة {n} من {N}"></label><label class="field"><span>الحجم</span><input id="edPnSize" type="number" value="11" min="6" max="40"></label></div><div class="row2"><label class="field"><span>اللون</span><input id="edPnCol" type="color" value="#333333"></label><label class="field"><span>الخط</span><select id="edPnFont">' + F + '</select></label></div><button type="button" class="btn sm" data-tl="pageNums">إضافة الترقيم لكل الصفحات</button></div></details>' +
+      '<details class="t2-el"><summary>ترقيم الصفحات / رأس وتذييل</summary><div><label class="field"><span>الموضع</span><select id="edPnPos"><option value="bottom">أسفل الصفحة (تذييل)</option><option value="top">أعلى الصفحة (رأس)</option></select></label><div class="row2"><label class="field"><span>الصيغة</span><input id="edPnFmt" type="text" value="صفحة {n} من {N}"></label><label class="field"><span>الحجم</span><input id="edPnSize" type="number" value="11" min="6" max="40"></label></div><div class="row2"><label class="field"><span>اللون</span><input id="edPnCol" type="color" value="#333333"></label><label class="field"><span>الخط</span><select id="edPnFont">' + F + '</select></label></div><button type="button" class="btn sm" data-tl="pageNums">إضافة الترقيم لكل الصفحات</button></div></details>' +
       '<details class="t2-el"><summary>علامة مائية نصية</summary><div><label class="field"><span>النص</span><input id="edWmTxt" type="text" value="نسخة للمراجعة"></label><div class="row2"><label class="field"><span>الحجم</span><input id="edWmSize" type="number" value="70"></label><label class="field"><span>الشفافية %</span><input id="edWmOp" type="number" value="15" min="5" max="100"></label></div><label class="field"><span>اللون</span><input id="edWmCol" type="color" value="#888888"></label><button type="button" class="btn sm" data-tl="wm">إضافة لكل الصفحات</button></div></details>' +
       '</fieldset>' +
       '<fieldset class="group" data-edit-only="pdf"><legend>٥) التفكيك والتحويل</legend>' +
       '<div class="ed-btnrow"><button type="button" class="btn sm" data-tl="extractSel">استخراج المحدد كملف</button><button type="button" class="btn sm" data-tl="splitAll">كل صفحة ملف (ZIP)</button></div>' +
       '<div class="row2"><label class="field"><span>استخراج مدى</span><input id="edRange" type="text" placeholder="1-3,5,8-10"></label><label class="field"><span>تقسيم كل N صفحة</span><input id="edEvery" type="number" value="2" min="1"></label></div>' +
       '<div class="ed-btnrow"><button type="button" class="btn sm" data-tl="extractRange">استخراج المدى</button><button type="button" class="btn sm" data-tl="splitEvery">تقسيم لأجزاء (ZIP)</button></div>' +
-      '<div class="ed-btnrow"><button type="button" class="btn sm primary" data-tl="toWord">تحويل إلى Word</button><button type="button" class="btn sm" data-tl="imgPage">الصفحة كصورة PNG</button><button type="button" class="btn sm" data-tl="imgAll">كل الصفحات صور (ZIP)</button></div>' +
+      '<div class="ed-btnrow"><button type="button" class="btn sm primary" data-tl="toWord" title="نص عربي قابل للتعديل مع الفقرات والمحاذاة">تحويل إلى Word (نص قابل للتعديل)</button><button type="button" class="btn sm" data-tl="toWordImg" title="كل صفحة صورة مطابقة للأصل">Word مطابق للأصل (صور)</button><button type="button" class="btn sm" data-tl="imgPage">الصفحة كصورة PNG</button><button type="button" class="btn sm" data-tl="imgAll">كل الصفحات صور (ZIP)</button></div>' +
       '<div class="ed-btnrow"><button type="button" class="btn sm" data-tl="text">نص الصفحة</button><button type="button" class="btn sm" data-tl="textAll">نص كل الصفحات</button><button type="button" class="btn sm" data-tl="copyText">نسخ النص</button></div>' +
       '<textarea id="edText" rows="6" hidden readonly></textarea></fieldset>' +
+      '<fieldset class="group" data-edit-only="pdf"><legend>٦) أدوات احترافية</legend>' +
+      '<div class="ed-btnrow"><button type="button" class="btn sm" data-tl="sig">✍ رسم توقيع</button></div>' +
+      '<div class="hint">أختام نصية جاهزة:</div><div class="ed-btnrow">' + [['معتمد', '#0a7a2f'], ['نسخة طبق الأصل', '#0a3a8a'], ['سري', '#c00000'], ['مسودة', '#c06000'], ['تم الدفع', '#0a7a2f'], ['صورة', '#555555']].map(s => '<button type="button" class="btn sm" data-tl="stamp" data-arg="' + s[0] + '|' + s[1] + '">' + s[0] + '</button>').join('') + '</div>' +
+      '<div class="row2"><label class="field"><span>بحث في نص الكتاب</span><input id="edSearch" type="text" placeholder="كلمة أو عبارة"></label><div class="ed-btnrow" style="align-items:flex-end"><button type="button" class="btn sm" data-tl="search">بحث</button><button type="button" class="btn sm" data-tl="hl">تظليل النتائج</button></div></div><div id="edResults"></div>' +
+      '<div class="row2"><label class="field"><span>عنوان الملف (خصائص)</span><input id="edMetaT" type="text"></label><label class="field"><span>المؤلف</span><input id="edMetaA" type="text"></label></div>' +
+      '<div class="row2"><label class="field"><span>جودة التسطيح/الضغط</span><select id="edFlatQ"><option value="2200">عالية</option><option value="1500" selected>متوسطة</option><option value="1000">منخفضة (أصغر حجماً)</option></select></label><div class="ed-btnrow" style="align-items:flex-end"><button type="button" class="btn sm" data-tl="flat">PDF مسطّح/مضغوط</button></div></div>' +
+      '<p class="hint">«تعديل نص موجود»: اختر الأداة من الشريط ثم اضغط سطراً في الصفحة. «المسطّح» يحوّل الصفحات إلى صور فيُزيل أي نص مغطّى بمستطيل أسود أو أبيض (مفيد للحجب).</p></fieldset>' +
       '<div data-edit-only="docx" id="edWordForm"></div>' +
       '<p class="hint ed-foot">التنزيل والطباعة والإرسال من الأزرار العلوية تعمل على هذا الملف. التعديلات تبقى في الصفحة المفتوحة فقط (لا تُحفظ بعد إغلاقها)، فنزّل الملف قبل الخروج.</p>';
     bindForm();
@@ -677,6 +853,7 @@
     const host = $('#edForm');
     $('#edFile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; openFile(f); });
     $('#edPick').addEventListener('click', () => $('#edFile').click());
+    $$('[data-newblank]', host).forEach(b => b.addEventListener('click', () => { if (E.kind && !confirm('سيُغلق الملف الحالي وتضيع التعديلات غير المنزّلة. متابعة؟')) return; newBlank(b.dataset.newblank, $('.ed-bsize', b.closest('[data-blank]')).value); }));
     $('#edScanBtn').addEventListener('click', () => $('#btnScan').click());
     $('#edCamBtn').addEventListener('click', () => $('#btnCam').click());
     $('#edClose').addEventListener('click', () => { if (!confirm('إغلاق الملف؟ ستفقد التعديلات غير المنزّلة.')) return; closeFile(); });
@@ -687,6 +864,7 @@
     host.addEventListener('click', e => {
       const p = e.target.closest('[data-page]'); if (p && pageOps[p.dataset.page]) { pageOps[p.dataset.page](); return; }
       const t = e.target.closest('[data-tl]'); if (t && tools[t.dataset.tl]) { const a = (t.dataset.arg || '').split('|'); tools[t.dataset.tl](a[0], a[1]); }
+      const h = e.target.closest('[data-hit]'); if (h && hits[+h.dataset.hit]) goPage(hits[+h.dataset.hit].i);
     });
     $('#edImgFile').addEventListener('change', async e => { const fs = Array.from(e.target.files); e.target.value = ''; for (const f of fs) await addImageItem(await readUrl(f)); setTool('select'); });
     $('#edImgPageFile').addEventListener('change', async e => { const fs = Array.from(e.target.files); e.target.value = ''; if (E.kind !== 'pdf') return; pushUndo(); for (const f of fs) { E.pages.splice(E.cur + 1, 0, await imageAsPages(await readUrl(f), f.name)); E.cur++; } renderAll(); });
