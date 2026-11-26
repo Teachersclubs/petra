@@ -29,7 +29,11 @@
       [['bold', '<b>B</b>', 'غامق'], ['italic', '<i>I</i>', 'مائل'], ['underline', '<u>U</u>', 'تسطير'], ['strikeThrough', '<s>S</s>', 'يتوسطه خط'], ['justifyRight', '⇥', 'محاذاة يمين'], ['justifyCenter', '≡', 'توسيط'], ['justifyLeft', '⇤', 'محاذاة يسار'], ['justifyFull', '☰', 'ضبط'], ['insertUnorderedList', '•', 'قائمة نقطية'], ['insertOrderedList', '1.', 'قائمة رقمية'], ['indent', '→', 'زيادة المسافة'], ['outdent', '←', 'إنقاص المسافة'], ['subscript', 'x₂', 'منخفض'], ['superscript', 'x²', 'مرتفع'], ['removeFormat', 'Tx', 'مسح التنسيق'], ['undo', '↶', 'تراجع'], ['redo', '↷', 'إعادة']]
         .map(b => '<button type="button" class="ed-tb wd-b" data-cmd="' + b[0] + '" title="' + b[2] + '">' + b[1] + '</button>').join('') +
       '<label class="ed-tb" title="لون الخط">A<input type="color" id="wdCol" value="#000000"></label><label class="ed-tb" title="تظليل">▮<input type="color" id="wdHl" value="#ffff00"></label>' +
-      '<button type="button" class="ed-tb" id="wdRtl" title="اتجاه الفقرة: عربي (يمين)">RTL</button><button type="button" class="ed-tb" id="wdLtr" title="اتجاه الفقرة: إنجليزي (يسار)">LTR</button></div>' +
+      '<button type="button" class="ed-tb" id="wdRtl" title="اتجاه الفقرة: عربي (يمين)">RTL</button><button type="button" class="ed-tb" id="wdLtr" title="اتجاه الفقرة: إنجليزي (يسار)">LTR</button>' +
+      '<select id="wdLs" title="تباعد الأسطر"><option value="">تباعد الأسطر</option><option>1</option><option>1.15</option><option>1.5</option><option>2</option><option>2.5</option></select>' +
+      '<select id="wdSp" title="فراغ بعد الفقرة"><option value="">فراغ بعد الفقرة</option><option value="0">0</option><option value="6">6 نقاط</option><option value="12">12 نقطة</option><option value="18">18 نقطة</option></select>' +
+      '<button type="button" class="ed-tb" id="wdFi" title="مسافة أول السطر">¶→</button><button type="button" class="ed-tb" id="wdDate" title="إدراج تاريخ اليوم (ميلادي + هجري)">📅</button>' +
+      '<select id="wdSym" title="رموز"><option value="">رموز</option>' + ['✓', '✗', '©', '®', '™', '§', '°', '±', '×', '÷', '«', '»', '٪', '؛', '؟', '←', '→', '•', '—', '…'].map(s => '<option>' + s + '</option>').join('') + '</select></div>' +
       '<div class="wd-view"><div class="wd-paper" id="wdPaper" contenteditable="true" dir="rtl" spellcheck="false"></div></div>';
     const p = ed(); p.innerHTML = E0.word.html; if (!p.textContent.trim() && !p.querySelector('img,table')) p.innerHTML = '<p><br></p>';
     bind();
@@ -45,6 +49,14 @@
     $('#wdBlock').addEventListener('change', e => cmd('formatBlock', e.target.value));
     $('#wdCol').addEventListener('input', e => cmd('foreColor', e.target.value));
     $('#wdHl').addEventListener('input', e => cmd('hiliteColor', e.target.value));
+    const selBlocks = () => { restoreSel(); const s = g.getSelection(); if (!s.rangeCount) return []; const r = s.getRangeAt(0); const all = $$('p,h1,h2,h3,h4,h5,h6,li,blockquote,div', ed()).filter(n => r.intersectsNode(n) && !n.querySelector('p,h1,h2,h3,h4,h5,h6,li,div')); return all.length ? all : (() => { let n = s.anchorNode; while (n && n !== ed() && !(n.nodeType === 1 && /^(P|H[1-6]|LI|DIV|BLOCKQUOTE)$/.test(n.tagName))) n = n.parentNode; return n && n !== ed() ? [n] : []; })(); };
+    $('#wdLs').addEventListener('change', e => { if (e.target.value) selBlocks().forEach(n => { n.style.lineHeight = e.target.value; }); e.target.value = ''; });
+    $('#wdSp').addEventListener('change', e => { if (e.target.value !== '') selBlocks().forEach(n => { n.style.marginBottom = e.target.value + 'pt'; }); e.target.value = ''; });
+    $('#wdFi').addEventListener('mousedown', e => e.preventDefault());
+    $('#wdFi').addEventListener('click', () => selBlocks().forEach(n => { n.style.textIndent = n.style.textIndent ? '' : '1.5cm'; }));
+    $('#wdDate').addEventListener('mousedown', e => e.preventDefault());
+    $('#wdDate').addEventListener('click', () => { const iso = App.todayISO ? App.todayISO() : new Date().toISOString().slice(0, 10), [y, m, d] = iso.split('-'); restoreSel(); doc.execCommand('insertText', false, d + '/' + m + '/' + y + 'م' + (App.formatHijri ? ' الموافق ' + App.formatHijri(iso) : '')); });
+    $('#wdSym').addEventListener('change', e => { if (e.target.value) { restoreSel(); doc.execCommand('insertText', false, e.target.value); } e.target.value = ''; });
     $('#wdRtl').addEventListener('click', () => setDir('rtl')); $('#wdLtr').addEventListener('click', () => setDir('ltr'));
     $('#wdRtl').addEventListener('mousedown', e => e.preventDefault()); $('#wdLtr').addEventListener('mousedown', e => e.preventDefault());
     ed().addEventListener('paste', e => { // لصق نص نظيف أو صور
@@ -78,6 +90,9 @@
     else if (op === 'delRow') { tr.remove(); if (!tb.children.length) tb.closest('table').remove(); }
     else if (op === 'delCol') { Array.from(tb.children).forEach(r => r.children[ci] && r.children[ci].remove()); if (!tr.children.length) tb.closest('table').remove(); }
     else if (op === 'delTable') td.closest('table').remove();
+    else if (op === 'shade') td.style.backgroundColor = $('#wdShade').value;
+    else if (op === 'shadeRow') Array.from(tr.children).forEach(c => { c.style.backgroundColor = $('#wdShade').value; });
+    else if (op === 'bold') Array.from(tr.children).forEach(c => { c.style.fontWeight = 700; });
     E0.word.dirty = true;
   }
   function findReplace(find, rep, all) {
@@ -98,11 +113,13 @@
       '<fieldset class="group"><legend>٣) جدول وفقرات</legend>' +
       '<div class="row2"><label class="field"><span>صفوف</span><input id="wdRows" type="number" value="3" min="1" max="50"></label><label class="field"><span>أعمدة</span><input id="wdCols" type="number" value="3" min="1" max="12"></label></div>' +
       '<div class="ed-btnrow"><button type="button" class="btn sm" data-wt="ins">إدراج جدول</button><button type="button" class="btn sm" data-wt="addRow">+ صف</button><button type="button" class="btn sm" data-wt="addCol">+ عمود</button><button type="button" class="btn sm danger" data-wt="delRow">حذف صف</button><button type="button" class="btn sm danger" data-wt="delCol">حذف عمود</button><button type="button" class="btn sm danger" data-wt="delTable">حذف الجدول</button></div>' +
+      '<div class="ed-btnrow"><label class="ed-tb">لون التظليل <input type="color" id="wdShade" value="#d9e2f3"></label><button type="button" class="btn sm" data-wt="shade">تظليل الخلية</button><button type="button" class="btn sm" data-wt="shadeRow">تظليل الصف</button><button type="button" class="btn sm" data-wt="bold">صف عناوين (غامق)</button></div>' +
       '<div class="ed-btnrow"><button type="button" class="btn sm" id="wdHr">خط فاصل</button><button type="button" class="btn sm" id="wdPb">فاصل صفحة</button><button type="button" class="btn sm" id="wdLink">رابط</button></div></fieldset>' +
       '<fieldset class="group"><legend>٤) بحث واستبدال</legend>' +
       '<div class="row2"><label class="field"><span>بحث</span><input id="wdFind" type="text"></label><label class="field"><span>استبدال بـ</span><input id="wdRep" type="text"></label></div>' +
       '<div class="ed-btnrow"><button type="button" class="btn sm" id="wdRepAll">استبدال الكل</button><span class="hint" id="wdStat"></span></div></fieldset>' +
-      '<fieldset class="group"><legend>٥) تحويل</legend><div class="ed-btnrow"><button type="button" class="btn sm primary" id="wdToPdf">تحويل إلى PDF</button><button type="button" class="btn sm" id="wdToTxt">تنزيل كنص (.txt)</button><button type="button" class="btn sm" id="wdToHtml">تنزيل كصفحة (.html)</button></div></fieldset>';
+      '<fieldset class="group"><legend>٥) إعدادات صفحة Word عند التنزيل</legend><div class="row2"><label class="field"><span>الاتجاه</span><select id="wdOri"><option value="p">عمودي</option><option value="l">أفقي</option></select></label><label class="field"><span>الهوامش (سم)</span><input id="wdMar" type="number" value="2" min="0.5" max="5" step="0.25"></label></div><label class="field"><span>رأس الصفحة (نص)</span><input id="wdHdr" type="text" placeholder="مثال: قسم أندية المعلمين والعاملين"></label><label class="field"><span>تذييل الصفحة (نص)</span><input id="wdFtr" type="text"></label><label class="check"><input type="checkbox" id="wdPn"> <span>ترقيم الصفحات (صفحة X من Y)</span></label></fieldset>' +
+      '<fieldset class="group"><legend>٦) تحويل</legend><div class="ed-btnrow"><button type="button" class="btn sm primary" id="wdToPdf">تحويل إلى PDF</button><button type="button" class="btn sm" id="wdToTxt">تنزيل كنص (.txt)</button><button type="button" class="btn sm" id="wdToHtml">تنزيل كصفحة (.html)</button></div></fieldset>';
     const S = () => App.getState();
     $('#wdAddImg').addEventListener('click', () => { saveSel(); $('#wdImgFile').click(); });
     $('#wdImgFile').addEventListener('change', async e => { const fs = Array.from(e.target.files); e.target.value = ''; for (const f of fs) { restoreSel(); insertImg(await readUrl(f)); await new Promise(r => setTimeout(r, 80)); } });
@@ -154,6 +171,7 @@
   }
   const HEAD = { H1: [D => D.HeadingLevel.HEADING_1, 40], H2: [D => D.HeadingLevel.HEADING_2, 32], H3: [D => D.HeadingLevel.HEADING_3, 28], H4: [D => D.HeadingLevel.HEADING_4, 26], H5: [D => D.HeadingLevel.HEADING_5, 24], H6: [D => D.HeadingLevel.HEADING_6, 22] };
   function blockProps(el, D, base) {
+    const lh = parseFloat(el.style.lineHeight), mb = el.style.marginBottom, ti = el.style.textIndent;
     const dir = el.getAttribute('dir') || (isAr(el.textContent) ? 'rtl' : 'ltr'), ta = (el.style.textAlign || '').toLowerCase();
     const rtl = dir === 'rtl'; let al;
     // في فقرة bidi: START = يمين للعربي، END = يسار
@@ -161,7 +179,7 @@
     else if (ta === 'left') al = rtl ? D.AlignmentType.END : D.AlignmentType.START; else if (ta === 'right') al = rtl ? D.AlignmentType.START : D.AlignmentType.END;
     const ml = parseFloat(el.style.marginRight || el.style.paddingRight || 0), mrl = parseFloat(el.style.marginLeft || el.style.paddingLeft || 0);
     const ind = rtl ? ml : mrl;
-    return Object.assign({ bidirectional: rtl, alignment: al, spacing: { after: 100, line: 300 }, indent: ind > 0 ? { start: Math.round(ind * 15) } : undefined }, base || {});
+    return Object.assign({ bidirectional: rtl, alignment: al, spacing: { after: mb ? Math.round(parseFloat(mb) * (/px$/.test(mb) ? 15 : 20)) : 100, line: lh && lh < 10 ? Math.round(lh * 240) : 300 }, indent: (ind > 0 || ti) ? { start: ind > 0 ? Math.round(ind * 15) : undefined, firstLine: ti ? Math.round(parseFloat(ti) * (/cm$/.test(ti) ? 567 : /px$/.test(ti) ? 15 : 20)) : undefined } : undefined }, base || {});
   }
   function listItems(list, D, kids, level, ctr) {
     const ord = list.tagName === 'OL', inst = ++ctr.n;
@@ -205,11 +223,11 @@
     flush();
   }
   async function toDocx() {
-    const D = g.docx, kids = [];
+    const D = g.docx, kids = [], v = id => ($('#' + id) || {}).value || '', land = v('wdOri') === 'l', mar = Math.round((parseFloat(v('wdMar')) || 2) * 567), hdr = v('wdHdr').trim(), ftr = v('wdFtr').trim(), pn = !!($('#wdPn') && $('#wdPn').checked);
     blocksOf(ed(), D, kids, { n: 0 });
     if (!kids.length) kids.push(new D.Paragraph({ children: [] }));
     const lvl = i => ({ level: i, format: D.LevelFormat.DECIMAL, text: '%' + (i + 1) + '.', alignment: D.AlignmentType.START });
-    const d = new D.Document({ numbering: { config: [{ reference: 'edOl', levels: [0, 1, 2, 3].map(lvl) }] }, styles: { default: { document: { run: { font: 'Arial', size: 28 } } } }, sections: [{ properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 } } }, children: kids }] });
+    const d = new D.Document({ numbering: { config: [{ reference: 'edOl', levels: [0, 1, 2, 3].map(lvl) }] }, styles: { default: { document: { run: { font: 'Arial', size: 28 } } } }, sections: [{ properties: { page: { size: { width: 11906, height: 16838, orientation: land ? D.PageOrientation.LANDSCAPE : D.PageOrientation.PORTRAIT }, margin: { top: mar, bottom: mar, left: mar, right: mar } } }, headers: hdr ? { default: new D.Header({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: isAr(hdr), children: [new D.TextRun({ text: hdr, font: 'Arial', size: 20, color: '555555', rightToLeft: isAr(hdr) || undefined })] })] }) } : undefined, footers: (ftr || pn) ? { default: new D.Footer({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, bidirectional: true, children: [].concat(ftr ? [new D.TextRun({ text: ftr + (pn ? '   |   ' : ''), font: 'Arial', size: 20, color: '555555', rightToLeft: isAr(ftr) || undefined })] : [], pn ? [new D.TextRun({ children: ['صفحة ', D.PageNumber.CURRENT, ' من ', D.PageNumber.TOTAL_PAGES], font: 'Arial', size: 20, color: '555555', rightToLeft: true })] : []) })] }) } : undefined, children: kids }] });
     return D.Packer.toBlob(d);
   }
   async function toPdf() {
