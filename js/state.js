@@ -101,9 +101,9 @@
   function dgPlayer(role) { return { name: '', ministryNo: '', memberNo: '', nationalNo: '', joinDate: '', role: role || '', game: '', x: {} }; }
   function leaveDefaults() {
     return {
-      name: '', job: '', dept: 'مديرية النشاطات المدرسية', section: 'أندية المعلمين والعاملين',
+      name: '', job: '', admin: 'إدارة شؤون المعلمين والطلبة', dept: 'مديرية النشاطات المدرسية', section: 'قسم أندية المعلمين والعاملين',
       place: 'in', address: '', phone: '',
-      start: '', end: '', days: '', daysManual: false,
+      start: '', end: '', startTime: '00:00', endTime: '23:59', days: '', daysManual: false,
       date: todayISO(), dateManual: false
     };
   }
@@ -362,6 +362,7 @@
     if (d.delegation.kindName === 'كرة القدم للمربع الذهبي لدورة ميلاد القائد 23') d.delegation.kindName = 'المربع الذهبي لبطولة كرة القدم';
     if (!d.cert.hijri && !d.cert.hijriManual) d.cert.hijri = formatHijri(d.cert.date);
     if (!d.members.hijri && !d.members.hijriManual) d.members.hijri = formatHijri(d.members.date);
+    if (d.leave && d.leave.section === 'أندية المعلمين والعاملين') d.leave.section = 'قسم أندية المعلمين والعاملين';
     if (!d.delegation.hijri && !d.delegation.hijriManual) d.delegation.hijri = formatHijri(d.delegation.date);
     if (!d.circular.hijri && !d.circular.hijriManual) d.circular.hijri = formatHijri(d.circular.date);
     return d;

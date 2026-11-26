@@ -118,7 +118,7 @@
     if (path === 'claim.claimDate') S.claim.claimDateText = '';
     if (path === 'leave.date') S.leave.dateManual = true;
     if (path === 'leave.days') S.leave.daysManual = true;
-    if (path === 'leave.start' || path === 'leave.end') { const l = S.leave; if (!l.daysManual) l.days = App.leave.calcDays(l.start, l.end); }
+    if (/^leave\.(start|end|startTime|endTime)$/.test(path)) { const l = S.leave; if (!l.daysManual) l.days = App.leave.calcDays(l.start, l.end, l.startTime, l.endTime); }
     const m = /^(letter|internal|thanks|circular|assign|claim|delegation|members|cert)\.(date|hijri|showHijri)$/.exec(path);
     if (m) {
       const d = S[m[1]];
@@ -579,8 +579,9 @@
       '<fieldset class="group"><legend>بيانات الموظف</legend>' +
       '<label class="field"><span>الاسم</span><input type="text" data-doc-bind="leave.name" placeholder="الاسم الكامل"></label>' +
       '<label class="field"><span>المسمى الوظيفي</span><input type="text" data-doc-bind="leave.job"></label>' +
-      '<div class="row2"><label class="field"><span>الإدارة</span><input type="text" data-doc-bind="leave.dept"></label>' +
-      '<label class="field"><span>القسم</span><input type="text" data-doc-bind="leave.section"></label></div></fieldset>' +
+      '<label class="field"><span>الإدارة</span><input type="text" data-doc-bind="leave.admin"></label>' +
+      '<label class="field"><span>المديرية</span><input type="text" data-doc-bind="leave.dept"></label>' +
+      '<label class="field"><span>القسم</span><input type="text" data-doc-bind="leave.section"></label></fieldset>' +
       '<fieldset class="group"><legend>مكان الإجازة</legend>' +
       '<label class="field"><span>مكان تواجد الموظف أثناء الإجازة</span><select data-doc-bind="leave.place"><option value="in">داخل المملكة</option><option value="out">خارج المملكة</option></select></label>' +
       '<label class="field"><span>العنوان</span><input type="text" data-doc-bind="leave.address" placeholder="اكتب العنوان"></label>' +
@@ -588,9 +589,11 @@
       '<fieldset class="group"><legend>مدة الإجازة</legend>' +
       '<div class="row2"><label class="field"><span>تاريخ بداية الإجازة</span><input type="date" data-doc-bind="leave.start"></label>' +
       '<label class="field"><span>تاريخ نهاية الإجازة</span><input type="date" data-doc-bind="leave.end"></label></div>' +
+      '<div class="row2"><label class="field"><span>وقت البداية</span><input type="time" data-doc-bind="leave.startTime"></label>' +
+      '<label class="field"><span>وقت النهاية <small>(23:59 = نهاية اليوم)</small></span><input type="time" data-doc-bind="leave.endTime"></label></div>' +
       '<div class="row2"><label class="field"><span>عدد الأيام <small id="lvDaysNote"></small></span><input type="text" inputmode="numeric" data-doc-bind="leave.days"></label>' +
       '<div class="field"><span>&nbsp;</span><button type="button" class="btn sm" id="lvRecalc">إعادة الحساب التلقائي</button></div></div>' +
-      '<p class="hint">يُحسب العدد تلقائيًا شاملًا يومي البداية والنهاية، ويمكنك تعديله يدويًا (يتوقف الحساب التلقائي حتى تضغط «إعادة الحساب»).</p></fieldset>' +
+      '<p class="hint">يُحسب العدد تلقائيًا بنظام كل 24 ساعة = يوم (من بداية الإجازة حتى نهايتها، والافتراضي من أول اليوم إلى آخره)، ويمكنك تعديله يدويًا (يتوقف الحساب التلقائي حتى تضغط «إعادة الحساب»).</p></fieldset>' +
       '<fieldset class="group"><legend>تاريخ تقديم الإجازة</legend><div class="row2">' +
       '<label class="field"><span>التاريخ <small id="lvDateNote"></small></span><input type="date" data-doc-bind="leave.date"></label>' +
       '<div class="field"><span>&nbsp;</span><button type="button" class="btn sm" id="lvToday">اليوم (تلقائي)</button></div></div></fieldset>' +
@@ -602,7 +605,7 @@
       if (b) b.textContent = l.dateManual ? '(يدوي)' : '(تلقائي — يتبع اليوم)';
     };
     form.addEventListener('click', e => {
-      if (e.target.closest('#lvRecalc')) { const l = S.leave; l.daysManual = false; l.days = App.leave.calcDays(l.start, l.end); refreshControls(); note(); changed(); }
+      if (e.target.closest('#lvRecalc')) { const l = S.leave; l.daysManual = false; l.days = App.leave.calcDays(l.start, l.end, l.startTime, l.endTime); refreshControls(); note(); changed(); }
       else if (e.target.closest('#lvToday')) { const l = S.leave; l.dateManual = false; l.date = App.todayISO(); refreshControls(); note(); changed(); }
       else if (e.target.closest('#lvClear')) { if (!confirm('مسح كل بيانات النموذج وإعادته للوضع الافتراضي؟')) return; S.leave = App.leaveDefaults(); refreshControls(); note(); changed(); }
     });

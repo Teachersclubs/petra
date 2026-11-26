@@ -8,7 +8,9 @@
 
   /* ---------- حساب الأيام والتواريخ ---------- */
   const parse = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : null; };
-  function calcDays(a, b) { const x = parse(a), y = parse(b); if (x == null || y == null || y < x) return ''; return String(Math.round((y - x) / 86400000) + 1); }
+  // كل 24 ساعة = يوم: الفرق بالساعات بين (تاريخ+وقت البداية) و(تاريخ+وقت النهاية)؛ 23:59 تُعدّ نهاية اليوم (24:00)
+  const mins = t => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); if (!m) return null; const v = +m[1] * 60 + +m[2]; return v === 1439 ? 1440 : v; };
+  function calcDays(a, b, ta, tb) { const x = parse(a), y = parse(b), m1 = mins(ta == null ? '00:00' : ta), m2 = mins(tb == null ? '23:59' : tb); if (x == null || y == null || m1 == null || m2 == null) return ''; const ms = (y + m2 * 60000) - (x + m1 * 60000); return ms < 0 ? '' : String(Math.floor(ms / 86400000)); }
   function fmt(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[3]) + '/' + (+m[2]) + '/' + m[1] : ''; }
   const blankDate = () => NB.repeat(4) + '/' + NB.repeat(4) + '/' + NB + '202';
   const dateTxt = iso => fmt(iso) || blankDate();
@@ -29,7 +31,8 @@
     const R = [];
     R.push({ h: 258, cells: [{ w: 10389, b: 'tdldbdrd', fill: 'FFFFFF', lines: [L(' المادة ( 50  / أ   ) من نظام ادارة الموارد البشرية  في القطاع العام رقم 33 لسنة 2024م  وتعديلاته البند رابعاً فقرة (3 ) من كتاب تفويض الصلاحيات رقم 1/70/50791  تاريخ  : 23/9/2026م ')] }] });
     R.push({ h: 432, cells: [{ w: 5555, b: 'tdldbdrs', va: 'b', lines: [L('الاسم : ', d.name)] }, { w: 4834, b: 'tdlsbdrd', va: 'b', lines: [L('المسمى الوظيفي:  ', d.job)] }] });
-    R.push({ h: 432, cells: [{ w: 2316, b: 'tdldbdrs', va: 'b', lines: [L('الادارة :')] }, { w: 3239, b: 'tdlsbdrs', va: 'b', lines: [L(d.dept)] }, { w: 2250, b: 'tdlsbdrs', va: 'b', lines: [L('الـقـســم ــ ')] }, { w: 2584, b: 'tdlsbdrd', va: 'b', lines: [L(d.section), L(club)] }] });
+    R.push({ h: 432, cells: [{ w: 2316, b: 'tdldbdrs', va: 'b', lines: [L('الادارة :')] }, { w: 3239, b: 'tdlsbdrs', va: 'b', lines: [L(d.admin)] }, { w: 2250, b: 'tdlsbdrs', va: 'b', lines: [L('المديرية :')] }, { w: 2584, b: 'tdlsbdrd', va: 'b', lines: [L(d.dept)] }] });
+    R.push({ h: 432, cells: [{ w: 2316, b: 'ldbdrs', va: 'b', lines: [L('الـقـســم ــ ')] }, { w: 3239, b: 'lsbdrs', va: 'b', lines: [L(d.section)] }, { w: 4834, b: 'lsbdrd', va: 'b', lines: [L(club)] }] });
     R.push({ h: 645, cells: [{ w: 10389, b: 'tdldbdrd', lines: [
       M(sg(6200, 'r', 'مكان تواجد الموظف أثناء الإجازة :'), sg(4000, 'l', 'الـهـاتف الـخلــوي : ', d.phone)),
       L({ box: inn }, NB, 'داخل المملكة / العنوان  ( ', inn ? addr : NB.repeat(18), ' )'),
