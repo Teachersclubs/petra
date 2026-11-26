@@ -579,8 +579,7 @@
       '<fieldset class="group"><legend>بيانات الموظف</legend>' +
       '<label class="field"><span>الاسم</span><input type="text" data-doc-bind="leave.name" placeholder="الاسم الكامل"></label>' +
       '<label class="field"><span>المسمى الوظيفي</span><input type="text" data-doc-bind="leave.job"></label>' +
-      '<label class="field"><span>الإدارة</span><input type="text" data-doc-bind="leave.admin"></label>' +
-      '<label class="field"><span>المديرية</span><input type="text" data-doc-bind="leave.dept"></label>' +
+      '<label class="field"><span>الإدارة</span><input type="text" data-doc-bind="leave.dept"></label>' +
       '<label class="field"><span>القسم</span><input type="text" data-doc-bind="leave.section"></label></fieldset>' +
       '<fieldset class="group"><legend>مكان الإجازة</legend>' +
       '<label class="field"><span>مكان تواجد الموظف أثناء الإجازة</span><select data-doc-bind="leave.place"><option value="in">داخل المملكة</option><option value="out">خارج المملكة</option></select></label>' +
