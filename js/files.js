@@ -34,6 +34,7 @@
   }
   const cache = new Map();
   async function getFile(S, type, fmt) {
+    if (type === 'edit') return App.editor.getFile(fmt);
     const key = fingerprint(S, type, fmt), name = App.fileName(S, type) + '.' + fmt;
     if (cache.has(key)) { const b = cache.get(key); cache.delete(key); cache.set(key, b); return { blob: b, name, cached: true }; }
     setMsg(fmt === 'pdf' ? 'جارٍ تجهيز ملف PDF…' : 'جارٍ تجهيز ملف Word…');

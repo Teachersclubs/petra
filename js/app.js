@@ -6,6 +6,7 @@
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
 
   let S = App.build(null);
+  App.getState = () => S;
   const PAGE_H = 1122.52; // 297mm
   let zoom = 1, fitMode = true;
 
@@ -20,6 +21,7 @@
   let raf = 0;
   function changed() {
     App.save(S);
+    if (S.activeDoc === 'edit') { App.editor.pull(); return; }
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(renderPreview);
   }
@@ -1168,6 +1170,7 @@
   function setDoc(type) {
     S.activeDoc = type;
     App.attach.renderList();
+    App.editor.show(type === 'edit');
     $$('.doc-tab').forEach(b => { const on = b.dataset.doc === type; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); });
     $$('.doc-form').forEach(f => { f.hidden = f.dataset.form !== type; });
     changed();
@@ -1195,12 +1198,12 @@
 
   function setupActions() {
     const exportAs = fmt => approve('التنزيل').then(ok => ok && App.run(fmt === 'pdf' ? 'جارٍ تجهيز ملف PDF…' : 'جارٍ تجهيز ملف Word…', async () => {
-      const f = await App.getFile(S, S.activeDoc, fmt);
+      const f = S.activeDoc === 'edit' ? await App.editor.getFile(fmt) : await App.getFile(S, S.activeDoc, fmt);
       if (await App.saveFile(f.blob, f.name)) toast('تم تنزيل الملف: ' + f.name);
     }));
     $('#btnWord').addEventListener('click', () => exportAs('docx'));
     $('#btnPdf').addEventListener('click', () => exportAs('pdf'));
-    $('#btnPrint').addEventListener('click', async () => { if (await approve('الطباعة')) App.printDoc(S, S.activeDoc); });
+    $('#btnPrint').addEventListener('click', async () => { if (await approve('الطباعة')) { if (S.activeDoc === 'edit') App.editor.print(); else App.printDoc(S, S.activeDoc); } });
 
     $('#btnClearDoc').addEventListener('click', () => {
       if (!confirm('سيتم مسح بيانات هذا المستند فقط (الإعدادات والشعارات تبقى). متابعة؟')) return;
@@ -1285,7 +1288,7 @@
     const bl = document.getElementById('brandLogo'); if (bl && window.DEFAULT_CLUB_LOGO) bl.src = window.DEFAULT_CLUB_LOGO;
     buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); buildDelegationForm(); buildMembersForm(); buildCertForm(); buildSubjectPos(); setupAssign(); setupAutoDate();
     bindAll(); setupRte(); setupLogos(); setupPeople(); setupFonts(); setupPositions(); setupDrag(); syncPos(); fillAR(); setupActions(); setupZoom(); setupTheme(); applyTheme();
-    App.attach.init(() => S.activeDoc, changed); App.initSend(() => S); App.drive.init(() => S);
+    App.attach.init(() => S.activeDoc, changed); App.editor.init(); App.initSend(() => S); App.drive.init(() => S);
     $$('.doc-tab').forEach(b => b.addEventListener('click', () => setDoc(b.dataset.doc)));
     $$('.side-tab').forEach(b => b.addEventListener('click', () => setSection(b.dataset.sec)));
     applyFonts();
