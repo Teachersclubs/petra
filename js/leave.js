@@ -31,8 +31,7 @@
     const R = [];
     R.push({ h: 258, cells: [{ w: 10389, b: 'tdldbdrd', fill: 'FFFFFF', lines: [L(' المادة ( 50  / أ   ) من نظام ادارة الموارد البشرية  في القطاع العام رقم 33 لسنة 2024م  وتعديلاته البند رابعاً فقرة (3 ) من كتاب تفويض الصلاحيات رقم 1/70/50791  تاريخ  : 23/9/2026م ')] }] });
     R.push({ h: 432, cells: [{ w: 5555, b: 'tdldbdrs', va: 'b', lines: [L('الاسم : ', d.name)] }, { w: 4834, b: 'tdlsbdrd', va: 'b', lines: [L('المسمى الوظيفي:  ', d.job)] }] });
-    R.push({ h: 432, cells: [{ w: 2316, b: 'tdldbdrs', va: 'b', lines: [L('الادارة :')] }, { w: 3239, b: 'tdlsbdrs', va: 'b', lines: [L(d.admin)] }, { w: 2250, b: 'tdlsbdrs', va: 'b', lines: [L('المديرية :')] }, { w: 2584, b: 'tdlsbdrd', va: 'b', lines: [L(d.dept)] }] });
-    R.push({ h: 432, cells: [{ w: 2316, b: 'ldbdrs', va: 'b', lines: [L('الـقـســم ــ ')] }, { w: 3239, b: 'lsbdrs', va: 'b', lines: [L(d.section)] }, { w: 4834, b: 'lsbdrd', va: 'b', lines: [L(club)] }] });
+    R.push({ h: 432, cells: [{ w: 2316, b: 'tdldbdrs', va: 'b', lines: [L('الادارة :')] }, { w: 3239, b: 'tdlsbdrs', va: 'b', lines: [L(d.dept)] }, { w: 2250, b: 'tdlsbdrs', va: 'b', lines: [L('الـقـســم ــ ')] }, { w: 2584, b: 'tdlsbdrd', va: 'b', lines: [L(d.section), L(club)] }] });
     R.push({ h: 645, cells: [{ w: 10389, b: 'tdldbdrd', lines: [
       M(sg(6200, 'r', 'مكان تواجد الموظف أثناء الإجازة :'), sg(4000, 'l', 'الـهـاتف الـخلــوي : ', d.phone)),
       L({ box: inn }, NB, 'داخل المملكة / العنوان  ( ', inn ? addr : NB.repeat(18), ' )'),
