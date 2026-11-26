@@ -33,7 +33,7 @@
     const r = App.renderDoc(S, S.activeDoc);
     App.lastEff = r.eff;
     sheet.setAttribute('style', r.style);
-    sheet.classList.toggle('land', !!r.land);
+    sheet.classList.toggle('land', !!r.land); sheet.classList.toggle('bare', !!r.bare);
     sheet.innerHTML = '<div class="sheet-main">' + r.main + '</div><div class="sheet-foot">' + r.foot + '</div>';
     $('#copySheets').innerHTML = App.variants(S, S.activeDoc).slice(1).map((v, i) => {
       const c = App.renderDoc(S, S.activeDoc, i + 1);
@@ -116,6 +116,9 @@
     App.setPath(S, path, v);
     if (path === 'assign.assignDate') S.assign.assignDateText = '';
     if (path === 'claim.claimDate') S.claim.claimDateText = '';
+    if (path === 'leave.date') S.leave.dateManual = true;
+    if (path === 'leave.days') S.leave.daysManual = true;
+    if (path === 'leave.start' || path === 'leave.end') { const l = S.leave; if (!l.daysManual) l.days = App.leave.calcDays(l.start, l.end); }
     const m = /^(letter|internal|thanks|circular|assign|claim|delegation|members|cert)\.(date|hijri|showHijri)$/.exec(path);
     if (m) {
       const d = S[m[1]];
@@ -568,6 +571,42 @@
     const f = document.createElement('div');
     f.className = 'doc-form'; f.dataset.form = type; f.hidden = true; f.innerHTML = html;
     $('#sec-doc').insertBefore(f, $('#peopleBox'));
+  }
+  function buildLeaveForm() {
+    addForm('leave',
+      '<h2 class="panel-title">نموذج طلب إجازة سنوية</h2>' +
+      '<label class="field"><span>اسم النادي <small>(يظهر في خانة القسم تلقائيًا)</small></span><input type="text" data-bind="clubName" placeholder="مثال: البتراء"></label>' +
+      '<fieldset class="group"><legend>بيانات الموظف</legend>' +
+      '<label class="field"><span>الاسم</span><input type="text" data-doc-bind="leave.name" placeholder="الاسم الكامل"></label>' +
+      '<label class="field"><span>المسمى الوظيفي</span><input type="text" data-doc-bind="leave.job"></label>' +
+      '<div class="row2"><label class="field"><span>الإدارة</span><input type="text" data-doc-bind="leave.dept"></label>' +
+      '<label class="field"><span>القسم</span><input type="text" data-doc-bind="leave.section"></label></div></fieldset>' +
+      '<fieldset class="group"><legend>مكان الإجازة</legend>' +
+      '<label class="field"><span>مكان تواجد الموظف أثناء الإجازة</span><select data-doc-bind="leave.place"><option value="in">داخل المملكة</option><option value="out">خارج المملكة</option></select></label>' +
+      '<label class="field"><span>العنوان</span><input type="text" data-doc-bind="leave.address" placeholder="اكتب العنوان"></label>' +
+      '<label class="field"><span>الهاتف الخلوي</span><input type="tel" inputmode="tel" dir="ltr" data-doc-bind="leave.phone" placeholder="07xxxxxxxx"></label></fieldset>' +
+      '<fieldset class="group"><legend>مدة الإجازة</legend>' +
+      '<div class="row2"><label class="field"><span>تاريخ بداية الإجازة</span><input type="date" data-doc-bind="leave.start"></label>' +
+      '<label class="field"><span>تاريخ نهاية الإجازة</span><input type="date" data-doc-bind="leave.end"></label></div>' +
+      '<div class="row2"><label class="field"><span>عدد الأيام <small id="lvDaysNote"></small></span><input type="text" inputmode="numeric" data-doc-bind="leave.days"></label>' +
+      '<div class="field"><span>&nbsp;</span><button type="button" class="btn sm" id="lvRecalc">إعادة الحساب التلقائي</button></div></div>' +
+      '<p class="hint">يُحسب العدد تلقائيًا شاملًا يومي البداية والنهاية، ويمكنك تعديله يدويًا (يتوقف الحساب التلقائي حتى تضغط «إعادة الحساب»).</p></fieldset>' +
+      '<fieldset class="group"><legend>تاريخ تقديم الإجازة</legend><div class="row2">' +
+      '<label class="field"><span>التاريخ <small id="lvDateNote"></small></span><input type="date" data-doc-bind="leave.date"></label>' +
+      '<div class="field"><span>&nbsp;</span><button type="button" class="btn sm" id="lvToday">اليوم (تلقائي)</button></div></div></fieldset>' +
+      '<div class="ed-btnrow"><button type="button" class="btn sm danger" id="lvClear">مسح الحقول وإعادة النموذج للوضع الافتراضي</button></div>');
+    const form = $('.doc-form[data-form="leave"]');
+    const note = () => {
+      const l = S.leave, a = $('#lvDaysNote'), b = $('#lvDateNote');
+      if (a) a.textContent = l.daysManual ? '(يدوي)' : '(تلقائي)';
+      if (b) b.textContent = l.dateManual ? '(يدوي)' : '(تلقائي — يتبع اليوم)';
+    };
+    form.addEventListener('click', e => {
+      if (e.target.closest('#lvRecalc')) { const l = S.leave; l.daysManual = false; l.days = App.leave.calcDays(l.start, l.end); refreshControls(); note(); changed(); }
+      else if (e.target.closest('#lvToday')) { const l = S.leave; l.dateManual = false; l.date = App.todayISO(); refreshControls(); note(); changed(); }
+      else if (e.target.closest('#lvClear')) { if (!confirm('مسح كل بيانات النموذج وإعادته للوضع الافتراضي؟')) return; S.leave = App.leaveDefaults(); refreshControls(); note(); changed(); }
+    });
+    form.addEventListener('input', note); form.addEventListener('change', note); note();
   }
   function buildAssignForm() {
     addForm('assign',
@@ -1170,7 +1209,7 @@
   function setDoc(type) {
     S.activeDoc = type;
     App.attach.renderList();
-    App.editor.show(type === 'edit');
+    App.editor.show(type === 'edit'); document.body.classList.toggle('mode-leave', type === 'leave');
     $$('.doc-tab').forEach(b => { const on = b.dataset.doc === type; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); });
     $$('.doc-form').forEach(f => { f.hidden = f.dataset.form !== type; });
     changed();
@@ -1286,7 +1325,7 @@
   }
   function init() {
     const bl = document.getElementById('brandLogo'); if (bl && window.DEFAULT_CLUB_LOGO) bl.src = window.DEFAULT_CLUB_LOGO;
-    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildClaimForm(); buildDelegationForm(); buildMembersForm(); buildCertForm(); buildSubjectPos(); setupAssign(); setupAutoDate();
+    buildInternalForm(); buildThanksForm(); buildAssignForm(); buildLeaveForm(); buildClaimForm(); buildDelegationForm(); buildMembersForm(); buildCertForm(); buildSubjectPos(); setupAssign(); setupAutoDate();
     bindAll(); setupRte(); setupLogos(); setupPeople(); setupFonts(); setupPositions(); setupDrag(); syncPos(); fillAR(); setupActions(); setupZoom(); setupTheme(); applyTheme();
     App.attach.init(() => S.activeDoc, changed); App.editor.init(); App.initSend(() => S); App.drive.init(() => S);
     $$('.doc-tab').forEach(b => b.addEventListener('click', () => setDoc(b.dataset.doc)));

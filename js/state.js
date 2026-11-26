@@ -99,6 +99,14 @@
   };
   function dgAdmin(role) { return { name: '', ministryNo: '', nationalNo: '', role: role || '', game: '', x: {} }; }
   function dgPlayer(role) { return { name: '', ministryNo: '', memberNo: '', nationalNo: '', joinDate: '', role: role || '', game: '', x: {} }; }
+  function leaveDefaults() {
+    return {
+      name: '', job: '', dept: 'مديرية النشاطات المدرسية', section: 'أندية المعلمين والعاملين',
+      place: 'in', address: '', phone: '',
+      start: '', end: '', days: '', daysManual: false,
+      date: todayISO(), dateManual: false
+    };
+  }
   function delegationDefaults() {
     return {
       subX: 0, subY: 0, number: '', date: todayISO(), dateManual: false, showHijri: true, hijri: '', hijriManual: false,
@@ -242,6 +250,7 @@
         owner: '', lblOwner: 'صاحب الاستحقاق:', lblSign: 'التوقيع:', lblDate: 'التاريخ:',
         showClaimDate: true, claimDate: '', claimDateText: '', showHead: false, showManager: false
       },
+      leave: leaveDefaults(),
       delegation: delegationDefaults(),
       members: membersDefaults(),
       cert: certDefaults(),
@@ -416,7 +425,7 @@
   }
 
   g.App = Object.assign(g.App || {}, {
-    KEY, FONTS, T2_SPEC, T2_TXT_DEF, defaults, build, loadAsync, save, flush, wipe, getPath, setPath, migrate,
+    leaveDefaults, KEY, FONTS, T2_SPEC, T2_TXT_DEF, defaults, build, loadAsync, save, flush, wipe, getPath, setPath, migrate,
     isPersisted: () => App_persisted,
     todayISO, certDateText, formatGregorian, formatHijri, DG_ROLES, DG_STD, dgAdmin, dgPlayer, mbRow, parseMembers, ASSIGN_TOKEN, ASSIGN_BODY, CLAIM_BODY
   });

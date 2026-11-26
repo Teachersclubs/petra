@@ -603,6 +603,7 @@
   }
 
   async function buildDocx(S0, type) {
+    if (type === 'leave') return App.leave.docx(App.withEffective(S0, type));
     const S = App.withEffective(S0, type);
     const vars = App.variants(S, type);
     const bodySections = [];
@@ -657,7 +658,7 @@
     return docx.Packer.toBlob(doc);
   }
 
-  const DOC_TITLES = { cert: 'شهادة شكر وتقدير', letter: 'كتاب للوزارة', internal: 'كتاب داخلي', thanks: 'كتاب شكر', circular: 'تعميم هيئة عامة', assign: 'قرار تكليف', claim: 'مطالبة مالية', delegation: 'الوفد المشارك', members: 'تقرير المنتسبين الجدد' };
+  const DOC_TITLES = { leave: 'نموذج طلب إجازة سنوية', cert: 'شهادة شكر وتقدير', letter: 'كتاب للوزارة', internal: 'كتاب داخلي', thanks: 'كتاب شكر', circular: 'تعميم هيئة عامة', assign: 'قرار تكليف', claim: 'مطالبة مالية', delegation: 'الوفد المشارك', members: 'تقرير المنتسبين الجدد' };
   const LATIN = { cert: 'thanks-certificate', letter: 'ministry-letter', internal: 'internal-letter', thanks: 'thanks-letter', circular: 'general-circular', assign: 'assignment-decision', claim: 'financial-claim', delegation: 'participating-delegation', members: 'new-members-report' };
   /** اسم الملف = موضوع الكتاب: عربي ومسافات مسموحان، وتُزال المحارف الممنوعة والتحكّمية فقط */
   function cleanName(t) {
@@ -671,6 +672,7 @@
   }
   function fileName(S, type) {
     const d = S[type];
+    if (type === 'leave') return cleanName('نموذج طلب إجازة سنوية' + (d.name ? ' - ' + d.name : '')) || 'annual-leave';
     const n = type === 'cert' ? cleanName((d.kind === 'excel' ? 'شهادة تفوق' : 'شهادة شكر وتقدير') + (d.name ? ' - ' + d.name : '')) : cleanName(d.subject);
     if (n) return n;
     const extra = type === 'assign' ? d.assignee : type === 'claim' ? d.owner : '';
