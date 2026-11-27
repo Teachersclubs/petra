@@ -101,7 +101,7 @@
   function dgPlayer(role) { return { name: '', ministryNo: '', memberNo: '', nationalNo: '', joinDate: '', role: role || '', game: '', x: {} }; }
   function leaveDefaults() {
     return {
-      name: '', job: '', admin: 'إدارة شؤون المعلمين والطلبة', dept: 'مديرية النشاطات المدرسية', section: 'أندية المعلمين والعاملين',
+      name: '', job: '', admin: 'إدارة شؤون المعلمين والطلبة', dept: 'مديرية النشاطات المدرسية', section: 'أندية المعلمين والعاملين', club: '',
       place: 'in', address: '', phone: '',
       start: '', end: '', startTime: '00:00', endTime: '23:59', days: '', daysManual: false,
       date: todayISO(), dateManual: false
