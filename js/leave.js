@@ -86,7 +86,7 @@
   /* ---------- Word ---------- */
   const dataBytes = u => { const b = atob(u.split(',')[1]), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; };
   async function docxBlob(S) {
-    const D = g.docx, f = S.font, SZ = 26, R = rows(S), none = { style: D.BorderStyle.NONE, size: 0, color: 'auto' };
+    const D = g.docx, f = 'Arial', SZ = 26, R = rows(S), none = { style: D.BorderStyle.NONE, size: 0, color: 'auto' };
     const run = (r, o) => typeof r === 'string' ? new D.TextRun(Object.assign({ text: r, bold: true, size: SZ, font: f, rightToLeft: /[؀-ۿ]/.test(r) || undefined }, o || {})) : new D.TextRun({ text: r.box ? '☒' : '☐', font: 'Segoe UI Symbol', size: SZ });
     const para = (runs, al, extra) => new D.Paragraph(Object.assign({ bidirectional: true, alignment: al === 'c' ? D.AlignmentType.CENTER : al === 'l' ? D.AlignmentType.END : D.AlignmentType.START, spacing: { before: 0, after: 0, line: 276 }, children: runs.map(r => run(r)) }, extra || {}));
     const bd = b => { const o = {}; for (let i = 0; i < b.length; i += 2) o[b[i]] = b[i + 1]; const m = k => ({ style: o[k] === 'd' ? D.BorderStyle.DOUBLE : D.BorderStyle.SINGLE, size: o[k] === 'd' ? 6 : 4, color: '000000' }); return { top: m('t'), bottom: m('b'), left: m('l'), right: m('r') }; };
