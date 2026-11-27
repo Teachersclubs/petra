@@ -670,5 +670,5 @@
     return list.map(p => '<div class="att-page"><div class="att-cap">' + esc(p.cap) + '</div><img src="' + p.url + '" alt=""></div>');
   }
 
-  g.App = Object.assign(App, { signHTML, SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, dgFit, durationParts, durationText, subStyle, dgIntro, mbIntro, memView, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, DEPT2, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
+  g.App = Object.assign(App, { footerHTML, signHTML, SG, signGeom, signGeomSafe, signIssues, signers, boxLeft, shortDate, assignDateStr, DATE_DOC, variants, toLines, circTitle, attachPagesHTML, esc, sanitize, DG_KINDS, DG_COLS, dgCols, dgFit, durationParts, durationText, subStyle, dgIntro, mbIntro, memView, dgCell, dgWidths, renderDoc, effective, withEffective, footItems, footExtra, footHasContent, iconSVG, fontCss, isLetter, TITLES, CONST: { MINISTRY, DEPT, DEPT2, CLUBS, CLUB_PREFIX, CLOSING, RECIPIENTS, DIRECTOR } });
 })(window);
