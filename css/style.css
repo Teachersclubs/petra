@@ -651,3 +651,4 @@ body.ed-full .ed-stage { position: fixed; inset: 0; z-index: 300; height: 100vh;
 body.ed-full { overflow: hidden; }
 body.ed-full .ed-fs-btn { bottom: auto; top: 6px; left: 10px; }
 #wdZr{width:160px;flex:none}
+@media (min-width: 900px) { .doc-tabs { gap: 1px; } .doc-tab { padding: 7px 8px; font-size: 13px; gap: 5px; } .doc-tab .tab-ico { width: 15px; height: 15px; } }
