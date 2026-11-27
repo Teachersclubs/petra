@@ -914,7 +914,7 @@
     doc.addEventListener('keydown', e => { if (e.key === 'Escape' && doc.body.classList.contains('ed-full') && !doc.querySelector('dialog[open]')) setFull(false); });
     doc.body.appendChild(b); return b;
   }
-  function setFull(on) { doc.body.classList.toggle('ed-full', on); const b = fsBtn(); b.textContent = on ? '✕ إغلاق ملء الشاشة' : '⛶ فتح بصفحة كاملة'; b.title = on ? 'الرجوع للواجهة (Esc)' : 'عرض المحرر على كامل الشاشة مثل صفحة Word'; setTimeout(() => g.dispatchEvent(new Event('resize')), 50); }
+  function setFull(on) { doc.body.classList.toggle('ed-full', on); const b = fsBtn(); b.textContent = on ? '✕ إغلاق ملء الشاشة' : '⛶ فتح بملء الشاشة'; b.title = on ? 'الرجوع للواجهة (Esc)' : 'عرض المحرر على كامل الشاشة مثل صفحة Word'; setTimeout(() => g.dispatchEvent(new Event('resize')), 50); }
   function show(on) {
     doc.body.classList.toggle('mode-edit', on); fsBtn(); if (!doc.body.classList.contains('ed-full')) setFull(false); if (!on) doc.body.classList.remove('ed-full');
     const st = stage(); if (!st) return;
