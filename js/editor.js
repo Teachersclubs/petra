@@ -907,16 +907,8 @@
   }
 
   /* ================= دخول/خروج التبويب والتصدير ================= */
-  function fsBtn() {
-    let b = $('#edFullBtn'); if (b) return b;
-    b = doc.createElement('button'); b.type = 'button'; b.id = 'edFullBtn'; b.className = 'ed-fs-btn';
-    b.addEventListener('click', () => setFull(!doc.body.classList.contains('ed-full')));
-    doc.addEventListener('keydown', e => { if (e.key === 'Escape' && doc.body.classList.contains('ed-full') && !doc.querySelector('dialog[open]')) setFull(false); });
-    doc.body.appendChild(b); return b;
-  }
-  function setFull(on) { doc.body.classList.toggle('ed-full', on); const b = fsBtn(); b.textContent = on ? '✕ إغلاق ملء الشاشة' : '⛶ فتح بصفحة كاملة'; b.title = on ? 'الرجوع للواجهة (Esc)' : 'عرض المحرر على كامل الشاشة مثل صفحة Word'; setTimeout(() => g.dispatchEvent(new Event('resize')), 50); }
   function show(on) {
-    doc.body.classList.toggle('mode-edit', on); fsBtn(); if (!doc.body.classList.contains('ed-full')) setFull(false); if (!on) doc.body.classList.remove('ed-full');
+    doc.body.classList.toggle('mode-edit', on);
     const st = stage(); if (!st) return;
     if (!on) { if (E.kind === 'docx' && App.editorWord) App.editorWord.snapshot(); st.hidden = true; $('#sheetHolder').hidden = false; return; }
     $('#sheetHolder').hidden = true;

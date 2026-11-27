@@ -641,13 +641,3 @@ body.mode-leave #peopleBox, body.mode-leave #posBox { display: none !important; 
 @media (max-width:700px){.wd-view{padding:6px}}
 
 #wdFont{width:140px}.wd-bar select{max-width:140px}
-
-/* التابات تظهر كاملة على سطح المكتب */
-@media (min-width: 900px) { .doc-tabs { flex-wrap: wrap; overflow-x: visible; row-gap: 2px; } }
-/* محرر الكتب بصفحة كاملة */
-.ed-fs-btn { display: none; position: fixed; z-index: 400; left: 14px; bottom: 44px; border: 0; border-radius: 20px; padding: 7px 14px; background: var(--brand, #1a73e8); color: #fff; font: inherit; font-size: 13px; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
-body.mode-edit .ed-fs-btn { display: block; }
-body.ed-full .ed-stage { position: fixed; inset: 0; z-index: 300; height: 100vh; min-height: 0; }
-body.ed-full { overflow: hidden; }
-body.ed-full .ed-fs-btn { bottom: auto; top: 6px; left: 10px; }
-#wdZr{width:160px;flex:none}
