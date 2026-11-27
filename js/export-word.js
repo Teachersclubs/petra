@@ -680,5 +680,5 @@
     return fb || LATIN[type];
   }
 
-  g.App = Object.assign(App, { buildDocx, fileName, cleanName, DOC_TITLES });
+  g.App = Object.assign(App, { buildFooter, buildDocx, fileName, cleanName, DOC_TITLES });
 })(window);

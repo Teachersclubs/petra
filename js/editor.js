@@ -156,6 +156,7 @@
     st.innerHTML = '<div class="ed-empty" id="edDrop"><div class="ed-empty-box"><svg viewBox="0 0 24 24" width="54" height="54" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 17v-6M9 13l3-3 3 3"/></svg><h3>اسحب ملف الكتاب هنا</h3><p>ملف PDF أو Word (.docx) — أو اضغط للاختيار من جهازك</p><button type="button" class="btn primary" id="edPickBig">اختيار ملف</button><div class="ed-or">أو ابدأ بصفحة فارغة</div><div class="ed-blank" data-blank><select class="ed-bsize">' + BLANK_OPTS + '</select><button type="button" class="btn" data-newblank="pdf">+ صفحة فارغة (PDF)</button><button type="button" class="btn" data-newblank="docx">+ مستند Word فارغ</button></div></div></div>';
     $('#edPickBig').addEventListener('click', () => $('#edFile').click());
     $$('[data-newblank]', st).forEach(b => b.addEventListener('click', () => newBlank(b.dataset.newblank, $('.ed-bsize', b.closest('[data-blank]')).value)));
+    const di = App.editorWord && App.editorWord.draftInfo(); if (di) { const b = doc.createElement('button'); b.type = 'button'; b.className = 'btn'; b.style.marginTop = '10px'; b.textContent = 'استعادة آخر مسودة Word: ' + di.name; b.addEventListener('click', () => App.editorWord.restoreDraft(E)); $('.ed-empty-box', st).appendChild(b); }
     st.hidden = false; doc.body.classList.remove('ed-has-file');
   }
 
@@ -596,12 +597,8 @@
   const AR = /[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]/;
   const fixAr = s => s.replace(/ا([أإآ])ل/g, 'ال$1').replace(/ـ/g, '').replace(/[‎‏‪-‮]/g, '');
   const lineCache = new Map();
-  async function pageLines(pg) {
-    const key = pg.s + ':' + pg.p + ':' + rotOf(pg);
-    if (lineCache.has(key)) return lineCache.get(key);
-    const res = { lines: [], items: [], W: dims(pg)[0], H: dims(pg)[1] };
-    if (pg.s >= 0) {
-      const p = await E.srcs[pg.s].pdf.getPage(pg.p + 1), vp = p.getViewport({ scale: 1, rotation: rotOf(pg) }), tc = await p.getTextContent();
+  async function fillLines(res, p, rot) {
+      const vp = p.getViewport({ scale: 1, rotation: rot }), tc = await p.getTextContent();
       const boldOf = fn => { try { const f = p.commonObjs.get(fn); return /bold|black|heavy|semibold|demi/i.test((f && f.name) || ''); } catch (e) { return false; } };
       const bc = {}; res.items = tc.items.filter(t => t.str && t.str.trim() && !(t.transform[1] && Math.abs(t.transform[1]) > Math.abs(t.transform[0]) * 0.8)).map(t => {
         const [a, b2, , , e, f] = t.transform, size = Math.hypot(a, b2) || t.height || 12;
@@ -621,11 +618,35 @@
         const bs = seq.filter(i => i.bold).length;
         res.lines.push({ text: text.trim(), seq, rtl, x0: Math.min.apply(null, asc.map(i => i.x0)), x1: Math.max.apply(null, asc.map(i => i.x1)), y0: Math.min.apply(null, asc.map(i => i.y0)), y1: Math.max.apply(null, asc.map(i => i.y1)), size: g0.size, bold: bs * 2 > seq.length });
       });
-    }
+  }
+  async function pageLines(pg) {
+    const key = pg.s + ':' + pg.p + ':' + rotOf(pg);
+    if (lineCache.has(key)) return lineCache.get(key);
+    const res = { lines: [], items: [], W: dims(pg)[0], H: dims(pg)[1] };
+    if (pg.s >= 0) await fillLines(res, await E.srcs[pg.s].pdf.getPage(pg.p + 1), rotOf(pg));
     lineCache.set(key, res); if (lineCache.size > 60) lineCache.delete(lineCache.keys().next().value);
     return res;
   }
   async function textOfPage(pg) { return (await pageLines(pg)).lines.map(l => l.text); }
+  async function openPdfData(f) { g.pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js'; return g.pdfjsLib.getDocument({ data: new Uint8Array(await readBuf(f)) }).promise; }
+  async function pdfToImages(f, scale, setMsg) {
+    const pdf = await openPdfData(f), out = [];
+    for (let i = 1; i <= pdf.numPages; i++) { setMsg && setMsg('تحويل الصفحة ' + i + ' من ' + pdf.numPages + '…'); const p = await pdf.getPage(i), vp = p.getViewport({ scale: scale || 1.6 }), c = doc.createElement('canvas'); c.width = vp.width; c.height = vp.height; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); await p.render({ canvasContext: x, viewport: vp }).promise; out.push(c.toDataURL('image/jpeg', 0.9)); }
+    return out;
+  }
+  async function pdfTextHTML(f, setMsg) {
+    const pdf = await openPdfData(f); let h = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      setMsg && setMsg('استخراج نص الصفحة ' + i + ' من ' + pdf.numPages + '…');
+      const p = await pdf.getPage(i), v = p.getViewport({ scale: 1 }), res = { lines: [], items: [], W: v.width, H: v.height };
+      await fillLines(res, p, 0);
+      const paras = paragraphsOf(res);
+      if (!paras.length) h += '<p dir="rtl"><i>[صفحة ' + i + ': لا يوجد نص قابل للاستخراج — صفحة ممسوحة ضوئياً]</i></p>';
+      paras.forEach(pa => { const txt = pa.lines.map(l => l.text).join(' '), b = pa.lines[0].bold; h += '<p dir="' + (pa.rtl ? 'rtl' : 'ltr') + '" style="text-align:' + (pa.center ? 'center' : pa.rtl ? 'right' : 'left') + '">' + (b ? '<b>' : '') + esc(txt) + (b ? '</b>' : '') + '</p>'; });
+      if (i < pdf.numPages) h += '<hr data-pb="1" style="border:0;border-top:2px dashed #999"><p><br></p>';
+    }
+    return h;
+  }
   function paragraphsOf(L) {
     const W = L.W, lines = L.lines.slice().sort((a, b) => a.y0 - b.y0), maxW = Math.max.apply(null, lines.map(l => l.x1 - l.x0).concat(1));
     const paras = []; let cur = null;
@@ -889,7 +910,7 @@
   function show(on) {
     doc.body.classList.toggle('mode-edit', on);
     const st = stage(); if (!st) return;
-    if (!on) { const pp = $('#wdPaper'); if (pp && E.word) E.word.html = pp.innerHTML; st.hidden = true; $('#sheetHolder').hidden = false; return; }
+    if (!on) { if (E.kind === 'docx' && App.editorWord) App.editorWord.snapshot(); st.hidden = true; $('#sheetHolder').hidden = false; return; }
     $('#sheetHolder').hidden = true;
     if (!E.kind) showEmpty(); else { showStage(); renderAll(); }
     syncForm();
@@ -928,5 +949,5 @@
     g.addEventListener('resize', () => { if (E.kind === 'pdf' && E.fit && doc.body.classList.contains('mode-edit')) renderPage(); });
   }
 
-  g.App = Object.assign(App, { editor: { init, show, getFile, print: printIt, pull: pullAttachments, E, openFile } });
+  g.App = Object.assign(App, { editor: { init, show, getFile, print: printIt, pull: pullAttachments, E, openFile, close: closeFile, pdfToImages, pdfTextHTML } });
 })(window);
